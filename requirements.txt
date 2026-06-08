@@ -1,27 +1,30 @@
-# Core RAG pipeline
+# ── LangChain ecosystem (versions from working local venv) ──────────────────
 langchain==1.3.4
 langchain-core==1.4.1
 langchain-community==0.4.2
 langchain-text-splitters==1.1.2
-langchain-chroma==0.2.4
-langchain-huggingface==0.2.0
+langchain-chroma==1.1.0
+langchain-huggingface==1.2.2
+langchain-nvidia-ai-endpoints     # Phase 3 cloud LLM; no local version yet
+
+# ── Vector store & embeddings ────────────────────────────────────────────────
 chromadb==1.5.9
 sentence-transformers==5.5.1
+transformers==5.10.2
+torch==2.12.0                     # required by sentence-transformers
 
-# LLM — Phase 2 (local), Phase 3 (cloud)
-langchain-ollama==1.1.0       # Phase 2 local only; not needed on Railway
-langchain-nvidia-ai-endpoints # Phase 3 cloud deployment
+# ── API server (Phase 3 Railway backend) ────────────────────────────────────
+fastapi==0.136.3
+uvicorn==0.49.0
+pydantic==2.13.4
 
-# API server (Phase 3)
-fastapi
-uvicorn
+# ── Shared utilities ─────────────────────────────────────────────────────────
+python-dotenv==1.2.2
+huggingface_hub==1.18.0
 
-# Frontend (Phase 2 Streamlit)
+# ── Local dev only (not used on Railway) ────────────────────────────────────
+langchain-ollama==1.1.0
+ollama==0.6.2
 streamlit==1.58.0
 pandas==3.0.3
-
-# Data and environment
-python-dotenv==1.2.2
-
-# Scraper (only needed to re-scrape; not required to run the app)
 playwright==1.60.0
