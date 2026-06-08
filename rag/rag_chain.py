@@ -1,26 +1,55 @@
 # rag_chain.py
 # Retriever + LLM chain for UIUC housing search (Green Street Realty data)
 #
-# Run:    python rag_chain.py
+# Run:    python -m rag.rag_chain
 # Output: prints answers to a set of real-case student test questions
 
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+import os, sys
+from pathlib import Path
+if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
+from typing import Any
+from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
-
-CHROMA_DIR  = "./chroma_db"
-EMBED_MODEL = "all-MiniLM-L6-v2"
-LLM_MODEL   = "llama3.1:8b"
+from langchain_core.retrievers import BaseRetriever
+from langchain_core.documents import Document
+from langchain_core.callbacks import CallbackManagerForRetrieverRun
+from config import CHROMA_DIR, EMBED_MODEL, LLM_MODEL, K_RESULTS, SCORE_GAP
 
 # ── Load vector store ─────────────────────────────────────────────────────────
 embeddings  = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
 vectorstore = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
 
-# k=6: retrieve 6 candidates so the LLM has enough to pick the best 5
-retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
+class RelativeThresholdRetriever(BaseRetriever):
+    """Returns up to k results, dropping any whose score falls more than
+    SCORE_GAP below the top result. Adapts to the query instead of using
+    a fixed floor — a weak query still returns its best matches."""
+    vectorstore: Any
+    k: int
+    max_gap: float
+
+    def _get_relevant_documents(
+        self, query: str, *, run_manager: CallbackManagerForRetrieverRun
+    ) -> list[Document]:
+        results = self.vectorstore.similarity_search_with_relevance_scores(query, k=self.k)
+        if not results:
+            return []
+        top_score = results[0][1]
+        return [doc for doc, score in results if top_score - score <= self.max_gap]
+
+
+retriever = RelativeThresholdRetriever(
+    vectorstore=vectorstore,
+    k=K_RESULTS,
+    max_gap=SCORE_GAP,
+)
 
 
 # ── Prompt template ───────────────────────────────────────────────────────────

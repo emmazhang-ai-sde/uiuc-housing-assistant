@@ -1,20 +1,17 @@
 # ingest.py
 # Loads listings from green_street_listings.db → embeds text into Chroma vector store
 #
-# Run:    python ingest.py
+# Run:    python -m pipeline.ingest   (from project root)
 # Output: chroma_db/
 #
 # ⚠️  First run downloads the embedding model (~90 MB) — takes 2–5 min.
 #     Subsequent runs are instant (model is cached locally).
 
 from langchain_core.documents import Document
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
 import sqlite3
-
-DB_FILE     = "green_street_listings.db"
-CHROMA_DIR  = "./chroma_db"
-EMBED_MODEL = "all-MiniLM-L6-v2"
+from config import DB_FILE, CHROMA_DIR, EMBED_MODEL
 
 # ── Load listings from SQLite ─────────────────────────────────────────────────
 conn = sqlite3.connect(DB_FILE)
