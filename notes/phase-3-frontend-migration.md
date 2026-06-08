@@ -171,17 +171,100 @@ Since `ui-design.html` already uses Tailwind class names, the CSS translates dir
 
 ### Step 5 — Deploy FastAPI to Railway
 
-1. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub
-2. Point to this repo, select the `backend/` folder
-3. Add environment variables in Railway dashboard:
-   ```
-   NVIDIA_API_KEY=nvapi-xxx
-   ```
-4. Add a `Procfile` in the project root:
-   ```
-   web: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
-   ```
-5. Railway gives you a URL like `https://your-app.railway.app`
+#### 5.1 — Add required files to the repo
+
+Railway needs two files at the **project root** (not inside `backend/`):
+
+**`Procfile`** — tells Railway how to start the server:
+```
+web: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+```
+
+**`requirements.txt`** — must already exist (it does). Make sure it includes:
+```
+fastapi
+uvicorn
+langchain-nvidia-ai-endpoints
+langchain
+chromadb
+sentence-transformers
+python-dotenv
+```
+
+Commit and push both files before continuing:
+```bash
+git add Procfile requirements.txt
+git commit -m "add Procfile for Railway deployment"
+git push origin main
+```
+
+#### 5.2 — Push your repo to GitHub (if not already)
+
+Railway deploys from GitHub. If the repo isn't on GitHub yet:
+```bash
+# On github.com: create a new empty repo (no README, no .gitignore)
+git remote add origin https://github.com/<your-username>/uiuc-housing-assistant-langchain-rag.git
+git push -u origin main
+```
+
+#### 5.3 — Create a Railway project
+
+1. Go to [railway.app](https://railway.app) → sign in with GitHub
+2. Click **New Project** → **Deploy from GitHub repo**
+3. Authorize Railway to access your GitHub account if prompted
+4. Select the `uiuc-housing-assistant-langchain-rag` repo
+5. Railway will detect the `Procfile` and start an initial deploy (it will fail — that's fine, you haven't set env vars yet)
+
+#### 5.4 — Set environment variables
+
+In your Railway project dashboard:
+
+1. Click on the service (the box that appeared after step 5.3)
+2. Go to the **Variables** tab
+3. Add the following key/value pairs one at a time:
+
+| Key | Value |
+|---|---|
+| `NVIDIA_API_KEY` | `nvapi-xxxxxxxxxxxxxxxxxx` |
+| `TRANSFORMERS_OFFLINE` | `1` |
+
+> `TRANSFORMERS_OFFLINE=1` tells HuggingFace to use the cached embedding model instead of trying to download it at startup. **Without this, Railway will fail** because the model isn't cached on their server — you'll need to remove this flag and let it download on first deploy (see note below).
+
+**Note on the embedding model cache:** `all-MiniLM-L6-v2` is cached locally in `~/.cache/huggingface/` on your machine. Railway's server doesn't have that cache. Remove `TRANSFORMERS_OFFLINE=1` on Railway so it downloads the model on first boot (~90MB, happens once).
+
+#### 5.5 — Trigger a redeploy
+
+After setting env vars, go to the **Deployments** tab and click **Redeploy** (or push a new commit — Railway auto-deploys on every push to `main`).
+
+Watch the deploy logs in real time. A successful deploy ends with:
+```
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:XXXXX
+```
+
+#### 5.6 — Get your Railway URL and test it
+
+1. Go to the **Settings** tab → **Networking** → click **Generate Domain**
+2. Railway gives you a URL like `https://uiuc-housing-assistant-langchain-rag-production.up.railway.app`
+3. Test the endpoint with curl:
+
+```bash
+curl -X POST https://<your-railway-url>/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "2 bedroom under $900"}'
+```
+
+Expected response shape:
+```json
+{
+  "answer": "Here are some 2-bedroom options under $900...",
+  "listings": [
+    { "address": "...", "beds": 2, "price_per_bed_low": 850, ... }
+  ]
+}
+```
+
+If you get a 200 with that shape, the backend is live. Copy the Railway URL — you'll need it for Step 6.
 
 ---
 
