@@ -7,7 +7,7 @@
 # We parse that directly — no fragile HTML element scraping needed.
 #
 # Run:    python scrapers/green_street.py
-# Output: green_street_raw.json
+# Output: data/green_street_raw.json
 
 from playwright.sync_api import sync_playwright
 import json
@@ -115,11 +115,11 @@ def scrape_green_street():
 if __name__ == "__main__":
     data = scrape_green_street()
 
-    with open("green_street_raw.json", "w") as f:
+    with open("data/green_street_raw.json", "w") as f:
         json.dump(data, f, indent=2)
 
     unique_props = len(set(d["address"] for d in data))
     print(f"✅ Saved {len(data)} floor plan listings from {unique_props} properties")
-    print(f"   → green_street_raw.json")
+    print(f"   → data/green_street_raw.json")
 
 

@@ -7,11 +7,15 @@ function priceStr(low: number | null, high: number | null): string {
 }
 
 function AvailabilityBadge({ availability }: { availability: string }) {
-  const leased = availability.toLowerCase() === "leased"
+  const status = availability.toLowerCase()
+  const style =
+    status.includes("available") && !status.includes("not available")
+      ? "bg-green-100 text-green-700"
+      : status === "Leased".toLowerCase()
+      ? "bg-red-100 text-red-700"
+      : "bg-slate-100 text-slate-600"
   return (
-    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase whitespace-nowrap ${
-      leased ? "bg-slate-100 text-slate-600" : "bg-orange-100 text-orange-700"
-    }`}>
+    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase whitespace-nowrap ${style}`}>
       {availability}
     </span>
   )
@@ -25,7 +29,10 @@ export default function ListingCard({ listing }: { listing: Listing }) {
   return (
     <article className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow group">
       <div className="flex justify-between items-start mb-3">
-        <h3 className="font-bold text-slate-900 text-sm leading-tight flex-1 mr-2">{listing.address}</h3>
+        <div className="flex-1 mr-2">
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">{listing.company}</div>
+          <h3 className="font-bold text-slate-900 text-sm leading-tight">{listing.address}</h3>
+        </div>
         <AvailabilityBadge availability={listing.availability} />
       </div>
 

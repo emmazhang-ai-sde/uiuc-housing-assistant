@@ -1,6 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
 
 export interface Listing {
+  company: string
   address: string
   unit_type: string
   beds: number
@@ -16,6 +17,18 @@ export interface Listing {
 export interface SearchResponse {
   answer: string
   listings: Listing[]
+}
+
+export interface DataStatus {
+  last_scraped: string | null
+  listing_count: number | null
+  property_count: number | null
+}
+
+export async function fetchStatus(): Promise<DataStatus> {
+  const res = await fetch(`${API_URL}/api/status`)
+  if (!res.ok) throw new Error(`API error: ${res.status}`)
+  return res.json()
 }
 
 export async function search(query: string): Promise<SearchResponse> {

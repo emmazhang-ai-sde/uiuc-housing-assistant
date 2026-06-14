@@ -1,4 +1,28 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { fetchStatus, DataStatus } from "@/lib/api"
+
 export default function Sidebar({ onClear }: { onClear: () => void }) {
+  const [status, setStatus] = useState<DataStatus | null>(null)
+
+  useEffect(() => {
+    fetchStatus().then(setStatus).catch(() => {})
+  }, [])
+
+  const listingLabel =
+    status?.listing_count != null && status?.property_count != null
+      ? `${status.listing_count} floor plans · ${status.property_count} properties`
+      : "—"
+
+  const scrapedLabel = status?.last_scraped
+    ? new Date(status.last_scraped + "T00:00:00").toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "—"
+
   return (
     <aside className="hidden md:flex flex-col w-72 bg-slate-50 border-r border-slate-200 shrink-0 h-full">
       <div className="p-6 overflow-y-auto flex-1">
@@ -12,7 +36,7 @@ export default function Sidebar({ onClear }: { onClear: () => void }) {
               UIUC Housing Assistant
             </div>
             <div className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-medium">
-              Green Street Realty · Champaign, IL
+              Champaign-Urbana, IL
             </div>
           </div>
         </div>
@@ -21,9 +45,9 @@ export default function Sidebar({ onClear }: { onClear: () => void }) {
         <section className="mb-8">
           <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">About</h2>
           <div className="space-y-2 text-sm text-slate-600 leading-relaxed">
-            <p><span className="font-semibold text-slate-900">Data source:</span> Green Street Realty</p>
-            <p><span className="font-semibold text-slate-900">Listings:</span> 489 floor plans · 251 properties</p>
-            <p><span className="font-semibold text-slate-900">Last scraped:</span> May 20, 2026</p>
+            <p><span className="font-semibold text-slate-900">Data sources:</span> Green Street Realty, Universities Group</p>
+            <p><span className="font-semibold text-slate-900">Listings:</span> {listingLabel}</p>
+            <p><span className="font-semibold text-slate-900">Last scraped:</span> {scrapedLabel}</p>
             <p><span className="font-semibold text-slate-900">Area:</span> Champaign, IL (UIUC)</p>
           </div>
         </section>

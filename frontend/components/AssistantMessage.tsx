@@ -14,11 +14,12 @@ export default function AssistantMessage({
       <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center shrink-0 text-sm mt-1">
         🏠
       </div>
-      <div className="flex-1 space-y-4">
-        {/* LLM answer text */}
-        <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm text-[15px] leading-relaxed text-slate-700">
-          {answer}
-        </div>
+      <div className="flex-1 min-w-0 space-y-4">
+        {answer && listings.length === 0 && (
+          <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm text-[15px] leading-relaxed text-slate-700">
+            {answer}
+          </div>
+        )}
 
         {/* Listing cards grid */}
         {listings.length > 0 && (

@@ -66,7 +66,7 @@ ASSISTANT_AVATAR = "🏠"
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def format_response(text: str) -> str:
     text = re.sub(r'\$(\d)', r'\\$\1', text)
-    for marker in ["📍", "🛏", "💰", "📅", "🔗", "⚠️", "Found", "Note"]:
+    for marker in ["🏠", "🛏", "💰", "📅", "🔗", "⚠️", "Found", "Note"]:
         text = text.replace(f"\n{marker}", f"\n\n{marker}")
     return text.strip()
 

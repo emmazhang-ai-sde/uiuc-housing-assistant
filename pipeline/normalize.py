@@ -1,15 +1,21 @@
-# normalize_green_street.py
-# Reads green_street_raw.json → cleans each field → stores in green_street_listings.db (SQLite)
+# normalize.py
+# Reads all data/*_raw.json → cleans each field → stores in snapshots/listings_YYYY-MM-DD.db
 #
-# Run:    python normalize_green_street.py
-# Output: green_street_listings.db
+# Run:    python -m pipeline.normalize
+# Output: snapshots/listings_YYYY-MM-DD.db  (only if data changed vs last snapshot)
+#         snapshots/latest.txt              (updated to new date if snapshot was written)
 
-import json # for reading the raw JSON file
-import re # for parsing price ranges with regex
-import sqlite3 # for storing normalized data in a SQLite database
+import hashlib
+import json
+import re
+import shutil
+import sqlite3
+from datetime import date
+from pathlib import Path
 
-INPUT_FILE = "green_street_raw.json"
-DB_FILE    = "green_street_listings.db"
+DATA_DIR      = Path("data")
+SNAPSHOTS_DIR = Path("snapshots")
+SNAPSHOTS_DIR.mkdir(exist_ok=True)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -27,13 +33,6 @@ def parse_price_range(value: str) -> tuple[int | None, int | None]:
         "3500-3600" → (3500, 3600)
 
     Empty / unparseable → (None, None)
-
-    Why two columns instead of one lower bound?
-    Showing only the low price and hiding the upper bound misleads users —
-    they click expecting $875 and find $900. Both numbers go into the DB so
-    the UI and the RAG chain can display the honest range, and price filters
-    can use the HIGH column to guarantee no surprises (e.g. WHERE
-    price_per_bed_high <= 900).
     """
     if not value:
         return None, None
@@ -41,12 +40,11 @@ def parse_price_range(value: str) -> tuple[int | None, int | None]:
     if not numbers:
         return None, None
     low  = int(numbers[0])
-    high = int(numbers[-1])   # same as low when only one number is found
+    high = int(numbers[-1])
     return low, high
 
 
 def parse_int(value: str) -> int | None:
-    """Convert a string to int; return None if empty or non-numeric."""
     try:
         return int(value) if value else None
     except (ValueError, TypeError):
@@ -54,7 +52,6 @@ def parse_int(value: str) -> int | None:
 
 
 def parse_float(value: str) -> float | None:
-    """Convert a string to float; return None if empty or non-numeric."""
     try:
         return float(value) if value else None
     except (ValueError, TypeError):
@@ -62,13 +59,6 @@ def parse_float(value: str) -> float | None:
 
 
 def format_price_range(low: int | None, high: int | None) -> str:
-    """
-    Format a (low, high) pair into a human-readable string for the RAG text chunk.
-
-        (900, 900)   → "$900"
-        (875, 900)   → "$875–$900"
-        (None, None) → "unknown"
-    """
     if low is None:
         return "unknown"
     if low == high:
@@ -79,13 +69,10 @@ def format_price_range(low: int | None, high: int | None) -> str:
 # ── Normalizer ───────────────────────────────────────────────────────────────
 
 def normalize(record: dict) -> dict:
-    """Clean and type-cast one raw record into the target schema."""
-
     ppb_low,  ppb_high  = parse_price_range(record.get("price_per_bed", ""))
     ptot_low, ptot_high = parse_price_range(record.get("price_total",   ""))
 
-    # Re-compose the RAG text chunk with honest price ranges instead of bare numbers.
-    # Richer, accurate text = better retrieval quality AND no misleading prices.
+    company      = record.get("company", "").strip()
     address      = record.get("address", "").strip()
     unit_type    = record.get("unit_type", "").strip()
     beds         = record.get("beds", "")
@@ -105,16 +92,16 @@ def normalize(record: dict) -> dict:
         f"Availability: {availability}. "
         f"Area: {area}. "
         f"{'Roommate match available. ' if roommate else ''}"
-        f"Company: Green Street Realty. "
+        f"Company: {company}. "
         f"Link: {url}"
     )
 
     return {
-        "company":            record.get("company", "Green Street Realty"),
+        "company":            company,
         "address":            address,
         "area":               area,
         "property_type":      record.get("property_type", "").strip(),
-        "roommate_match":     1 if roommate else 0,   # SQLite has no bool type
+        "roommate_match":     1 if roommate else 0,
         "unit_type":          unit_type,
         "beds":               parse_int(beds),
         "baths":              parse_float(baths),
@@ -129,44 +116,32 @@ def normalize(record: dict) -> dict:
     }
 
 
-# ── Main ─────────────────────────────────────────────────────────────────────
+# ── Snapshot helpers ──────────────────────────────────────────────────────────
 
-def main():
-    # Load raw data
-    with open(INPUT_FILE) as f:
-        raw = json.load(f)
-    print(f"Loaded {len(raw)} records from {INPUT_FILE}")
-
-    # Normalize every record
-    normalized = [normalize(r) for r in raw]
-
-    # Write to SQLite
-    conn = sqlite3.connect(DB_FILE)
-
-    # Drop and recreate so re-running always produces a clean, fresh DB
+def write_db(normalized: list[dict], db_path: Path) -> None:
+    conn = sqlite3.connect(db_path)
     conn.execute("DROP TABLE IF EXISTS listings")
     conn.execute("""
         CREATE TABLE listings (
             id                  INTEGER PRIMARY KEY AUTOINCREMENT,
             company             TEXT,
             address             TEXT,
-            area                TEXT,     -- "on-campus", "downtown", etc.
-            property_type       TEXT,     -- "Apartment", etc.
-            roommate_match      INTEGER,  -- 0 or 1
-            unit_type           TEXT,     -- "1 Bedroom", "2 Bedroom", etc.
+            area                TEXT,
+            property_type       TEXT,
+            roommate_match      INTEGER,
+            unit_type           TEXT,
             beds                INTEGER,
             baths               REAL,
             sqft                INTEGER,
-            price_per_bed_low   INTEGER,  -- lower bound (or exact if no range)
-            price_per_bed_high  INTEGER,  -- upper bound (same as low if no range)
-            price_total_low     INTEGER,  -- lower bound (or exact if no range)
-            price_total_high    INTEGER,  -- upper bound (same as low if no range)
-            availability        TEXT,     -- "Available August 2026" or "Leased"
+            price_per_bed_low   INTEGER,
+            price_per_bed_high  INTEGER,
+            price_total_low     INTEGER,
+            price_total_high    INTEGER,
+            availability        TEXT,
             url                 TEXT,
-            text                TEXT      -- pre-composed RAG chunk for embedding
+            text                TEXT
         )
     """)
-
     conn.executemany("""
         INSERT INTO listings
             (company, address, area, property_type, roommate_match,
@@ -181,24 +156,94 @@ def main():
              :price_total_low,   :price_total_high,
              :availability, :url, :text)
     """, normalized)
-
     conn.commit()
+    conn.close()
 
-    # Print a summary so you can spot-check before moving to ingest.py
+
+def db_fingerprint(db_path: Path) -> str:
+    """MD5 of all content rows, sorted for stable comparison."""
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute(
+        "SELECT address, unit_type, beds, baths, sqft, "
+        "price_per_bed_low, price_per_bed_high, "
+        "price_total_low, price_total_high, availability, url "
+        "FROM listings ORDER BY address, unit_type"
+    ).fetchall()
+    conn.close()
+    return hashlib.md5(str(rows).encode()).hexdigest()
+
+
+def get_latest_date() -> str | None:
+    latest_file = SNAPSHOTS_DIR / "latest.txt"
+    return latest_file.read_text().strip() if latest_file.exists() else None
+
+
+def print_summary(db_path: Path) -> None:
+    conn = sqlite3.connect(db_path)
     total      = conn.execute("SELECT COUNT(*) FROM listings").fetchone()[0]
     available  = conn.execute("SELECT COUNT(*) FROM listings WHERE availability != 'Leased'").fetchone()[0]
     leased     = conn.execute("SELECT COUNT(*) FROM listings WHERE availability  = 'Leased'").fetchone()[0]
     with_price = conn.execute("SELECT COUNT(*) FROM listings WHERE price_per_bed_low IS NOT NULL").fetchone()[0]
     null_price = conn.execute("SELECT COUNT(*) FROM listings WHERE price_per_bed_low IS NULL").fetchone()[0]
-    has_range  = conn.execute("SELECT COUNT(*) FROM listings WHERE price_per_bed_low != price_per_bed_high AND price_per_bed_low IS NOT NULL").fetchone()[0]
 
-    print(f"\n✅ Stored {total} listings in {DB_FILE}")
-    print(f"   Available : {available}  |  Leased     : {leased}")
-    print(f"   Has price : {with_price}  |  No price   : {null_price}")
-    print(f"   Price ranges (low ≠ high): {has_range}")
-    print(f"\nOpen with DB Browser for SQLite to verify the data looks right.")
-
+    # Per-company breakdown
+    companies = conn.execute(
+        "SELECT company, COUNT(*) FROM listings GROUP BY company ORDER BY company"
+    ).fetchall()
     conn.close()
+
+    print(f"   Total     : {total}  |  Available : {available}  |  Leased : {leased}")
+    print(f"   Has price : {with_price}  |  No price  : {null_price}")
+    for company, count in companies:
+        print(f"   {company}: {count}")
+
+
+# ── Main ─────────────────────────────────────────────────────────────────────
+
+def main():
+    today       = date.today().isoformat()
+    new_db      = SNAPSHOTS_DIR / f"listings_{today}.db"
+    latest_date = get_latest_date()
+
+    # Load all raw JSON files from data/
+    raw_files = sorted(DATA_DIR.glob("*_raw.json"))
+    if not raw_files:
+        print(f"No *_raw.json files found in {DATA_DIR}/")
+        return
+
+    raw: list[dict] = []
+    for f in raw_files:
+        records = json.loads(f.read_text())
+        print(f"Loaded {len(records):>4} records from {f}")
+        raw.extend(records)
+    print(f"Total: {len(raw)} records\n")
+
+    normalized = [normalize(r) for r in raw]
+
+    # Write candidate DB
+    write_db(normalized, new_db)
+    new_fp = db_fingerprint(new_db)
+
+    # Compare with previous snapshot
+    if latest_date and latest_date != today:
+        prev_db = SNAPSHOTS_DIR / f"listings_{latest_date}.db"
+        if prev_db.exists() and db_fingerprint(prev_db) == new_fp:
+            new_db.unlink()
+            print(f"✅ No changes vs snapshot {latest_date} — nothing written.")
+            return
+
+    # Data changed (or first ever run): commit this snapshot
+    for f in raw_files:
+        shutil.copy(f, SNAPSHOTS_DIR / f"raw_{today}_{f.name}")
+    (SNAPSHOTS_DIR / "latest.txt").write_text(today)
+
+    if latest_date and latest_date != today:
+        print(f"📸 New snapshot: {new_db}  (previous: {latest_date})")
+    else:
+        print(f"📸 Snapshot written: {new_db}")
+
+    print_summary(new_db)
+    print(f"\nRun next:  python -m pipeline.ingest")
 
 
 if __name__ == "__main__":

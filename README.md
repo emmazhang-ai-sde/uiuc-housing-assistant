@@ -12,7 +12,7 @@ Built as an original portfolio project to demonstrate production-ready AI engine
 
 ## Demo
 
-Streamlit chat UI — ask a question, get a comparison table with address, unit type, price range, availability, and a direct link.*
+Next.js + React chat UI backed by a FastAPI server — ask a question, get listing cards and a sortable comparison table with address, unit type, price range, availability, and a direct link.
 
 ![Screenshot](screenshot.png)
 
@@ -89,8 +89,8 @@ The system runs in two phases: **Build** (run once to index listings) and **Quer
 │                  (LangChain LCEL chain)                         │
 └─────────────────────────────────────────────────────────────────┘
 
-  Student types in Streamlit UI (app.py)
-  ───────────────────────────────────────
+  Student types in Next.js UI (frontend/) → FastAPI (backend/main.py)
+  ────────────────────────────────────────────────────────────────────
   "2BR under $900/bed — what's available?"
           │
           │  chain.invoke(question)
@@ -164,18 +164,18 @@ The system runs in two phases: **Build** (run once to index listings) and **Quer
                                       │
                                       ▼
   ┌──────────────────────────────────────────────────────────┐
-  │  app.py renders two things in the chat UI                │
+  │  Next.js frontend renders the response                   │
   │                                                          │
-  │  ┌─────────────────────┐  ┌──────────────────────────┐  │
-  │  │  Comparison Table   │  │   LLM Answer (chat)      │  │
-  │  │  (from retriever)   │  │   (from chain)           │  │
-  │  │                     │  │                          │  │
-  │  │  Address | Beds |   │  │  📍 503 E White St       │  │
-  │  │  Price   | Avail│   │  │  🛏 2BR · $875/bed       │  │
-  │  │  ────────┼──────│   │  │  💰 $1,750/mo total      │  │
-  │  │  503 E W.│  2   │   │  │  📅 Available Aug 2026   │  │
-  │  │  …       │  …   │   │  │  …                       │  │
-  │  └─────────────────────┘  └──────────────────────────┘  │
+  │  ┌──────────────────────────────────────────────────┐   │
+  │  │  Listing Cards (grid)                            │   │
+  │  │  address · unit type · price/bed · availability  │   │
+  │  └──────────────────────────────────────────────────┘   │
+  │  ┌──────────────────────────────────────────────────┐   │
+  │  │  Summary Table (sortable by Beds or Price/mo)    │   │
+  │  │  Address | Unit | Beds↑ | Price/bed | Price/mo↑  │   │
+  │  │  503 E W.│ 2BR  │  2   │  $875     │  $1,750    │   │
+  │  │  …       │  …   │  …   │  …        │  …         │   │
+  │  └──────────────────────────────────────────────────┘   │
   └──────────────────────────────────────────────────────────┘
 ```
 
@@ -205,25 +205,44 @@ The `|` pipe operator passes the output of each step into the input of the next 
 | **RAG framework** | LangChain + Chroma vector store |
 | **Embeddings** | `all-MiniLM-L6-v2` via `sentence-transformers` |
 | **Scraping** | Playwright (headless Chromium) |
-| **Database** | SQLite |
-| **Frontend** | Streamlit |
-| **Language** | Python 3.14 |
+| **Database** | SQLite (versioned snapshots in `snapshots/`) |
+| **Backend** | FastAPI + Uvicorn |
+| **Frontend** | Next.js (React, TypeScript, Tailwind) |
+| **Language** | Python 3.14 / TypeScript |
 
 
 ## Project Structure
 
 ```
-ai/
+uiuc-housing-assistant-langchain-rag/
 ├── scrapers/
 │   └── green_street.py         # Playwright scraper → green_street_raw.json
-├── normalize_green_street.py   # Cleans raw JSON → SQLite
-├── ingest.py                   # Embeds listings into Chroma vector store
-├── rag_chain.py                # Retriever + LLM chain
-├── app.py                      # Streamlit chat UI
-├── green_street_raw.json       # Raw scraped data (489 floor plans)
-├── green_street_listings.db    # Normalized SQLite database
-├── chroma_db/                  # Persisted vector store
-└── notes/                      # Research notes and phase docs
+├── pipeline/
+│   ├── normalize_green_street.py  # Cleans raw JSON → snapshots/listings_YYYY-MM-DD.db
+│   └── ingest.py               # Incremental Chroma update (add/update/delete by stable ID)
+├── rag/
+│   └── rag_chain.py            # Retriever + LangChain LCEL chain
+├── backend/
+│   └── main.py                 # FastAPI — POST /api/search
+├── frontend/                   # Next.js (React, TypeScript, Tailwind)
+│   ├── app/
+│   │   ├── page.tsx            # Chat UI, message state, form handling
+│   │   └── layout.tsx
+│   ├── components/
+│   │   ├── AssistantMessage.tsx # Listing cards + summary table
+│   │   ├── SummaryTable.tsx    # Sortable comparison table
+│   │   ├── ListingCard.tsx
+│   │   ├── UserBubble.tsx
+│   │   └── Sidebar.tsx
+│   └── lib/api.ts              # search() + TypeScript types
+├── snapshots/                  # Versioned SQLite snapshots + raw JSON archives
+│   ├── latest.txt              # Points to most recent snapshot date
+│   ├── listings_YYYY-MM-DD.db
+│   └── raw_YYYY-MM-DD.json
+├── chroma_db/                  # Chroma vector store (incremental, single directory)
+├── config.py                   # Shared constants (model names, paths)
+├── design_docs/                # Phase design docs and architecture notes
+└── app.py                      # Legacy Streamlit UI (superseded by Next.js frontend)
 ```
 
 
@@ -238,18 +257,22 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 2. Install dependencies
+### 2. Install Python dependencies
 
 ```bash
-pip install langchain langchain-ollama langchain-community langchain-core \
-            chromadb sentence-transformers streamlit \
-            playwright pandas sqlite-utils python-dotenv
+pip install -r requirements.txt
 playwright install chromium
+```
+
+### 3. Install Node.js dependencies (frontend)
+
+```bash
+cd frontend && npm install && cd ..
 ```
 
 > **Note:** You only need to reinstall dependencies if you delete `.venv`, clone the repo to a new machine, or move the project to a different folder. For normal day-to-day use, just `source .venv/bin/activate` and skip straight to running the app.
 
-### 3. Install and start Ollama
+### 4. Install and start Ollama
 
 ```bash
 brew install ollama
@@ -260,24 +283,35 @@ ollama pull llama3.1:8b
 
 ## Running the Pipeline
 
-Run these once to build the data layer, then launch the app.
+### Data pipeline (run once, then re-run whenever you want fresh listings)
 
 ```bash
 # Step 1 — Scrape Green Street Realty
 python scrapers/green_street.py
-# → green_street_raw.json  (489 floor plans · 251 properties)
+# → green_street_raw.json
 
-# Step 2 — Normalize and store in SQLite
-python normalize_green_street.py
-# → green_street_listings.db
+# Step 2 — Normalize and snapshot
+python -m pipeline.normalize_green_street
+# → snapshots/listings_YYYY-MM-DD.db  (skipped if data unchanged vs last snapshot)
 
-# Step 3 — Embed listings into Chroma
-python ingest.py
-# → chroma_db/  (first run downloads ~90 MB embedding model)
+# Step 3 — Incremental Chroma update
+python -m pipeline.ingest
+# → chroma_db/  (only adds/updates/deletes what changed; first run ~90 MB model download)
+```
 
-# Step 4 — Launch the app
-streamlit run app.py
-# → http://localhost:8501
+### Launch the app (two terminals)
+
+**Terminal 1 — Backend:**
+```bash
+source .venv/bin/activate
+uvicorn backend.main:app --reload --port 8001
+# → http://localhost:8001
+```
+
+**Terminal 2 — Frontend:**
+```bash
+cd frontend && npm run dev
+# → http://localhost:3000
 ```
 
 

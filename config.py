@@ -14,9 +14,8 @@ EMBED_MODEL = "all-MiniLM-L6-v2"
 # Vector store
 CHROMA_DIR = "./chroma_db"
 
-# Data
-
-DB_FILE = "green_street_listings.db"
+# Snapshots
+SNAPSHOTS_DIR = "./snapshots"
 
 # Retrieval
 K_RESULTS  = 6    # max candidates fetched before gap filtering
