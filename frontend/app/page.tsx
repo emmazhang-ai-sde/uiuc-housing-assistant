@@ -4,11 +4,12 @@ import { useState, useRef, useEffect } from "react"
 import Sidebar from "@/components/Sidebar"
 import UserBubble from "@/components/UserBubble"
 import AssistantMessage from "@/components/AssistantMessage"
-import { search, Listing } from "@/lib/api"
+import FilterPanel from "@/components/FilterPanel"
+import { search, Listing, Filters, DEFAULT_FILTERS } from "@/lib/api"
 
 type Message =
   | { role: "user"; text: string }
-  | { role: "assistant"; answer: string; listings: Listing[] }
+  | { role: "assistant"; answer: string; listings: Listing[]; maxPricePerBed: number | null }
 
 const SUGGESTED = [
   "2BR under $900/bed — what's available?",
@@ -18,9 +19,10 @@ const SUGGESTED = [
 ]
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [messages, setMessages]   = useState<Message[]>([])
+  const [input, setInput]         = useState("")
+  const [loading, setLoading]     = useState(false)
+  const [filters, setFilters]     = useState<Filters>(DEFAULT_FILTERS)  // Phase 6
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -30,19 +32,20 @@ export default function Home() {
   async function submit(query: string) {
     if (!query.trim() || loading) return
     const q = query.trim()
+    const maxPricePerBed = filters.max_price_per_bed  // capture at submit time for badge
     setInput("")
     setMessages(prev => [...prev, { role: "user", text: q }])
     setLoading(true)
     try {
-      const res = await search(q)
+      const res = await search(q, filters)
       setMessages(prev => [
         ...prev,
-        { role: "assistant", answer: res.answer, listings: res.listings },
+        { role: "assistant", answer: res.answer, listings: res.listings, maxPricePerBed },
       ])
     } catch {
       setMessages(prev => [
         ...prev,
-        { role: "assistant", answer: "Something went wrong — is the backend running on port 8000?", listings: [] },
+        { role: "assistant", answer: "Something went wrong — is the backend running on port 8000?", listings: [], maxPricePerBed: null },
       ])
     } finally {
       setLoading(false)
@@ -64,7 +67,12 @@ export default function Home() {
               {messages.map((m, i) =>
                 m.role === "user"
                   ? <UserBubble key={i} text={m.text} />
-                  : <AssistantMessage key={i} answer={m.answer} listings={m.listings} />
+                  : <AssistantMessage
+                      key={i}
+                      answer={m.answer}
+                      listings={m.listings}
+                      maxPricePerBed={m.maxPricePerBed}
+                    />
               )}
               {loading && <ThinkingBubble />}
               <div ref={bottomRef} />
@@ -72,11 +80,14 @@ export default function Home() {
           )}
         </div>
 
+        {/* Filter panel — Phase 6 */}
+        <FilterPanel filters={filters} onChange={setFilters} />
+
         {/* Input bar */}
         <div className="border-t border-slate-200 bg-white px-6 py-4">
           <form
             onSubmit={e => { e.preventDefault(); submit(input) }}
-            className="flex gap-3 max-w-5xl mx-auto" // center and constrain width of input bar
+            className="flex gap-3 max-w-5xl mx-auto"
           >
             <input
               value={input}

@@ -10,13 +10,30 @@ export interface Listing {
   price_total_low: number | null
   price_total_high: number | null
   availability: string
+  is_available: boolean          // Phase 6: pre-computed in ingest.py
   area: string
   url: string
+}
+
+// Phase 6: explicit UI filters sent alongside every NL query
+export interface Filters {
+  beds: number | null
+  available_only: boolean | null
+  max_price_per_bed: number | null
+  company: string | null   // Phase 6: "Green Street Realty" | "Universities Group" | null
+}
+
+export const DEFAULT_FILTERS: Filters = {
+  beds: null,
+  available_only: null,
+  max_price_per_bed: null,
+  company: null,
 }
 
 export interface SearchResponse {
   answer: string
   listings: Listing[]
+  filters_applied: Record<string, unknown>  // Phase 6: echoed back from backend
 }
 
 export interface DataStatus {
@@ -31,11 +48,12 @@ export async function fetchStatus(): Promise<DataStatus> {
   return res.json()
 }
 
-export async function search(query: string): Promise<SearchResponse> {
+// Phase 6: accepts explicit filters alongside the NL query
+export async function search(query: string, filters: Filters): Promise<SearchResponse> {
   const res = await fetch(`${API_URL}/api/search`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, filters }),
   })
   if (!res.ok) throw new Error(`API error: ${res.status}`)
   return res.json()

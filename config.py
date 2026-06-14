@@ -18,5 +18,6 @@ CHROMA_DIR = "./chroma_db"
 SNAPSHOTS_DIR = "./snapshots"
 
 # Retrieval
-K_RESULTS  = 6    # max candidates fetched before gap filtering
-SCORE_GAP  = 0.5  # max allowed drop from the top result's score; raise to be more permissive
+K_SEMANTIC       = 50    # max candidates fetched after metadata pre-filter (Phase 6)
+SCORE_GAP        = 0.5   # max allowed drop from the top result's score; raise to be more permissive
+PRICE_FLEX_MARGIN = 0.15 # allow up to 15% over stated budget before hard cutoff (Phase 6)

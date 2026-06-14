@@ -6,6 +6,7 @@
 # Output: chroma_db/  (incrementally updated in place)
 
 import hashlib
+import json
 import sqlite3
 from pathlib import Path
 
@@ -18,6 +19,13 @@ from config import CHROMA_DIR, EMBED_MODEL, SNAPSHOTS_DIR
 def listing_id(address: str, unit_type: str) -> str:
     """Stable document ID: MD5 of 'address|unit_type'."""
     return hashlib.md5(f"{address}|{unit_type}".encode()).hexdigest()
+
+
+def compute_is_available(status: str) -> bool:
+    """True if the availability string indicates the unit is currently available.
+    Mirrors the frontend badge logic in ListingCard.tsx."""
+    s = (status or "").lower()
+    return "available" in s and "not available" not in s and "leased" not in s
 
 
 def get_latest_db() -> Path:
@@ -84,6 +92,7 @@ def main():
                 "price_total_low":    l["price_total_low"],
                 "price_total_high":   l["price_total_high"],
                 "availability":       l["availability"],
+                "is_available":       compute_is_available(l["availability"]),
                 "area":               l["area"],
                 "url":                l["url"],
             },
@@ -92,17 +101,18 @@ def main():
     embeddings  = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
     vectorstore = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
 
-    # Fetch existing doc IDs and their text from Chroma
-    existing_raw   = vectorstore._collection.get(include=["documents"])
-    existing_texts = dict(zip(existing_raw["ids"], existing_raw["documents"]))
-    existing_ids   = set(existing_texts.keys())
-    new_ids        = set(new_docs.keys())
+    # Fetch existing doc IDs, text, and metadata from Chroma
+    existing_raw       = vectorstore._collection.get(include=["documents", "metadatas"])
+    existing_texts     = dict(zip(existing_raw["ids"], existing_raw["documents"]))
+    existing_metadatas = dict(zip(existing_raw["ids"], existing_raw["metadatas"]))
+    existing_ids       = set(existing_texts.keys())
+    new_ids            = set(new_docs.keys())
 
-    # IDs to delete: listings that disappeared from the new snapshot,
-    # plus changed listings (we delete-then-add to replace them)
-    to_delete: set[str] = existing_ids - new_ids
-    to_add_docs: list[Document] = []
-    to_add_ids:  list[str]      = []
+    to_delete: set[str]          = existing_ids - new_ids  # disappeared listings
+    to_add_docs: list[Document]  = []
+    to_add_ids:  list[str]       = []
+    meta_update_ids:  list[str]  = []   # metadata-only changes (no re-embed needed)
+    meta_update_vals: list[dict] = []
 
     for doc_id, (text, metadata) in new_docs.items():
         if doc_id not in existing_ids:
@@ -110,15 +120,19 @@ def main():
             to_add_docs.append(Document(page_content=text, metadata=metadata))
             to_add_ids.append(doc_id)
         elif existing_texts[doc_id] != text:
-            # Listing changed (price, availability, etc.) — replace
+            # Text changed (price/availability reflected in text) — delete + re-embed
             to_delete.add(doc_id)
             to_add_docs.append(Document(page_content=text, metadata=metadata))
             to_add_ids.append(doc_id)
-        # else: unchanged — skip entirely
+        elif existing_metadatas.get(doc_id) != metadata:
+            # Metadata-only change (e.g. new field added) — update in place, no re-embed
+            meta_update_ids.append(doc_id)
+            meta_update_vals.append(metadata)
+        # else: fully unchanged — skip
 
-    unchanged = len(new_ids) - len(to_add_ids)
+    unchanged = len(new_ids) - len(to_add_ids) - len(meta_update_ids)
 
-    if not to_delete and not to_add_docs:
+    if not to_delete and not to_add_docs and not meta_update_ids:
         print("✅ Chroma is already up to date — nothing to do.")
         return
 
@@ -128,16 +142,21 @@ def main():
     if to_add_docs:
         vectorstore.add_documents(to_add_docs, ids=to_add_ids)
 
+    if meta_update_ids:
+        vectorstore._collection.update(ids=meta_update_ids, metadatas=meta_update_vals)
+
     # Tally
-    removed  = len(to_delete) - sum(1 for i in to_add_ids if i in to_delete)
-    updated  = sum(1 for i in to_add_ids if i in existing_ids)
-    added    = len(to_add_ids) - updated
+    removed      = len(to_delete) - sum(1 for i in to_add_ids if i in to_delete)
+    reembedded   = sum(1 for i in to_add_ids if i in existing_ids)
+    added        = len(to_add_ids) - reembedded
+    meta_updated = len(meta_update_ids)
 
     print(f"✅ Chroma updated → {CHROMA_DIR}")
-    print(f"   Added    : {added}")
-    print(f"   Updated  : {updated}")
-    print(f"   Removed  : {removed}")
-    print(f"   Unchanged: {unchanged}")
+    print(f"   Added         : {added}")
+    print(f"   Re-embedded   : {reembedded}")
+    print(f"   Metadata-only : {meta_updated}")
+    print(f"   Removed       : {removed}")
+    print(f"   Unchanged     : {unchanged}")
 
 
 if __name__ == "__main__":

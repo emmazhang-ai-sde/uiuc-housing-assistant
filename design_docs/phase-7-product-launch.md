@@ -1,4 +1,4 @@
-# Phase 4 — Deployment & Product Launch
+# Phase 7 — Deployment & Product Launch
 
 ## Goal
 

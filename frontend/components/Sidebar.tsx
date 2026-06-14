@@ -10,11 +10,6 @@ export default function Sidebar({ onClear }: { onClear: () => void }) {
     fetchStatus().then(setStatus).catch(() => {})
   }, [])
 
-  const listingLabel =
-    status?.listing_count != null && status?.property_count != null
-      ? `${status.listing_count} floor plans · ${status.property_count} properties`
-      : "—"
-
   const scrapedLabel = status?.last_scraped
     ? new Date(status.last_scraped + "T00:00:00").toLocaleDateString("en-US", {
         month: "long",
@@ -44,9 +39,38 @@ export default function Sidebar({ onClear }: { onClear: () => void }) {
         {/* About */}
         <section className="mb-8">
           <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">About</h2>
-          <div className="space-y-2 text-sm text-slate-600 leading-relaxed">
-            <p><span className="font-semibold text-slate-900">Data sources:</span> Green Street Realty, Universities Group</p>
-            <p><span className="font-semibold text-slate-900">Listings:</span> {listingLabel}</p>
+          <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
+
+            {/* Data sources */}
+            <div>
+              <span className="font-semibold text-slate-900">Data sources:</span>
+              <ul className="mt-1.5 ml-3 space-y-1.5">
+                <li className="flex items-center gap-2">
+                  <span className="text-blue-400 shrink-0">•</span>
+                  <img src="/logos/company-logo-green-street-realty.png" alt="Green Street Realty" className="h-4 object-contain" />
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-blue-400 shrink-0">•</span>
+                  <img src="/logos/company-logo-university-group.png" alt="Universities Group" className="h-4 object-contain" />
+                </li>
+              </ul>
+            </div>
+
+            {/* Listings */}
+            <div>
+              <span className="font-semibold text-slate-900">Listings:</span>
+              <ul className="mt-1.5 ml-3 space-y-1">
+                <li className="flex items-center gap-2">
+                  <span className="text-blue-400 shrink-0">•</span>
+                  {status?.listing_count != null ? `${status.listing_count} floor plans` : "—"}
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-blue-400 shrink-0">•</span>
+                  {status?.property_count != null ? `${status.property_count} properties` : "—"}
+                </li>
+              </ul>
+            </div>
+
             <p><span className="font-semibold text-slate-900">Last scraped:</span> {scrapedLabel}</p>
             <p><span className="font-semibold text-slate-900">Area:</span> Champaign, IL (UIUC)</p>
           </div>
