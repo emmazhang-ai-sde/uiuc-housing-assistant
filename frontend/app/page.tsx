@@ -8,7 +8,7 @@ import FilterPanel from "@/components/FilterPanel"
 import { search, Listing, Filters, DEFAULT_FILTERS } from "@/lib/api"
 
 type Message =
-  | { role: "user"; text: string }
+  | { role: "user"; text: string; filters: Filters }
   | { role: "assistant"; answer: string; listings: Listing[]; maxPricePerBed: number | null }
 
 const SUGGESTED = [
@@ -23,7 +23,10 @@ export default function Home() {
   const [input, setInput]         = useState("")
   const [loading, setLoading]     = useState(false)
   const [filters, setFilters]     = useState<Filters>(DEFAULT_FILTERS)  // Phase 6
+  const [composerActive, setComposerActive] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const inputReady = input.trim().length > 0
+  const composerHighlighted = composerActive || inputReady
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -32,12 +35,14 @@ export default function Home() {
   async function submit(query: string) {
     if (!query.trim() || loading) return
     const q = query.trim()
+    const filtersSnapshot = { ...filters, beds: filters.beds ? [...filters.beds] : null }
     const maxPricePerBed = filters.max_price_per_bed  // capture at submit time for badge
     setInput("")
-    setMessages(prev => [...prev, { role: "user", text: q }])
+    setComposerActive(false)
+    setMessages(prev => [...prev, { role: "user", text: q, filters: filtersSnapshot }])
     setLoading(true)
     try {
-      const res = await search(q, filters)
+      const res = await search(q, filtersSnapshot)
       setMessages(prev => [
         ...prev,
         { role: "assistant", answer: res.answer, listings: res.listings, maxPricePerBed },
@@ -53,7 +58,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-white overflow-hidden">
+    <div className="flex h-screen bg-neutral-100 overflow-hidden">
       <Sidebar onClear={() => setMessages([])} />
 
       <div className="flex flex-col flex-1 min-w-0">
@@ -66,7 +71,7 @@ export default function Home() {
             <div className="max-w-7xl mx-auto">
               {messages.map((m, i) =>
                 m.role === "user"
-                  ? <UserBubble key={i} text={m.text} />
+                  ? <UserBubble key={i} text={m.text} filters={m.filters} />
                   : <AssistantMessage
                       key={i}
                       answer={m.answer}
@@ -81,25 +86,41 @@ export default function Home() {
         </div>
 
         {/* Filter panel — Phase 6 */}
-        <FilterPanel filters={filters} onChange={setFilters} />
+        <FilterPanel
+          filters={filters}
+          onChange={setFilters}
+          onInteract={() => setComposerActive(true)}
+        />
 
         {/* Input bar */}
-        <div className="border-t border-slate-200 bg-white px-6 py-4">
+        <div className="bg-neutral-100 px-6 py-4">
           <form
             onSubmit={e => { e.preventDefault(); submit(input) }}
-            className="flex gap-3 max-w-5xl mx-auto"
+            className={`flex gap-2 max-w-5xl mx-auto bg-white rounded-full p-1.5 transition-shadow ${
+              composerHighlighted
+                ? "shadow-[0_10px_34px_-10px_rgba(0,0,0,0.2)] ring-2 ring-black"
+                : "shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
+            }`}
           >
             <input
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onFocus={() => setComposerActive(true)}
+              onChange={e => {
+                setComposerActive(true)
+                setInput(e.target.value)
+              }}
               placeholder='e.g. "2BR under $900/month near Grainger"'
               disabled={loading}
-              className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50"
+              className="flex-1 rounded-full px-5 py-2.5 text-sm text-neutral-800 placeholder-neutral-400 bg-transparent focus:outline-none disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={!input.trim() || loading}
-              className="px-5 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              disabled={!inputReady || loading}
+              className={`px-5 py-2.5 rounded-full border text-sm font-semibold transition-colors ${
+                composerHighlighted
+                  ? "bg-black text-white border-black"
+                  : "bg-neutral-100 text-neutral-900 border-neutral-100 hover:bg-black hover:text-white hover:border-black"
+              } ${inputReady && !loading ? "" : "cursor-not-allowed"}`}
             >
               Send
             </button>
@@ -115,10 +136,11 @@ function EmptyState({ onSuggest }: { onSuggest: (q: string) => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-8 text-center">
       <div>
-        <div className="text-5xl mb-4">🏠</div>
-        <h1 className="text-2xl font-bold text-slate-900">UIUC Housing Assistant</h1>
-        <p className="text-slate-500 mt-2 text-sm max-w-sm">
-          Search 489 Green Street Realty listings by price, beds, location, or availability.
+        <h1 className="text-5xl font-bold text-neutral-900 leading-[1.3]">
+          Find Your Dream Homes Near UIUC, <br />Within Budget
+        </h1>
+        <p className="mx-auto text-center text-neutral-500 mt-5 text-sm max-w-md">
+          Search 879 floor plans across 410 properties from Green Street Realty + Universities Group (more rental companies are coming!) by price, beds, location, availability and so on.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
@@ -126,7 +148,7 @@ function EmptyState({ onSuggest }: { onSuggest: (q: string) => void }) {
           <button
             key={q}
             onClick={() => onSuggest(q)}
-            className="text-left px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-700 hover:border-blue-400 hover:bg-blue-50 transition-colors leading-snug"
+            className="text-left px-4 py-3.5 rounded-2xl bg-white text-sm text-neutral-600 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,0.12)] transition-shadow leading-snug"
           >
             &ldquo;{q}&rdquo;
           </button>
@@ -139,10 +161,10 @@ function EmptyState({ onSuggest }: { onSuggest: (q: string) => void }) {
 function ThinkingBubble() {
   return (
     <div className="flex items-start gap-3 my-4">
-      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center shrink-0 text-sm mt-1">
+      <div className="w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center shrink-0 text-sm mt-1">
         🏠
       </div>
-      <div className="bg-white border border-slate-100 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm text-slate-400 text-sm italic">
+      <div className="bg-white rounded-3xl rounded-tl-lg px-5 py-4 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] text-neutral-400 text-sm italic">
         Searching listings…
       </div>
     </div>

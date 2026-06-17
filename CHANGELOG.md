@@ -4,6 +4,31 @@ All notable changes to the UIUC Housing Assistant are recorded here.
 
 ---
 
+## [Unreleased] — Customizable price buffer + UI polish round 2 + planning docs
+
+> Not yet pushed. Date will be filled in (replacing this heading) at the next push/commit — see note in `feedback-changelog-dating.md` memory.
+
+### Added
+- `frontend/lib/companies.ts` — single source of truth for company name/logo data (`COMPANIES[]`, `COMPANY_LOGOS`); `FilterPanel`, `SummaryTable`, `ListingCard`, and `Sidebar` now import from here instead of each duplicating the list
+- Over-budget amber badge now also shown in card view (`ListingCard` accepts optional `maxPricePerBed` prop), matching the existing table view badge
+- `design_docs/phase-7-expanded-coverage.md` — Phase 7 renamed and refocused: map view, location-based search ("near Grainger") via landmark table + haversine distance, expanded property details (merged former UG floor-data feature in), new company scrapers
+- `design_docs/product-launch.md` — deliberately has no phase number; covers building-in-public, Groq-based deployment, `@illinois.edu`-only auth, 50 queries/month cap with dataset-version-aware caching, and a security-constrained "Bring Your Own API" design
+- `design_docs/future-ideas.md` — icebox doc for six longer-term concepts: sublet community, student reviews + Xiaohongshu scraping, saved properties folder, on-campus housing comparison for freshmen, academic-schedule-based proximity matching, UI visual overhaul
+- `design_docs/competitive-analysis.md` — surveyed RentCollegePads (now a dead 404), Student.com, uhomes.com, STAN.ai; confirmed no existing tool combines NL search + UIUC-only verification + unbiased ranking
+
+### Changed
+- `Sidebar.tsx` — "About" section restructured: data sources and listing counts now shown as indented bullet lists; each company logo on its own line
+- `FilterPanel.tsx` — filter bar centered (`justify-center`); buffer control is always visible (greyed out via `opacity-35 pointer-events-none` until a max price is set) — an earlier version hid it conditionally, which made it undiscoverable
+- `AssistantMessage.tsx` — card grid changed from 2 → 4 → settled on 3 columns per row
+- `ListingCard.tsx` — redesigned for the narrower 3-column layout: reduced padding/font sizes, elements stacked vertically; availability badge moved to top-right corner (absolute positioning); badge changed from `<span>` to `inline-block` so wrapped text renders as one solid background instead of per-line fragments; availability text now splits onto a new line at every comma, colon, or exclamation mark (lookbehind regex, punctuation retained); address font size increased one step
+- `SummaryTable.tsx` — company logos enlarged (`h-5` → `h-7`); "Link" column removed, address is now the hyperlink (Morandi palette `#7B90A0`, hover `#556070`); availability column uses the same comma/colon/exclamation wrapping as the card view
+- `design_docs/phase-7-product-launch.md` → split into `phase-7-expanded-coverage.md` (data/feature work) and a separate, phase-numberless `product-launch.md` (deployment/launch work); original phase-8 draft folded into the new product-launch doc
+
+### Data snapshot (2026-06-13, re-verified)
+- 879 floor plans (listings), 410 distinct properties — confirmed via direct snapshot DB query, matches `/api/status` and Sidebar display
+
+---
+
 ## 2026-06-13 — Universities Group integration + multi-source data pipeline
 
 ### Added

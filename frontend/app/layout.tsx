@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { COMPANIES } from "@/lib/companies";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "UIUC Housing Assistant",
-  description: "Search Green Street Realty listings by price, beds, and location.",
+  description: `Search ${COMPANIES.map(c => c.name).join(" + ")} listings by price, beds, and location.`,
 };
 
 export default function RootLayout({

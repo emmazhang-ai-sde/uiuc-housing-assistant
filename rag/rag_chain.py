@@ -6,6 +6,7 @@
 # Run:    python -m rag.rag_chain
 # Output: prints filter extraction + result count + summary for each test query
 
+import math
 import os, sys, json, re
 from pathlib import Path
 
@@ -102,13 +103,33 @@ def build_where(filters: dict) -> dict | None:
     clauses = []
 
     if filters.get("beds") is not None:
-        beds = int(filters["beds"])
+        bed_filter = filters["beds"]
+        selected_beds = bed_filter if isinstance(bed_filter, list) else [bed_filter]
+        exact_beds = sorted({int(bed) for bed in selected_beds if int(bed) < 4})
+        has_four_plus = any(int(bed) >= 4 for bed in selected_beds)
+
+        bed_clauses = []
+        if exact_beds:
+            bed_clauses.append({"beds": {"$in": exact_beds}})
         # 4+ button sends beds=4; use $gte so it catches 4, 5, 6-bedroom units too
-        op = "$gte" if beds >= 4 else "$eq"
-        clauses.append({"beds": {op: beds}})
+        if has_four_plus:
+            bed_clauses.append({"beds": {"$gte": 4}})
+
+        if len(bed_clauses) == 1:
+            clauses.append(bed_clauses[0])
+        elif bed_clauses:
+            clauses.append({"$or": bed_clauses})
 
     if filters.get("max_price_per_bed") is not None:
-        ceiling = int(filters["max_price_per_bed"] * (1 + PRICE_FLEX_MARGIN))
+        price        = filters["max_price_per_bed"]
+        btype        = filters.get("buffer_type") or "percent"
+        bvalue       = filters.get("buffer_value")
+        if btype == "percent":
+            ceiling = int(price * (1 + (bvalue if bvalue is not None else PRICE_FLEX_MARGIN * 100) / 100))
+        elif btype == "fixed":
+            ceiling = int(price + (bvalue or 0))
+        else:  # "exact"
+            ceiling = int(price)
         clauses.append({"price_per_bed_low": {"$lte": ceiling}})
 
     if filters.get("max_price_total") is not None:
@@ -143,7 +164,63 @@ def get_filtered_docs(query: str, where: dict | None = None) -> list[Document]:
     return [doc for doc, score in results if top_score - score <= SCORE_GAP]
 
 
-# ── Step 4: Summary-only LLM call (Phase 6) ───────────────────────────────────
+# ── Step 4: Proximity filter (Phase 7) ───────────────────────────────────────
+# Chroma doesn't support distance-based where clauses, so we post-filter after
+# semantic retrieval. Each entry is (aliases, (lat, lng)); first matching alias wins.
+
+PROXIMITY_RADIUS_MI = 0.5
+
+_LANDMARK_REGISTRY: list[tuple[list[str], tuple[float, float]]] = [
+    (["grainger", "engineering library"],              (40.1125, -88.2269)),
+    (["siebel", "cs building", "computer science"],    (40.1140, -88.2244)),
+    (["cif", "campus instructional"],                  (40.1125, -88.2283)),
+    (["bif", "gies", "business school", "business instructional"], (40.1020, -88.2310)),
+    (["law library", "law school", "college of law"],  (40.1010, -88.2315)),
+    (["main quad", "quad"],                            (40.1072, -88.2270)),
+    (["arc", "recreation center"],                     (40.1016, -88.2370)),
+    (["green street", "green st", "campustown"],       (40.1096, -88.2100)),
+    (["fresh international", "fresh market"],          (40.1112, -88.2445)),
+    (["far east grocery", "far east market"],          (40.1157, -88.2323)),
+    (["mcdonald", "mcdonalds"],                        (40.1105, -88.2298)),
+    (["target"],                                       (40.1102, -88.2302)),
+    (["walgreens", "pharmacy"],                        (40.1100, -88.2327)),
+]
+
+
+def _haversine_mi(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    R = 3958.8
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
+    return R * 2 * math.asin(math.sqrt(a))
+
+
+def _resolve_landmark(hint: str) -> tuple[float, float] | None:
+    h = hint.lower()
+    for aliases, coords in _LANDMARK_REGISTRY:
+        if any(a in h for a in aliases):
+            return coords
+    return None
+
+
+def filter_by_location(docs: list[Document], location_hint: str | None) -> list[Document]:
+    """Drop listings farther than PROXIMITY_RADIUS_MI from the named landmark.
+    Returns docs unchanged if hint is absent, unrecognised, or listing lacks coords."""
+    if not location_hint:
+        return docs
+    target = _resolve_landmark(location_hint)
+    if target is None:
+        return docs
+    tlat, tlng = target
+    return [
+        doc for doc in docs
+        if doc.metadata.get("lat") is not None
+        and doc.metadata.get("lng") is not None
+        and _haversine_mi(doc.metadata["lat"], doc.metadata["lng"], tlat, tlng) <= PROXIMITY_RADIUS_MI
+    ] or docs  # fall back to unfiltered if every listing lacks coords
+
+
+# ── Step 5: Summary-only LLM call (Phase 6) ───────────────────────────────────
 # LLM no longer selects or ranks listings — it only writes a one-line summary.
 # Only the first 5 listings are passed to keep the prompt short.
 

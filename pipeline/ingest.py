@@ -47,7 +47,8 @@ def load_listings(db_path: Path) -> list[dict]:
         SELECT address, unit_type, beds,
                price_per_bed_low, price_per_bed_high,
                price_total_low,   price_total_high,
-               availability, area, url, text, company
+               availability, area, url, text, company,
+               lat, lng
         FROM listings
     """).fetchall()
     conn.close()
@@ -65,6 +66,8 @@ def load_listings(db_path: Path) -> list[dict]:
             "url":                r[9],
             "text":               r[10],
             "company":            r[11],
+            "lat":                r[12],
+            "lng":                r[13],
         }
         for r in rows
     ]
@@ -95,6 +98,8 @@ def main():
                 "is_available":       compute_is_available(l["availability"]),
                 "area":               l["area"],
                 "url":                l["url"],
+                "lat":                l["lat"],
+                "lng":                l["lng"],
             },
         )
 

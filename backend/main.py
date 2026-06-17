@@ -3,7 +3,7 @@ import sqlite3
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from rag.rag_chain import extract_filters, merge_filters, build_where, get_filtered_docs, summarize  # Phase 6
+from rag.rag_chain import extract_filters, merge_filters, build_where, get_filtered_docs, filter_by_location, summarize
 from config import SNAPSHOTS_DIR
 
 app = FastAPI()
@@ -18,10 +18,12 @@ app.add_middleware(
 
 # Phase 6: explicit UI filters sent alongside the NL query
 class FilterParams(BaseModel):
-    beds: int | None = None
+    beds: int | list[int] | None = None
     max_price_per_bed: int | None = None
     available_only: bool | None = None
-    company: str | None = None   # Phase 6: exact match on Chroma "company" metadata field
+    company: str | None = None
+    buffer_type: str | None = None   # "percent" | "fixed" | "exact"
+    buffer_value: float | None = None
 
 
 class SearchRequest(BaseModel):
@@ -59,7 +61,10 @@ def search(req: SearchRequest):
     where = build_where(merged)
 
     # Step 3: metadata pre-filter + semantic re-rank
-    docs     = get_filtered_docs(req.query, where)
+    docs = get_filtered_docs(req.query, where)
+
+    # Step 3b: proximity filter — drop listings outside 0.5 mi of named landmark
+    docs     = filter_by_location(docs, merged.get("location_hint"))
     listings = [doc.metadata for doc in docs]
 
     # Step 4: LLM writes a one-line summary (no listing selection)

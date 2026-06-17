@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { fetchStatus, DataStatus } from "@/lib/api"
+import { COMPANIES } from "@/lib/companies"
 
 export default function Sidebar({ onClear }: { onClear: () => void }) {
   const [status, setStatus] = useState<DataStatus | null>(null)
@@ -19,76 +20,77 @@ export default function Sidebar({ onClear }: { onClear: () => void }) {
     : "—"
 
   return (
-    <aside className="hidden md:flex flex-col w-72 bg-slate-50 border-r border-slate-200 shrink-0 h-full">
+    <aside className="hidden md:flex flex-col w-72 bg-white shrink-0 h-full">
       <div className="p-6 overflow-y-auto flex-1">
         {/* Logo + Title */}
-        <div className="flex items-center gap-3 mb-7 pb-5 border-b border-slate-200">
-          <div className="w-9 h-9 bg-orange-50 rounded-full flex items-center justify-center text-xl shrink-0">
+        <div className="flex items-center gap-3 mb-4 pb-2">
+          <div className="w-9 h-9 flex items-center justify-center text-xl shrink-0">
             🏠
           </div>
           <div>
-            <div className="font-bold text-slate-900 text-[15px] leading-none">
+            <div className="font-bold text-neutral-900 text-[15px] leading-none">
               UIUC Housing Assistant
             </div>
-            <div className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-medium">
+            <div className="text-[10px] text-neutral-400 mt-1 uppercase tracking-widest font-medium">
               Champaign-Urbana, IL
             </div>
           </div>
         </div>
 
         {/* About */}
-        <section className="mb-8">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">About</h2>
-          <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
+        <section className="mb-6">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">About</h2>
+          <div className="space-y-3 text-sm text-neutral-600 leading-relaxed">
 
             {/* Data sources */}
             <div>
-              <span className="font-semibold text-slate-900">Data sources:</span>
+              <span className="font-semibold text-neutral-900">Data sources:</span>
               <ul className="mt-1.5 ml-3 space-y-1.5">
-                <li className="flex items-center gap-2">
-                  <span className="text-blue-400 shrink-0">•</span>
-                  <img src="/logos/company-logo-green-street-realty.png" alt="Green Street Realty" className="h-4 object-contain" />
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-blue-400 shrink-0">•</span>
-                  <img src="/logos/company-logo-university-group.png" alt="Universities Group" className="h-4 object-contain" />
-                </li>
+                {COMPANIES.map(({ name, logo }) => (
+                  <li key={name} className="flex items-center gap-2">
+                    <span className="text-glow-600 shrink-0">•</span>
+                    <img src={logo} alt={name} className="h-4 object-contain" />
+                  </li>
+                ))}
               </ul>
             </div>
 
             {/* Listings */}
             <div>
-              <span className="font-semibold text-slate-900">Listings:</span>
+              <span className="font-semibold text-neutral-900">Listings:</span>
               <ul className="mt-1.5 ml-3 space-y-1">
                 <li className="flex items-center gap-2">
-                  <span className="text-blue-400 shrink-0">•</span>
+                  <span className="text-glow-600 shrink-0">•</span>
                   {status?.listing_count != null ? `${status.listing_count} floor plans` : "—"}
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-blue-400 shrink-0">•</span>
+                  <span className="text-glow-600 shrink-0">•</span>
                   {status?.property_count != null ? `${status.property_count} properties` : "—"}
                 </li>
               </ul>
             </div>
 
-            <p><span className="font-semibold text-slate-900">Last scraped:</span> {scrapedLabel}</p>
-            <p><span className="font-semibold text-slate-900">Area:</span> Champaign, IL (UIUC)</p>
+            <p><span className="font-semibold text-neutral-900">Last scraped:</span> {scrapedLabel}</p>
+            <p><span className="font-semibold text-neutral-900">Area:</span> Champaign, IL (UIUC)</p>
           </div>
         </section>
 
         {/* Search Tips */}
-        <section>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Search Tips</h2>
-          <ul className="space-y-3 text-sm text-slate-600">
+        <section className="border-t border-neutral-100 pt-6">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Search Tips</h2>
+          <ul className="space-y-3 text-sm text-neutral-600">
             {[
               ['Mention bed count:', '"2BR" or "2 bedroom"'],
               ['Set a budget:', '"under $900/bed"'],
               ['Ask about location:', '"near Grainger"'],
               ['Availability:', '"August 2026"'],
             ].map(([label, example]) => (
-              <li key={label} className="flex gap-2">
-                <span className="text-blue-500 shrink-0">•</span>
-                <span>{label} <code className="bg-slate-200 px-1 rounded text-xs">{example}</code></span>
+              <li key={label} className="space-y-1">
+                <span>{label}</span>
+                <div className="flex gap-2 pl-5 leading-snug">
+                  <span className="text-glow-600">•</span>
+                  <span className="font-mono text-xs text-neutral-500">{example}</span>
+                </div>
               </li>
             ))}
           </ul>
@@ -96,10 +98,10 @@ export default function Sidebar({ onClear }: { onClear: () => void }) {
       </div>
 
       {/* Clear chat */}
-      <div className="p-4 border-t border-slate-200">
+      <div className="p-4">
         <button
           onClick={onClear}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-neutral-700 bg-neutral-50 hover:bg-neutral-100 rounded-full transition-colors"
         >
           🗑 Clear chat
         </button>

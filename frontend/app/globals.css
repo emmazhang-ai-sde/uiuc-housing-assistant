@@ -1,1 +1,24 @@
 @import "tailwindcss";
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+@theme {
+  --color-glow-50: #FAFEE9;
+  --color-glow-100: #F0FBC9;
+  --color-glow-200: #E2F89B;
+  --color-glow-300: #D2F55E;
+  --color-glow-400: #BEE13E;
+  --color-glow-500: #A8C92A;
+  --color-glow-600: #8AAA1E;
+  --color-glow-900: #2B3308;
+
+  /* Fixed availability-status colors — semantic meaning, not swapped by
+     the accent picker. available=green, now=urgent green. */
+  --color-avail-100: #DCFCE7; 
+  --color-avail-700: #15803D;
+  --color-now-100: #D2F55E;
+  --color-now-700: #C2410C;
+  --color-unavail-100: #FEE2E2;
+  --color-unavail-700: #B91C1C;
+
+  --color-sage: #B9D2A0;
+}

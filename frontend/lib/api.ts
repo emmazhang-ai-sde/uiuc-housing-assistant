@@ -13,14 +13,18 @@ export interface Listing {
   is_available: boolean          // Phase 6: pre-computed in ingest.py
   area: string
   url: string
+  lat: number | null             // Phase 7: geocoded coordinates
+  lng: number | null
 }
 
 // Phase 6: explicit UI filters sent alongside every NL query
 export interface Filters {
-  beds: number | null
+  beds: number[] | null
   available_only: boolean | null
   max_price_per_bed: number | null
-  company: string | null   // Phase 6: "Green Street Realty" | "Universities Group" | null
+  company: string | null
+  buffer_type: "percent" | "fixed" | "exact" | null  // how the price buffer is applied
+  buffer_value: number | null                         // % or $ amount; null when type is "exact"
 }
 
 export const DEFAULT_FILTERS: Filters = {
@@ -28,6 +32,8 @@ export const DEFAULT_FILTERS: Filters = {
   available_only: null,
   max_price_per_bed: null,
   company: null,
+  buffer_type: "percent",
+  buffer_value: 15,
 }
 
 export interface SearchResponse {
