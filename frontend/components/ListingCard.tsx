@@ -45,7 +45,15 @@ function AvailabilityBadge({ availability }: { availability: string }) {
   )
 }
 
-export default function ListingCard({ listing, maxPricePerBed = null }: { listing: Listing; maxPricePerBed?: number | null }) {
+export default function ListingCard({
+  listing,
+  maxPricePerBed = null,
+  onSelect,
+}: {
+  listing: Listing
+  maxPricePerBed?: number | null
+  onSelect?: (listing: Listing) => void
+}) {
   const priceBed   = priceStr(listing.price_per_bed_low, listing.price_per_bed_high)
   const priceTotal = priceStr(listing.price_total_low ?? listing.price_per_bed_low, listing.price_total_high ?? listing.price_per_bed_high)
   const bedsLabelStr = bedsLabel(listing.beds, listing.unit_type)
@@ -55,7 +63,10 @@ export default function ListingCard({ listing, maxPricePerBed = null }: { listin
   const addressLines = splitAddressLines(addressMain)
 
   return (
-    <article className="relative bg-white rounded-3xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.14)] transition-shadow group flex flex-col overflow-hidden">
+    <article
+      onClick={() => onSelect?.(listing)}
+      className={`relative bg-white rounded-3xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.14)] transition-shadow group flex flex-col overflow-hidden ${onSelect ? "cursor-pointer" : ""}`}
+    >
 
       {/* Availability badge — absolute over photo (or card top if no photo) */}
       <div className="absolute top-4 right-4 z-10">
@@ -85,9 +96,18 @@ export default function ListingCard({ listing, maxPricePerBed = null }: { listin
           {addressCode && <span className="block text-neutral-900 font-medium text-xs mt-0.5">{addressCode}</span>}
         </h3>
 
+        {/* Area tag */}
+        {listing.area && (
+          <div className="text-[11px] text-neutral-400 font-medium capitalize -mt-1">
+            {listing.area}
+          </div>
+        )}
+
         <div className="flex flex-col gap-2 mt-auto">
           {/* Layout */}
-          <div className="text-xs text-neutral-400 font-medium">{listing.unit_type}{bedsLabelStr ? ` · ${bedsLabelStr}` : ""}</div>
+          <div className="text-xs text-neutral-400 font-medium">
+            {listing.unit_type}{bedsLabelStr ? ` · ${bedsLabelStr}` : ""}{listing.property_type ? ` · ${listing.property_type}` : ""}
+          </div>
 
           {/* Rent — emphasized as the key data point, with the CTA alongside it */}
           <div className="flex items-end justify-between gap-2">
@@ -111,6 +131,7 @@ export default function ListingCard({ listing, maxPricePerBed = null }: { listin
               href={listing.url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
               className="inline-flex items-center gap-1 text-xs font-bold text-neutral-900 bg-neutral-100 hover:bg-black hover:text-white px-3 py-1.5 rounded-full transition-colors shrink-0"
             >
               View Listing →

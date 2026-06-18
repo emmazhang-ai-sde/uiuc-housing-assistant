@@ -29,9 +29,7 @@ function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
             <span className="w-16 text-neutral-400 text-xs font-medium shrink-0">Beds</span>
             <div className="flex gap-1">
               {BED_OPTIONS.map(({ label, value }) => {
-                const active = value === null
-                  ? filters.beds === null
-                  : selectedBeds.includes(value)
+                const active = value !== null && selectedBeds.includes(value)
                 return (
                   <span
                     key={label}
@@ -102,8 +100,8 @@ function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
             <div className="flex gap-1">
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                 filters.company === null
-                  ? "bg-black text-white"
-                  : "bg-neutral-100 text-neutral-600"
+                  ? "bg-neutral-100 text-neutral-600"
+                  : "bg-black text-white"
               }`}>
                 All
               </span>

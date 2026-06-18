@@ -1,10 +1,10 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { Fragment, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import ListingCard from "./ListingCard"
 import SummaryTable from "./SummaryTable"
-import { Listing } from "@/lib/api"
+import { Listing, Filters } from "@/lib/api"
 import { downloadElementPng } from "@/lib/exportDom"
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false })
@@ -15,14 +15,25 @@ export default function AssistantMessage({
   answer,
   listings,
   maxPricePerBed,
+  query,
+  filters,
+  onSelect,
 }: {
   answer: string
   listings: Listing[]
   maxPricePerBed: number | null
+  query: string
+  filters: Filters
+  onSelect?: (listing: Listing) => void
 }) {
   const [view, setView] = useState<View>("cards")
   const [cardSaveStatus, setCardSaveStatus] = useState<"idle" | "saving" | "failed">("idle")
   const cardsRef = useRef<HTMLDivElement>(null)
+  const answerBubble = answer ? (
+    <div className="w-fit max-w-3xl bg-neutral-900 rounded-3xl rounded-tl-lg px-5 py-3.5 text-[15px] font-medium leading-relaxed text-white">
+      {answer}
+    </div>
+  ) : null
 
   async function saveCardImages() {
     const cardGrid = cardsRef.current
@@ -72,18 +83,15 @@ export default function AssistantMessage({
         🏠
       </div>
       <div className="flex-1 min-w-0 space-y-4">
-        {answer && listings.length === 0 && (
-          <div className="bg-white rounded-3xl rounded-tl-lg px-5 py-4 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] text-[15px] leading-relaxed text-neutral-700">
-            {answer}
-          </div>
-        )}
+        {listings.length === 0 && answerBubble}
 
         {listings.length > 0 && (
           <>
-            {/* Header row: summary text + view toggle */}
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-neutral-500">{answer}</p>
-              <div className="flex shrink-0 items-center gap-2">
+            <SearchSummary count={listings.length} filters={filters} query={query} />
+
+            {/* View controls */}
+            <div className="flex justify-end">
+              <div className="flex items-center gap-2">
                 {view === "cards" && listings.length > 0 && (
                   <button
                     onClick={saveCardImages}
@@ -131,7 +139,7 @@ export default function AssistantMessage({
             {/* Cards view */}
             {view === "cards" && (
               <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {listings.map((l, i) => <ListingCard key={i} listing={l} maxPricePerBed={maxPricePerBed} />)}
+                {listings.map((l, i) => <ListingCard key={i} listing={l} maxPricePerBed={maxPricePerBed} onSelect={onSelect} />)}
               </div>
             )}
 
@@ -145,6 +153,65 @@ export default function AssistantMessage({
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+function SearchSummary({
+  count,
+  filters,
+  query,
+}: {
+  count: number
+  filters: Filters
+  query: string
+}) {
+  function formatBeds(beds: number[] | null): string {
+    if (!beds || beds.length === 0) return "Any"
+    const sorted = [...beds].sort((a, b) => a - b)
+    const labels = sorted.map(b => {
+      if (b === 0) return "Studio"
+      if (b >= 4) return "4+"
+      return `${b}`
+    })
+    return labels.join(", ") + (sorted.every(b => b === 0) ? "" : sorted[0] > 0 ? " bed" : "")
+  }
+
+  function formatBudget(): string {
+    if (!filters.max_price_per_bed) return "No limit"
+    const base = `≤ $${filters.max_price_per_bed.toLocaleString()}/bed`
+    if (filters.buffer_type === "exact") return `${base} (exact)`
+    if (filters.buffer_type === "percent" && filters.buffer_value)
+      return `${base}  +${filters.buffer_value}%`
+    if (filters.buffer_type === "fixed" && filters.buffer_value)
+      return `${base}  +$${filters.buffer_value}`
+    return base
+  }
+
+  const otherParts: string[] = []
+  if (filters.available_only) otherParts.push("Available listings only")
+  if (filters.company) otherParts.push(filters.company)
+
+  const rows: { label: string; value: string }[] = [
+    { label: "Bedroom",  value: formatBeds(filters.beds) },
+    { label: "Budget",   value: formatBudget() },
+    { label: "Query",    value: `"${query}"` },
+    ...(otherParts.length ? [{ label: "Filter", value: otherParts.join(" · ") }] : []),
+  ]
+
+  return (
+    <div className="w-fit max-w-3xl rounded-3xl rounded-tl-lg bg-neutral-900 px-5 py-3.5 text-sm leading-relaxed text-white">
+      <div className="font-semibold text-white">
+        {count} unit{count !== 1 ? "s" : ""} found
+      </div>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+        {rows.map(r => (
+          <Fragment key={r.label}>
+            <dt className="font-medium text-neutral-400 whitespace-nowrap">{r.label}</dt>
+            <dd className="text-neutral-200">{r.value}</dd>
+          </Fragment>
+        ))}
+      </dl>
     </div>
   )
 }

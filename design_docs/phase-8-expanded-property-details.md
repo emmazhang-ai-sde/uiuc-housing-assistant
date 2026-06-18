@@ -22,7 +22,7 @@ The guiding principle: **scrape whatever each company's website actually provide
 | Site | robots.txt | Verdict |
 |---|---|---|
 | ugroupcu.com | `Disallow:` (empty — all paths open) | ✅ Permitted |
-| greenstrealty.com | `Crawl-delay: 10` respected | ✅ Permitted |
+| greenstrealty.com | `Crawl-delay: 10` + `Content-signal: search=yes,ai-train=no`; 33 AI training bots fully blocked; our User-Agent falls under `*` block | ✅ Permitted (search/retrieval use, not training) |
 
 ---
 
@@ -77,6 +77,12 @@ When only one company's raw JSON is updated, the three pipeline steps behave as 
 | `ingest` | **Incremental** — diffs existing Chroma IDs against the new snapshot; only adds, re-embeds, or removes changed listings. | Only changed/new/removed documents are touched |
 
 **Practical implication:** updating UG data only and re-running all three steps is safe and efficient. `normalize` re-processes all companies but finishes in seconds; `geocode` and `ingest` automatically limit work to what actually changed.
+
+### Run log
+
+| Date       | Snapshot               | Total | Added | Re-embedded | Metadata-only | Removed | Unchanged |
+|------------|------------------------|-------|-------|-------------|---------------|---------|-----------|
+| 2026-06-17 | listings_2026-06-17.db | 879   | 0     | 377         | 490           | 0       | 0         |
 
 ---
 

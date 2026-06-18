@@ -48,7 +48,9 @@ def load_listings(db_path: Path) -> list[dict]:
                price_per_bed_low, price_per_bed_high,
                price_total_low,   price_total_high,
                availability, area, url, text, company,
-               lat, lng, photo_url, availability_summary, tagline
+               lat, lng, photo_url, availability_summary, tagline,
+               description, amenities, lease_dates, utility_fees, brochure_url,
+               property_type
         FROM listings
     """).fetchall()
     conn.close()
@@ -71,6 +73,12 @@ def load_listings(db_path: Path) -> list[dict]:
             "photo_url":            r[14],
             "availability_summary": r[15],
             "tagline":              r[16],
+            "description":          r[17],
+            "amenities":            r[18],
+            "lease_dates":          r[19],
+            "utility_fees":         r[20],
+            "brochure_url":         r[21],
+            "property_type":        r[22],
         }
         for r in rows
     ]
@@ -106,6 +114,12 @@ def main():
                 "photo_url":            l["photo_url"] or "",
                 "availability_summary": l["availability_summary"] or "",
                 "tagline":              l["tagline"] or "",
+                "description":          l["description"] or "",
+                "amenities":            l["amenities"] or "",
+                "lease_dates":          l["lease_dates"] or "",
+                "utility_fees":         l["utility_fees"] or "",
+                "brochure_url":         l["brochure_url"] or "",
+                "property_type":        l["property_type"] or "",
             },
         )
 

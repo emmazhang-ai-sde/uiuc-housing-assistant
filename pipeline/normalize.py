@@ -84,20 +84,29 @@ def normalize(record: dict) -> dict:
     url          = record.get("url", "").strip()
     photo_url            = record.get("photo_url", "").strip()
     availability_summary = record.get("availability_summary", "").strip()
-    tagline              = record.get("tagline", "").strip()
+    # GSR uses "subtitle"; UG uses "tagline" — accept either
+    tagline              = (record.get("tagline") or record.get("subtitle") or "").strip()
+    description          = record.get("description", "").strip()
+    amenities            = record.get("amenities", "").strip()
+    lease_dates          = record.get("lease_dates", "").strip()
+    utility_fees         = record.get("utility_fees", "").strip()
+    brochure_url         = record.get("brochure_url", "").strip()
 
-    text = (
-        f"{address}. "
+    text = " ".join(filter(None, [
+        f"{address}.",
         f"{unit_type}: {beds} bed, {baths} bath"
-        f"{', ' + sqft + ' sqft' if sqft else ''}. "
-        f"Price: {format_price_range(ppb_low, ppb_high)}/bed per month, "
-        f"{format_price_range(ptot_low, ptot_high)}/month total. "
-        f"Availability: {availability}. "
-        f"Area: {area}. "
-        f"{'Roommate match available. ' if roommate else ''}"
-        f"Company: {company}. "
-        f"Link: {url}"
-    )
+        + (f", {sqft} sqft" if sqft else "") + ".",
+        f"Price: {format_price_range(ppb_low, ppb_high)}/bed per month,"
+        f" {format_price_range(ptot_low, ptot_high)}/month total.",
+        f"Availability: {availability}.",
+        f"Area: {area}.",
+        "Roommate match available." if roommate else "",
+        f"Amenities: {amenities}." if amenities else "",
+        f"Lease dates: {lease_dates}." if lease_dates else "",
+        f"Utility fee: {utility_fees}." if utility_fees else "",
+        f"Company: {company}.",
+        f"Link: {url}",
+    ]))
 
     return {
         "company":            company,
@@ -113,12 +122,17 @@ def normalize(record: dict) -> dict:
         "price_per_bed_high": ppb_high,
         "price_total_low":    ptot_low,
         "price_total_high":   ptot_high,
-        "availability":          availability,
-        "url":                   url,
-        "photo_url":             photo_url,
-        "availability_summary":  availability_summary,
-        "tagline":               tagline,
-        "text":                  text,
+        "availability":       availability,
+        "url":                url,
+        "photo_url":          photo_url,
+        "availability_summary": availability_summary,
+        "tagline":            tagline,
+        "description":        description,
+        "amenities":          amenities,
+        "lease_dates":        lease_dates,
+        "utility_fees":       utility_fees,
+        "brochure_url":       brochure_url,
+        "text":               text,
     }
 
 
@@ -148,6 +162,11 @@ def write_db(normalized: list[dict], db_path: Path) -> None:
             photo_url            TEXT,
             availability_summary TEXT,
             tagline              TEXT,
+            description          TEXT,
+            amenities            TEXT,
+            lease_dates          TEXT,
+            utility_fees         TEXT,
+            brochure_url         TEXT,
             lat                  REAL,
             lng                  REAL,
             text                 TEXT
@@ -161,6 +180,7 @@ def write_db(normalized: list[dict], db_path: Path) -> None:
              price_total_low,   price_total_high,
              availability, url,
              photo_url, availability_summary, tagline,
+             description, amenities, lease_dates, utility_fees, brochure_url,
              text)
         VALUES
             (:company, :address, :area, :property_type, :roommate_match,
@@ -169,6 +189,7 @@ def write_db(normalized: list[dict], db_path: Path) -> None:
              :price_total_low,   :price_total_high,
              :availability, :url,
              :photo_url, :availability_summary, :tagline,
+             :description, :amenities, :lease_dates, :utility_fees, :brochure_url,
              :text)
     """, normalized)
     conn.commit()

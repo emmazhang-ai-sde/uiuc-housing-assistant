@@ -6,10 +6,11 @@ import UserBubble from "@/components/UserBubble"
 import AssistantMessage from "@/components/AssistantMessage"
 import FilterPanel from "@/components/FilterPanel"
 import { search, Listing, Filters, DEFAULT_FILTERS } from "@/lib/api"
+import PropertyDrawer from "@/components/PropertyDrawer"
 
 type Message =
   | { role: "user"; text: string; filters: Filters }
-  | { role: "assistant"; answer: string; listings: Listing[]; maxPricePerBed: number | null }
+  | { role: "assistant"; answer: string; listings: Listing[]; maxPricePerBed: number | null; query: string; filters: Filters }
 
 const SUGGESTED = [
   "2BR under $900/bed — what's available?",
@@ -24,6 +25,7 @@ export default function Home() {
   const [loading, setLoading]     = useState(false)
   const [filters, setFilters]     = useState<Filters>(DEFAULT_FILTERS)  // Phase 6
   const [composerActive, setComposerActive] = useState(false)
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputReady = input.trim().length > 0
   const composerHighlighted = composerActive || inputReady
@@ -45,12 +47,12 @@ export default function Home() {
       const res = await search(q, filtersSnapshot)
       setMessages(prev => [
         ...prev,
-        { role: "assistant", answer: res.answer, listings: res.listings, maxPricePerBed },
+        { role: "assistant", answer: res.answer, listings: res.listings, maxPricePerBed, query: q, filters: filtersSnapshot },
       ])
     } catch {
       setMessages(prev => [
         ...prev,
-        { role: "assistant", answer: "Something went wrong — is the backend running on port 8000?", listings: [], maxPricePerBed: null },
+        { role: "assistant", answer: "Something went wrong — is the backend running on port 8000?", listings: [], maxPricePerBed: null, query: q, filters: filtersSnapshot },
       ])
     } finally {
       setLoading(false)
@@ -77,6 +79,9 @@ export default function Home() {
                       answer={m.answer}
                       listings={m.listings}
                       maxPricePerBed={m.maxPricePerBed}
+                      query={m.query}
+                      filters={m.filters}
+                      onSelect={setSelectedListing}
                     />
               )}
               {loading && <ThinkingBubble />}
@@ -128,6 +133,7 @@ export default function Home() {
         </div>
 
       </div>
+      <PropertyDrawer listing={selectedListing} onClose={() => setSelectedListing(null)} />
     </div>
   )
 }

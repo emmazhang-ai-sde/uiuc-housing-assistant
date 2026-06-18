@@ -18,6 +18,12 @@ export interface Listing {
   photo_url: string              // Phase 8: exterior photo from /building-list/
   availability_summary: string   // Phase 8: property-level note e.g. "Available August 2026"
   tagline: string                // Phase 8: marketing tagline e.g. "LUXURY 1 BR! HUGE!"
+  description: string            // Phase 8.2: full property description from detail page
+  amenities: string              // Phase 8.2: comma-separated amenity tags
+  lease_dates: string            // Phase 8.2: e.g. "Aug 21, 2026 – Jul 31, 2027"
+  utility_fees: string           // Phase 8.2: e.g. "$55/bed includes water, internet, trash"
+  brochure_url: string           // Phase 8.2: PDF brochure link, empty when absent
+  property_type: string          // Phase 8.3: e.g. "Apartment", "House", "Townhome"
 }
 
 // Phase 6: explicit UI filters sent alongside every NL query

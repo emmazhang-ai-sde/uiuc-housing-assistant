@@ -3,10 +3,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# LLM — change LLM_MODEL here when swapping ChatOllama → ChatOpenAI for Phase 3
-OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY")
-NVIDIA_API_KEY  = os.getenv("NVIDIA_API_KEY")
-LLM_MODEL      = "llama3.1:8b"
+# LLM provider — controlled by LLM_PROVIDER env var
+#   "groq"   → ChatGroq (recommended; works locally and in cloud; requires GROQ_API_KEY)
+#   "ollama" → ChatOllama (optional; local-only; requires Ollama daemon + pulled model)
+LLM_MODEL      = "llama3.1:8b"   # used by Ollama; Groq uses "llama-3.1-8b-instant" directly
 
 # Embeddings
 EMBED_MODEL = "all-MiniLM-L6-v2"

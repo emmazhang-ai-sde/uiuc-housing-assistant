@@ -204,7 +204,12 @@ export default function MapView({ listings }: Props) {
                 </a>
               </div>
               <div className="font-semibold text-neutral-900 leading-snug">{popup.address}</div>
-              <div className="text-neutral-500">{popup.unit_type}{bedsLabel(popup.beds, popup.unit_type) ? ` · ${bedsLabel(popup.beds, popup.unit_type)}` : ""}</div>
+              {popup.area && (
+                <div className="text-neutral-400 text-[11px] capitalize">{popup.area}</div>
+              )}
+              <div className="text-neutral-500">
+                {popup.unit_type}{bedsLabel(popup.beds, popup.unit_type) ? ` · ${bedsLabel(popup.beds, popup.unit_type)}` : ""}{popup.property_type ? ` · ${popup.property_type}` : ""}
+              </div>
               <div className="font-bold text-neutral-900 text-sm">
                 {popup.beds <= 1
                   ? <>{priceLabel(popup)}<span className="font-normal text-neutral-400 text-xs">/mo</span></>

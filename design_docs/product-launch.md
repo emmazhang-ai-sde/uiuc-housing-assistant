@@ -26,24 +26,58 @@ Building in public before launch means the audience is already there on day one.
 
 Deploy the existing local stack to the cloud so there is a real, shareable URL.
 
+### Current deployment blockers
+
+Two things prevent an immediate launch. Everything else is already cloud-ready.
+
+| Blocker | Why it matters | Fix |
+|---------|---------------|-----|
+| **LLM: Ollama (local daemon)** | `ChatOllama` requires Ollama running on the same machine. Cloud containers cannot run Ollama as a persistent service. | Swap to `ChatGroq` — one-line change in `rag_chain.py` |
+| **Chroma DB (local filesystem)** | Vector store lives at `./chroma_db/` on disk. Must be included in the deployed container or migrated. | Bundle with the Railway deployment; no migration needed for now |
+
+Everything else is already cloud-ready:
+
+| Item | Status |
+|------|--------|
+| Frontend (Next.js) | ✅ Deploy to Vercel, zero config |
+| `NEXT_PUBLIC_API_URL` | ✅ One env var pointing to Railway URL |
+| CORS | ✅ Already `allow_origins=["*"]`; tighten after Vercel URL is known |
+| Embeddings model | ✅ Downloaded on first boot (~90 MB); Railway caches it |
+
 ### Step 2a — Swap Ollama → Groq Cloud API
 
 **Why not Ollama on Railway?** Ollama is a local daemon — it runs as a background process on your laptop and serves models from local GPU/CPU. Railway gives you a plain Linux container; there's no way to install and run Ollama as a persistent service there. A hosted LLM API is required for any cloud deployment.
 
-**Recommended: Groq** — free tier, no credit card required, no surprise bills. It runs `llama-3.1-8b-instruct` (the same model used locally), so pipeline behavior stays consistent. `ChatGroq` is a one-line swap from `ChatOllama` in LangChain. Groq's LPU hardware is also significantly faster than most cloud LLM APIs.
+Both cloud deployment and GitHub users are supported via a single codebase — the LLM provider is selected by an environment variable. Groq is the recommended path for both scenarios.
 
-What to change in `rag/rag_chain.py`:
+**Provider comparison:**
+
+| | Groq (recommended) | Ollama (optional) |
+|---|---|---|
+| **Works in cloud** | ✅ Yes | ❌ No |
+| **Works locally** | ✅ Yes | ✅ Yes |
+| **Setup** | Get free API key (30 sec) | Install Ollama + pull model (~5 GB) |
+| **Cost** | Free tier (30 req/min, 14,400/day) | Free, but uses local CPU/RAM |
+| **Speed** | Fast (Groq LPU) | Depends on hardware |
+| **Recommended for** | Everyone | Privacy-focused / offline users |
+
+**Groq free tier limits (as of 2025-08):** 30 req/min, 14,400 req/day — enough for any portfolio project.
+**Groq paid tier:** ~$0.05–0.08 per million tokens. Thousands of queries cost cents.
+
+**How the switch works** (`rag/rag_chain.py` — already implemented):
 ```python
-# Before (local only)
-from langchain_ollama import ChatOllama
-llm = ChatOllama(model=LLM_MODEL)
-
-# After (cloud deployment)
-from langchain_groq import ChatGroq
-llm = ChatGroq(model="llama-3.1-8b-instant", api_key=os.environ["GROQ_API_KEY"])
+# Controlled by LLM_PROVIDER env var (default: "ollama" for backwards compatibility)
+if LLM_PROVIDER == "groq":
+    llm = ChatGroq(model="llama-3.1-8b-instant", api_key=os.environ["GROQ_API_KEY"])
+else:
+    llm = ChatOllama(model="llama3.1:8b")
 ```
 
-Add `GROQ_API_KEY` to Railway environment variables. Test locally first by setting the env var and running `python -m rag.rag_chain` before touching Railway.
+**For cloud deployment (Railway):** set `LLM_PROVIDER=groq` and `GROQ_API_KEY` in Railway environment variables.
+
+**For local users (GitHub):** copy `.env.example` → `.env`, choose a provider, fill in the key if using Groq. Ollama users need to run `ollama pull llama3.1:8b` first.
+
+Other options if Groq free tier runs out: NVIDIA API (`meta/llama-3.1-8b-instruct`, also has a free tier) or OpenAI GPT-4o-mini (paid, cheapest OpenAI option).
 
 Other options if Groq free tier runs out: NVIDIA API (`meta/llama-3.1-8b-instruct`, also has a free tier) or OpenAI GPT-4o-mini (paid, cheapest OpenAI option).
 
@@ -218,7 +252,7 @@ Once the site is live:
 ## Checklist
 
 - [ ] Priority 1 — Start posting build progress publicly (LinkedIn / Twitter)
-- [ ] Priority 2a — Swap Ollama → Groq (`ChatGroq`, `llama-3.1-8b-instant`); test locally with GROQ_API_KEY
+- [x] Priority 2a — LLM provider switch implemented (`LLM_PROVIDER=groq|ollama`); `.env.example` created; test locally by setting `LLM_PROVIDER=groq` + `GROQ_API_KEY`
 - [ ] Priority 2b — Deploy FastAPI to Railway; verify `/api/search`
 - [ ] Priority 2c — Deploy Next.js to Vercel; verify end-to-end
 - [ ] Priority 2d — Register custom domain (optional)
