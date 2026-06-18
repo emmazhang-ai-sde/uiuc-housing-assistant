@@ -1,7 +1,10 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
+
+_BASE_DIR = Path(__file__).parent
 
 # LLM provider — controlled by LLM_PROVIDER env var
 #   "groq"   → ChatGroq (recommended; works locally and in cloud; requires GROQ_API_KEY)
@@ -9,7 +12,7 @@ load_dotenv()
 LLM_MODEL      = "llama3.1:8b"   # used by Ollama; Groq uses "llama-3.1-8b-instant" directly
 
 # Embeddings
-EMBED_MODEL = "./models/all-MiniLM-L6-v2"
+EMBED_MODEL = str(_BASE_DIR / "models" / "all-MiniLM-L6-v2")
 
 # Vector store
 CHROMA_DIR = "./chroma_db"
