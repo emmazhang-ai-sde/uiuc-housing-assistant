@@ -1,271 +1,278 @@
 # Product Launch Plan
 
-## Context & Intent
+**Created: 2026-06-17**
 
-This project scrapes publicly accessible housing data from company websites that permit scraping for non-commercial use. The intent is non-commercial: this is a portfolio project and a tool for UIUC students. However, ownership matters — a published website with an official link establishes that this project is mine, is live, and is actively maintained. Local-only is not enough.
+This is a non-commercial portfolio project that scrapes publicly accessible housing data for UIUC students. Publishing it as a live website establishes ownership, demonstrates it is actively maintained, and makes it resume-ready. Local-only is not enough.
 
 ---
 
-## Priority 1 — Building in Public (Most Urgent)
+## 1. Build in Public
 
-Start documenting the build process publicly **before** the site is live. This establishes a timestamp on ownership, builds an audience, and makes the eventual launch more impactful.
+1.1 Start posting **before** the site is live — establishes a public timestamp on ownership and means an audience already exists on launch day.
 
-### What to post
-
-- Short posts on LinkedIn and/or Twitter/X showing progress: the RAG pipeline, filter panel, card/table views, data sources
-- A one-liner for every post: *"AI-powered housing search for UIUC students — plain English queries, structured filters, real listings."*
+1.2 **What to post:**
+- Short progress posts on LinkedIn / Twitter showing the RAG pipeline, filter panel, card views, map, data sources
+- One-liner for every post: *"AI-powered housing search for UIUC students — plain English queries, structured filters, real listings."*
 - Frame it as a technical portfolio piece, not a commercial product
 
-### Why now
-
-Building in public before launch means the audience is already there on day one. It also creates a clear public record that this project existed and was built by you — relevant for both ownership and resume purposes.
+1.3 Link all posts back to each other on launch day so the journey is visible.
 
 ---
 
-## Priority 2 — Deployment (Published Website & Official Link)
+## 2. Deploy — Vercel (frontend) + Railway (backend)
 
-Deploy the existing local stack to the cloud so there is a real, shareable URL.
-
-### Current deployment blockers
-
-Two things prevent an immediate launch. Everything else is already cloud-ready.
-
-| Blocker | Why it matters | Fix |
-|---------|---------------|-----|
-| **LLM: Ollama (local daemon)** | `ChatOllama` requires Ollama running on the same machine. Cloud containers cannot run Ollama as a persistent service. | Swap to `ChatGroq` — one-line change in `rag_chain.py` |
-| **Chroma DB (local filesystem)** | Vector store lives at `./chroma_db/` on disk. Must be included in the deployed container or migrated. | Bundle with the Railway deployment; no migration needed for now |
-
-Everything else is already cloud-ready:
+### 2.1 Pre-deploy status
 
 | Item | Status |
 |------|--------|
-| Frontend (Next.js) | ✅ Deploy to Vercel, zero config |
-| `NEXT_PUBLIC_API_URL` | ✅ One env var pointing to Railway URL |
-| CORS | ✅ Already `allow_origins=["*"]`; tighten after Vercel URL is known |
-| Embeddings model | ✅ Downloaded on first boot (~90 MB); Railway caches it |
+| LLM: Groq (`LLM_PROVIDER=groq`) | ✅ Done — `rag_chain.py` already implemented |
+| Chroma DB committed to repo | ✅ Done — `chroma_db/` un-ignored and committed |
+| `TRANSFORMERS_OFFLINE=1` removed | ✅ Done — Railway downloads model on first boot |
+| CORS reads `ALLOWED_ORIGINS` env var | ✅ Done — `backend/main.py` |
+| `railway.toml` + `runtime.txt` | ✅ Done |
+| Frontend `NEXT_PUBLIC_API_URL` env var | ✅ Ready |
 
-### Step 2a — Swap Ollama → Groq Cloud API
+### 2.2 LLM — Groq
 
-**Why not Ollama on Railway?** Ollama is a local daemon — it runs as a background process on your laptop and serves models from local GPU/CPU. Railway gives you a plain Linux container; there's no way to install and run Ollama as a persistent service there. A hosted LLM API is required for any cloud deployment.
+2.2.1 **Why not Ollama in production:** Ollama is a local daemon that requires a persistent background process. Railway runs plain Linux containers — no persistent daemon support. A hosted LLM API is required.
 
-Both cloud deployment and GitHub users are supported via a single codebase — the LLM provider is selected by an environment variable. Groq is the recommended path for both scenarios.
+2.2.2 **Provider comparison:**
 
-**Provider comparison:**
-
-| | Groq (recommended) | Ollama (optional) |
+| | Groq (recommended) | Ollama (local dev only) |
 |---|---|---|
-| **Works in cloud** | ✅ Yes | ❌ No |
-| **Works locally** | ✅ Yes | ✅ Yes |
-| **Setup** | Get free API key (30 sec) | Install Ollama + pull model (~5 GB) |
-| **Cost** | Free tier (30 req/min, 14,400/day) | Free, but uses local CPU/RAM |
-| **Speed** | Fast (Groq LPU) | Depends on hardware |
-| **Recommended for** | Everyone | Privacy-focused / offline users |
+| Works in cloud | ✅ Yes | ❌ No |
+| Works locally | ✅ Yes | ✅ Yes |
+| Setup | Free API key (30 sec) | Install + pull model (~5 GB) |
+| Cost | Free tier: 30 req/min, 14,400 req/day | Free; uses local CPU/RAM |
+| Speed | Fast (Groq LPU) | Depends on hardware |
 
-**Groq free tier limits (as of 2025-08):** 30 req/min, 14,400 req/day — enough for any portfolio project.
-**Groq paid tier:** ~$0.05–0.08 per million tokens. Thousands of queries cost cents.
+2.2.3 **Free tier fallbacks if quota runs out:**
+- NVIDIA API (`meta/llama-3.1-8b-instruct`) — also has a free tier
+- OpenAI GPT-4o-mini — cheapest paid option (~$0.15/M tokens)
 
-**How the switch works** (`rag/rag_chain.py` — already implemented):
-```python
-# Controlled by LLM_PROVIDER env var (default: "ollama" for backwards compatibility)
-if LLM_PROVIDER == "groq":
-    llm = ChatGroq(model="llama-3.1-8b-instant", api_key=os.environ["GROQ_API_KEY"])
-else:
-    llm = ChatOllama(model="llama3.1:8b")
+2.2.4 **Local dev / GitHub users:** copy `.env.example` → `.env`, set `LLM_PROVIDER=groq` + `GROQ_API_KEY`. Ollama users: `ollama pull llama3.1:8b` instead.
+
+### 2.3 Railway — FastAPI backend
+
+2.3.1 **Create project:**
+1. [railway.app](https://railway.app) → New Project → Deploy from GitHub repo → select this repo
+2. Railway auto-detects `railway.toml` — no manual build config needed
+
+2.3.2 **Set environment variables:**
+> **Gotcha:** Variables are at the **service level**, not the project level. On the project homepage you see a card for your service (named after the repo) — click that card, then click the **Variables** tab. Many people stop at the project homepage and can't find Variables because they haven't clicked into the service yet.
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `GROQ_API_KEY` | `gsk_...` | [console.groq.com](https://console.groq.com) → API Keys |
+| `LLM_PROVIDER` | `groq` | Activates ChatGroq in `rag_chain.py` |
+| `ALLOWED_ORIGINS` | `*` | Temporary; tighten to Vercel URL in step 2.6 |
+
+2.3.3 **Generate a public domain:**
+- Service card → Settings → Networking → under **Public Networking**, click **Generate Domain**
+- Format: `https://xxxx.up.railway.app`
+- **Gotcha:** the URL shown in the Railway console sidebar (e.g. the internal dashboard link) is **not** the public API address. The real public domain is only under Settings → Networking → Public Networking. If you paste the wrong URL into `NEXT_PUBLIC_API_URL`, every frontend request will fail silently.
+
+2.3.4 **Verify backend is live:**
+```bash
+# Health check
+curl https://<railway-url>/api/status
+
+# Search test
+curl -X POST https://<railway-url>/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "2BR under $900"}'
 ```
+- Expected: JSON with `answer` + `listings` array
+- If 500 → service card → Deployments → View Logs
+- First boot is slow (~60 s) — Railway downloads `all-MiniLM-L6-v2` (~90 MB)
 
-**For cloud deployment (Railway):** set `LLM_PROVIDER=groq` and `GROQ_API_KEY` in Railway environment variables.
+2.3.5 **Chroma DB note:** Railway's filesystem resets on each deploy. `chroma_db/` is committed to the repo, so it is bundled automatically. After any local re-ingest, commit `chroma_db/` before pushing.
 
-**For local users (GitHub):** copy `.env.example` → `.env`, choose a provider, fill in the key if using Groq. Ollama users need to run `ollama pull llama3.1:8b` first.
+### 2.4 Vercel — Next.js frontend
 
-Other options if Groq free tier runs out: NVIDIA API (`meta/llama-3.1-8b-instruct`, also has a free tier) or OpenAI GPT-4o-mini (paid, cheapest OpenAI option).
+2.4.1 **Create project:**
+1. [vercel.com](https://vercel.com) → New Project → Import Git Repository → same repo
+2. Configure Project:
+   - **Root Directory:** change `.` → `frontend`
+   - **Framework Preset:** auto-detected as Next.js — leave it
+   - Build command / output directory: leave as defaults
 
-Other options if Groq free tier runs out: NVIDIA API (`meta/llama-3.1-8b-instruct`, also has a free tier) or OpenAI GPT-4o-mini (paid, cheapest OpenAI option).
+2.4.2 **Set environment variables** (on the Configure Project screen):
 
-> **Note on embeddings:** `all-MiniLM-L6-v2` is cached locally but not on Railway. Remove `TRANSFORMERS_OFFLINE=1` for the deployed environment — Railway will download the model (~90 MB) on first boot and cache it.
+| Variable | Value |
+|----------|-------|
+| `NEXT_PUBLIC_API_URL` | `https://<railway-url>` (no trailing slash) |
 
-### Step 2b — Deploy FastAPI to Railway
+The `NEXT_PUBLIC_` prefix bakes the value into the browser bundle at build time — this is the only env var the frontend needs.
 
-`Procfile` is already in place:
+2.4.3 **Deploy and verify:**
+- Click Deploy (~1–2 min) → open the Vercel URL → run a search query
+- If the search spinner hangs: DevTools → Network → check for a failed `POST /api/search`
+  - Most common causes: wrong `NEXT_PUBLIC_API_URL`, or CORS not yet configured
+- Both Railway and Vercel auto-redeploy within ~2 min on every `git push` to `main`
+
+### 2.5 Custom Domain (optional)
+
+Register a domain (e.g. `uiuchousing.xyz`, ~$10/yr) and add it in Vercel → Project → Settings → Domains. Makes the project feel official; Vercel handles SSL automatically.
+
+### 2.6 Tighten CORS
+
+Once the Vercel URL is known, update `ALLOWED_ORIGINS` on Railway:
+
+1. Service card → Variables tab → edit `ALLOWED_ORIGINS`
+   - Before: `*`
+   - After: `https://uiuc-housing-assistant.vercel.app`
+2. Multiple domains (e.g. preview + production): comma-separated — `backend/main.py` splits on `,` automatically
+3. Save → Railway auto-redeploys
+
+Verify:
+```bash
+curl -I -X OPTIONS https://<railway-url>/api/search \
+  -H "Origin: https://uiuc-housing-assistant.vercel.app" \
+  -H "Access-Control-Request-Method: POST"
+# Expected: Access-Control-Allow-Origin: https://uiuc-housing-assistant.vercel.app
 ```
-web: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
-```
-
-1. Railway → **New Project** → **Deploy from GitHub repo**
-2. Set environment variables: LLM API key, any others needed
-3. Generate a public domain under **Settings → Networking**
-4. Verify: `curl -X POST https://<railway-url>/api/search -d '{"query": "2BR under $900"}'`
-
-### Step 2c — Deploy Next.js to Vercel
-
-1. Vercel → **New Project** → import from GitHub, root directory = `frontend/`
-2. Set `NEXT_PUBLIC_API_URL=https://<railway-url>`
-3. Vercel auto-deploys on every push to `main`
-
-### Step 2d — Custom Domain (Optional but Recommended)
-
-A custom domain (e.g. `uiuchousing.xyz`) makes the project feel official and is cheap (~$10/year). Vercel supports custom domains natively.
-
-### Step 2e — Tighten CORS
-
-Once the Vercel URL is known, change `allow_origins=["*"]` in `backend/main.py` to the specific Vercel domain.
 
 ---
 
-## Priority 3 — User Authentication
+## 3. User Authentication
 
-Add login and logout so the app knows who is using it — required for storing conversations per user and enforcing usage limits.
+### 3.1 Scope
 
-### UIUC students only
+3.1.1 Access restricted to `@illinois.edu` email addresses — keeps the user base relevant, reduces abuse, and aligns with the non-commercial scraping intent.
 
-Access is restricted to `@illinois.edu` email addresses. This keeps the user base relevant, reduces abuse, and aligns with the non-commercial scraping terms (tool is for UIUC students, not the general public).
+3.1.2 Both Clerk and Supabase Auth support email domain allowlisting natively in their dashboards — no custom code needed. Non-`@illinois.edu` signups are rejected at the auth layer before reaching the app.
 
-Both Clerk and Supabase Auth support email domain allowlisting natively in their dashboards — no custom code needed. Anyone who tries to sign up with a non-`@illinois.edu` address is rejected at the auth layer before they ever reach the app.
+### 3.2 Recommended stack: Clerk
 
-### Recommended approach: Clerk
+3.2.1 **Clerk (recommended):** lowest-friction Next.js auth — hosted UI, React hooks (`useUser`, `useAuth`), FastAPI backend SDK for token verification.
 
-Clerk is the lowest-friction auth solution for Next.js. It provides a hosted UI (sign-in, sign-up, user management), React hooks (`useUser`, `useAuth`), and a backend SDK for verifying tokens in FastAPI.
+3.2.2 **Alternative — Supabase Auth:** open source; includes a PostgreSQL database (needed for Priority 4 anyway). Good choice if you want auth + DB in one place.
 
-Alternative: **Supabase Auth** — open source, includes a database (which we need anyway for Priority 4), good if we want everything in one place.
+### 3.3 What to implement
 
-### What to implement
-
-- Restrict sign-up to `@illinois.edu` domain in the auth provider dashboard
-- Wrap the Next.js app in `<ClerkProvider>` (or Supabase equivalent)
-- Add a sign-in/sign-up page; redirect unauthenticated users
-- Show user avatar + logout button in the sidebar
-- Pass the user's auth token to FastAPI on each `/api/search` request; FastAPI verifies it before responding
+1. Restrict sign-up to `@illinois.edu` in the auth provider dashboard
+2. Wrap the Next.js app in `<ClerkProvider>` (or Supabase equivalent); redirect unauthenticated users to sign-in
+3. Show user avatar + logout button in the sidebar
+4. Pass auth token to FastAPI on every `/api/search` request; FastAPI verifies before responding
 
 ---
 
-## Priority 4 — Conversation History Database
+## 4. Conversation History & Usage Limits
 
-Store each user's search sessions and enforce a monthly query limit.
+### 4.1 Usage cap: 50 queries/month
 
-### Usage limit: 50 queries per month
+4.1.1 A student actively apartment-hunting might send 10–20 queries in an intense week — 50/month is generous while keeping LLM costs predictable.
 
-Each user is capped at 50 searches per calendar month. Reasoning:
-- A student actively apartment-hunting might send 10–20 queries in an intense week; 50 is generous
-- The cap keeps LLM API costs predictable and protects against abuse
-- The counter resets on the 1st of each month
+4.1.2 When the limit is hit, the UI shows a clear message ("You've used all 50 searches this month. Resets July 1.") — no silent failures.
 
-When a user hits the limit, the UI shows a clear message ("You've used all 50 searches for this month. Resets on July 1.") rather than a silent failure.
+4.1.3 Counter resets on the 1st of each month (`usage` table, keyed by `YYYY-MM`).
 
-### Per-user query caching (dataset-version-aware)
+### 4.2 Per-user query cache (dataset-version-aware)
 
-If a user submits the exact same query they've asked before, the app returns the stored result from their conversation history — **but only if the dataset hasn't been updated since that result was generated.** If a new scrape has run, the cache is invalidated and the pipeline runs fresh.
+4.2.1 If a user submits the same query they've asked before AND the dataset hasn't changed since, return the cached result — skips the pipeline and does **not** count against quota.
 
-This is safe because cache validity is tied to the dataset version, not to time. The `last_scraped` date (already tracked in `snapshots/latest.txt` and exposed via `/api/status`) serves as the version key.
+4.2.2 Cache validity is tied to the dataset version (`last_scraped` date from `snapshots/latest.txt`, already exposed via `/api/status`) — not to time. A new scrape invalidates the cache.
 
-**Lookup logic on each search:**
+4.2.3 **Lookup logic per search:**
+1. Get `current_version` = `last_scraped` from `latest.txt`
+2. Query user's message history for exact match on query string
+3. If match found and `dataset_version == current_version` → return cached `listings_json` + summary; skip pipeline; do not increment usage
+4. Otherwise → run full pipeline; store result with `dataset_version = current_version`; increment usage counter
 
-1. Get `current_version` = today's `last_scraped` date from `latest.txt`
-2. Query the user's message history for an exact match on the query string
-3. If a match exists and its stored `dataset_version == current_version` → return the cached `listings_json` and summary; skip the pipeline and **do not count against the monthly quota**
-4. Otherwise → run the full pipeline, store the result with `dataset_version = current_version`, increment the usage counter
-
-A repeated query on a fresh dataset still counts as a new query (uses quota) since it triggers the full pipeline.
-
-### Schema (simplified)
+### 4.3 DB schema
 
 ```sql
-users        (id, email, created_at)
-sessions     (id, user_id, created_at, title)
-messages     (id, session_id, role, content, listings_json, dataset_version, created_at)
-usage        (id, user_id, month, query_count)   -- month stored as YYYY-MM
+users    (id, email, created_at)
+sessions (id, user_id, created_at, title)
+messages (id, session_id, role, content, listings_json, dataset_version, created_at)
+usage    (id, user_id, month, query_count)   -- month as YYYY-MM
 ```
 
-`listings_json` stores the raw listing array returned per assistant turn, so past conversations can be replayed without re-querying.
+- `listings_json` — raw listing array per assistant turn; enables replaying past conversations without re-querying
+- `dataset_version` — `last_scraped` date string at response time; used to validate cache hits
+- `usage` — FastAPI checks before pipeline; returns `429` if `query_count >= 50`
 
-`dataset_version` stores the `last_scraped` date string (e.g. `"2026-06-14"`) at the time the assistant response was generated. Used to determine whether a cached result is still valid.
+### 4.4 Recommended stack
 
-`usage` tracks the running monthly count per user. FastAPI checks this before running the pipeline and returns a `429` if the limit is exceeded.
+- **Supabase** — PostgreSQL + auth + storage in one; if using Supabase Auth (Priority 3), DB is already there
+- **Railway PostgreSQL** — if staying fully within Railway; add a Postgres plugin to the existing project
 
-### Recommended stack
+### 4.5 What to implement
 
-- **Supabase** (PostgreSQL + auth + storage in one) — if using Supabase Auth, the database is already there
-- **Railway PostgreSQL** — if staying within Railway; add a Postgres plugin to the existing Railway project
-
-### What to implement
-
-- On each search: check message history for an exact query match with matching `dataset_version`; if found, return cached result without hitting the pipeline or incrementing usage
-- On each search (cache miss): check `usage` table; reject with `429` if `query_count >= 50` for the current month
-- On each successful pipeline run: increment `usage.query_count`; write the message pair to `messages` with the current `dataset_version`
-- On load: fetch the user's recent sessions and render them in the sidebar as a history list
-- Allow users to click a past session to restore the full conversation
-- Show remaining queries for the month somewhere visible (e.g. sidebar footer)
+1. On each search: check message history for exact query match with matching `dataset_version` → return cached result if hit
+2. On cache miss: check `usage` table; return `429` if `query_count >= 50` for current month
+3. On successful pipeline run: write message pair to `messages` (with `dataset_version`); increment `usage.query_count`
+4. On app load: fetch user's recent sessions; render in sidebar as a clickable history list
+5. Show remaining monthly query count in sidebar footer (e.g. "32 / 50 searches left")
 
 ---
 
-## Priority 5 — API Integration (Bring Your Own API)
+## 5. Bring Your Own API Key
 
-Allow users to supply their own LLM API key directly from the UI, so power users can use Groq, OpenAI, or any compatible provider without redeploying. Groq is the recommended default for users: free tier, no billing required, fast, and supports the same Llama models used locally.
+### 5.1 What it looks like
 
-### What this looks like
+5.1.1 A settings panel (or sidebar field) where the user selects a provider (Groq / OpenAI / NVIDIA) and enters their API key.
 
-- A settings panel (or field in the sidebar) where the user selects a provider (Groq / OpenAI / NVIDIA / custom) and enters their API key
-- On search, the frontend passes the key and provider to FastAPI; the backend uses it for that request only
+5.1.2 On search, the frontend passes the key + provider to FastAPI; the backend uses it for that request only and discards it immediately.
 
-### Security constraints (non-negotiable)
+5.1.3 Groq is the recommended option for users: free tier, no billing required, fast, same Llama models as the default.
 
-User-supplied API keys are a high-value target. The following rules must be followed without exception:
+### 5.2 Security rules (non-negotiable)
 
-**Never persist the key anywhere:**
-- Store the key in React state (in-memory) only — never write it to `localStorage`, `sessionStorage`, or the database
-- The key disappears when the tab closes; this is intentional
-- A database breach or XSS attack cannot exfiltrate a key that was never written to disk or DB
+5.2.1 **Never persist the key:**
+- Store in React state (in-memory) only — never `localStorage`, `sessionStorage`, or DB
+- Key disappears on tab close — intentional
+- A DB breach or XSS attack cannot exfiltrate a key that was never written to disk
 
-**Never log the key on the server:**
-- FastAPI must not log request bodies — audit all middleware and logging config before launch
-- The key arrives at the backend, is used for one LLM call, and is immediately discarded
-- Railway log output must never contain the key string
+5.2.2 **Never log the key on the server:**
+- FastAPI must not log request bodies — audit all middleware before launch
+- Key is used for one LLM call, then discarded; must never appear in Railway logs
 
-**Minimize server exposure:**
-- HTTPS everywhere (already enforced by Vercel and Railway) — mitigates man-in-the-middle
-- Add a Content Security Policy (CSP) header in Next.js to reduce the XSS attack surface
-- Tighten CORS to the Vercel domain only (already planned in Priority 2e) — prevents cross-origin requests from injecting calls
+5.2.3 **Minimize server exposure:**
+- HTTPS enforced by Vercel + Railway — mitigates MITM
+- Add a Content Security Policy (CSP) header in Next.js to reduce XSS surface
+- CORS locked to Vercel domain (step 2.6) — blocks cross-origin injection
 
-**Risk by provider:**
+5.2.4 **Risk by provider:**
 
 | Provider | Financial risk if key stolen | Notes |
 |---|---|---|
-| Groq | None (free tier, no billing) | Worst case: quota abuse only |
+| Groq | None (free tier) | Worst case: quota abuse only |
 | OpenAI | High (pay-per-token) | In-memory-only is non-negotiable |
 | NVIDIA | Medium | Free credits; check billing terms |
 
-### Better architecture (future consideration)
+### 5.3 Future architecture
 
-The safest possible design is to have the browser call the LLM API **directly**, so the key never touches our server at all. The RAG vector search still needs the FastAPI backend, but the final summarization LLM call could happen client-side. This is a meaningful refactor and not required for launch — document it here as the target architecture if the user base grows.
+The safest design has the browser call the LLM API **directly** — the key never touches our server. The RAG vector search still needs FastAPI, but the summarization LLM call could be client-side. This is a meaningful refactor; document here as the target architecture if the user base grows.
 
 ---
 
-## Distribution
+## 6. Distribution
 
-Once the site is live:
+6.1 Post to communities **on launch day** and link back to the build-in-public posts:
+- **r/UIUC** — "built a housing search tool for UIUC students"
+- **Facebook groups:** UIUC Housing, UIUC Class of 20XX, UIUC International Students
+- **Discord:** UIUC CS Discord, major-specific servers
 
-- **r/UIUC** — "built a housing search tool for UIUC students" post
-- **Facebook groups**: UIUC Housing, UIUC Class of 20XX, UIUC International Students
-- **Discord**: UIUC CS Discord, major-specific servers
-- Link back to the building-in-public posts to show the journey
+6.2 Frame every post around the student use case, not the tech stack — "find a 1BR near Siebel under $900" lands better than "RAG pipeline with Chroma".
 
 ---
 
 ## Checklist
 
-- [ ] Priority 1 — Start posting build progress publicly (LinkedIn / Twitter)
-- [x] Priority 2a — LLM provider switch implemented (`LLM_PROVIDER=groq|ollama`); `.env.example` created; test locally by setting `LLM_PROVIDER=groq` + `GROQ_API_KEY`
-- [ ] Priority 2b — Deploy FastAPI to Railway; verify `/api/search`
-- [ ] Priority 2c — Deploy Next.js to Vercel; verify end-to-end
-- [ ] Priority 2d — Register custom domain (optional)
-- [ ] Priority 2e — Tighten CORS to Vercel domain
-- [ ] Priority 3 — Add user authentication (Clerk or Supabase Auth)
-- [ ] Priority 3 — Restrict sign-up to @illinois.edu domain in auth provider dashboard
-- [ ] Priority 4 — Set up database and schema (users, sessions, messages with dataset_version, usage)
-- [ ] Priority 4 — Implement per-user query cache: exact match on query + dataset_version → return stored result, skip pipeline and quota
-- [ ] Priority 4 — Implement 50 queries/month limit in FastAPI (check + increment usage table; return 429 on limit)
-- [ ] Priority 4 — Show remaining monthly query count in sidebar
-- [ ] Priority 4 — Wire conversation history into sidebar and chat UI
-- [ ] Priority 5 — Add "Bring Your Own API" settings panel (provider selector + API key field)
-- [ ] Priority 5 — Store key in React state only; confirm it never touches localStorage or DB
-- [ ] Priority 5 — Audit FastAPI logging config; ensure request bodies (incl. API keys) are never logged
-- [ ] Priority 5 — Add Content Security Policy header to Next.js
-- [ ] Distribution — Post launch to r/UIUC, Facebook groups, Discord
+- [ ] 1 — Start posting build progress publicly (LinkedIn / Twitter)
+- [x] 2.2 — Groq LLM implemented; `.env.example` created; tested locally
+- [ ] 2.3 — Deploy FastAPI to Railway; verify `/api/search`
+- [ ] 2.4 — Deploy Next.js to Vercel; verify end-to-end search
+- [ ] 2.5 — Register custom domain (optional)
+- [ ] 2.6 — Tighten CORS: set `ALLOWED_ORIGINS` to Vercel domain
+- [ ] 3 — Set up auth (Clerk or Supabase); restrict to `@illinois.edu`
+- [ ] 4.3 — Create DB schema (users, sessions, messages, usage)
+- [ ] 4.5.1–2 — Implement query cache + 50/month usage limit in FastAPI
+- [ ] 4.5.3 — Wire message history storage on every search
+- [ ] 4.5.4–5 — Sidebar: conversation history list + monthly quota display
+- [ ] 5.1–5.2 — Add BYOK settings panel; enforce in-memory-only key storage
+- [ ] 5.2.2 — Audit FastAPI logging; confirm request bodies never logged
+- [ ] 5.2.3 — Add CSP header to Next.js
+- [ ] 6 — Post launch to r/UIUC, Facebook groups, Discord

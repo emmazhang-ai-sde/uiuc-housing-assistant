@@ -9,7 +9,7 @@ load_dotenv()
 LLM_MODEL      = "llama3.1:8b"   # used by Ollama; Groq uses "llama-3.1-8b-instant" directly
 
 # Embeddings
-EMBED_MODEL = "all-MiniLM-L6-v2"
+EMBED_MODEL = "./models/all-MiniLM-L6-v2"
 
 # Vector store
 CHROMA_DIR = "./chroma_db"
