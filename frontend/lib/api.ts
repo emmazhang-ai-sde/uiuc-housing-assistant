@@ -15,6 +15,9 @@ export interface Listing {
   url: string
   lat: number | null             // Phase 7: geocoded coordinates
   lng: number | null
+  photo_url: string              // Phase 8: exterior photo from /building-list/
+  availability_summary: string   // Phase 8: property-level note e.g. "Available August 2026"
+  tagline: string                // Phase 8: marketing tagline e.g. "LUXURY 1 BR! HUGE!"
 }
 
 // Phase 6: explicit UI filters sent alongside every NL query

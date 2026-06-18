@@ -9,6 +9,7 @@ import { COMPANY_LOGOS } from "@/lib/companies"
 import { availabilityStatus, bedsLabel } from "@/lib/availability"
 
 const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron"
+const MAP_HEIGHT = "clamp(560px, 60vh, 720px)"
 
 const DEFAULT_VIEW = { longitude: -88.227, latitude: 40.1095, zoom: 14 }
 
@@ -106,7 +107,7 @@ export default function MapView({ listings }: Props) {
     <div className="rounded-3xl overflow-hidden shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)]">
       <Map
         initialViewState={DEFAULT_VIEW}
-        style={{ width: "100%", height: 460 }}
+        style={{ width: "100%", height: MAP_HEIGHT }}
         mapStyle={MAP_STYLE}
         onClick={() => { setPopup(null); setLandmarkPopup(null) }}
       >
@@ -178,9 +179,14 @@ export default function MapView({ listings }: Props) {
             anchor="top"
             onClose={() => setPopup(null)}
             closeButton={false}
-            maxWidth="220px"
+            maxWidth="240px"
           >
-            <div className="text-xs text-neutral-700 p-1 space-y-1.5">
+            <div className="h-28 bg-neutral-100">
+              {popup.photo_url && (
+                <img src={popup.photo_url} alt="" className="w-full h-full object-cover block" />
+              )}
+            </div>
+            <div className="text-xs text-neutral-700 p-3 space-y-1.5">
               <div className="flex items-start justify-between gap-2">
                 {COMPANY_LOGOS[popup.company]
                   ? <img src={COMPANY_LOGOS[popup.company]} alt={popup.company} className="h-3.5 object-contain object-left" />

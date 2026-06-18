@@ -82,6 +82,9 @@ def normalize(record: dict) -> dict:
     area         = record.get("area", "").strip()
     roommate     = record.get("roommate_match", False)
     url          = record.get("url", "").strip()
+    photo_url            = record.get("photo_url", "").strip()
+    availability_summary = record.get("availability_summary", "").strip()
+    tagline              = record.get("tagline", "").strip()
 
     text = (
         f"{address}. "
@@ -110,9 +113,12 @@ def normalize(record: dict) -> dict:
         "price_per_bed_high": ppb_high,
         "price_total_low":    ptot_low,
         "price_total_high":   ptot_high,
-        "availability":       availability,
-        "url":                url,
-        "text":               text,
+        "availability":          availability,
+        "url":                   url,
+        "photo_url":             photo_url,
+        "availability_summary":  availability_summary,
+        "tagline":               tagline,
+        "text":                  text,
     }
 
 
@@ -137,9 +143,14 @@ def write_db(normalized: list[dict], db_path: Path) -> None:
             price_per_bed_high  INTEGER,
             price_total_low     INTEGER,
             price_total_high    INTEGER,
-            availability        TEXT,
-            url                 TEXT,
-            text                TEXT
+            availability         TEXT,
+            url                  TEXT,
+            photo_url            TEXT,
+            availability_summary TEXT,
+            tagline              TEXT,
+            lat                  REAL,
+            lng                  REAL,
+            text                 TEXT
         )
     """)
     conn.executemany("""
@@ -148,13 +159,17 @@ def write_db(normalized: list[dict], db_path: Path) -> None:
              unit_type, beds, baths, sqft,
              price_per_bed_low, price_per_bed_high,
              price_total_low,   price_total_high,
-             availability, url, text)
+             availability, url,
+             photo_url, availability_summary, tagline,
+             text)
         VALUES
             (:company, :address, :area, :property_type, :roommate_match,
              :unit_type, :beds, :baths, :sqft,
              :price_per_bed_low, :price_per_bed_high,
              :price_total_low,   :price_total_high,
-             :availability, :url, :text)
+             :availability, :url,
+             :photo_url, :availability_summary, :tagline,
+             :text)
     """, normalized)
     conn.commit()
     conn.close()
@@ -198,6 +213,37 @@ def print_summary(db_path: Path) -> None:
         print(f"   {company}: {count}")
 
 
+# ── Geocode preservation ─────────────────────────────────────────────────────
+
+def read_geocoded_coords(db_path: Path) -> dict[str, tuple[float, float]]:
+    """Read all geocoded addresses from an existing snapshot DB."""
+    if not db_path.exists():
+        return {}
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute(
+        "SELECT DISTINCT address, lat, lng FROM listings WHERE lat IS NOT NULL"
+    ).fetchall()
+    conn.close()
+    return {addr: (lat, lng) for addr, lat, lng in rows}
+
+
+def restore_geocoded_coords(db_path: Path, coords: dict[str, tuple[float, float]]) -> int:
+    """Write previously geocoded lat/lng back into the new snapshot. Returns row count updated."""
+    if not coords:
+        return 0
+    conn = sqlite3.connect(db_path)
+    updated = 0
+    for address, (lat, lng) in coords.items():
+        cur = conn.execute(
+            "UPDATE listings SET lat=?, lng=? WHERE address=? AND lat IS NULL",
+            (lat, lng, address),
+        )
+        updated += cur.rowcount
+    conn.commit()
+    conn.close()
+    return updated
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -220,8 +266,23 @@ def main():
 
     normalized = [normalize(r) for r in raw]
 
+    # Snapshot geocoded coords BEFORE write_db — handles same-day re-runs where
+    # new_db and the existing snapshot are the same file (write_db drops the table).
+    prev_coords: dict[str, tuple[float, float]] = {}
+    if latest_date:
+        src = SNAPSHOTS_DIR / f"listings_{latest_date}.db"
+        prev_coords = read_geocoded_coords(src)
+        if prev_coords:
+            print(f"   (preserved {len(prev_coords)} geocoded addresses from {latest_date} snapshot)")
+
     # Write candidate DB
     write_db(normalized, new_db)
+
+    # Restore geocoded coords so geocode.py only hits new addresses
+    restored = restore_geocoded_coords(new_db, prev_coords)
+    if restored:
+        print(f"   ↳ Restored {restored} geocoded rows — geocode.py will skip these")
+
     new_fp = db_fingerprint(new_db)
 
     # Compare with previous snapshot

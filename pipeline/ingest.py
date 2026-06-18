@@ -48,26 +48,29 @@ def load_listings(db_path: Path) -> list[dict]:
                price_per_bed_low, price_per_bed_high,
                price_total_low,   price_total_high,
                availability, area, url, text, company,
-               lat, lng
+               lat, lng, photo_url, availability_summary, tagline
         FROM listings
     """).fetchall()
     conn.close()
     return [
         {
-            "address":            r[0],
-            "unit_type":          r[1],
-            "beds":               r[2],
-            "price_per_bed_low":  r[3],
-            "price_per_bed_high": r[4],
-            "price_total_low":    r[5],
-            "price_total_high":   r[6],
-            "availability":       r[7],
-            "area":               r[8],
-            "url":                r[9],
-            "text":               r[10],
-            "company":            r[11],
-            "lat":                r[12],
-            "lng":                r[13],
+            "address":              r[0],
+            "unit_type":            r[1],
+            "beds":                 r[2],
+            "price_per_bed_low":    r[3],
+            "price_per_bed_high":   r[4],
+            "price_total_low":      r[5],
+            "price_total_high":     r[6],
+            "availability":         r[7],
+            "area":                 r[8],
+            "url":                  r[9],
+            "text":                 r[10],
+            "company":              r[11],
+            "lat":                  r[12],
+            "lng":                  r[13],
+            "photo_url":            r[14],
+            "availability_summary": r[15],
+            "tagline":              r[16],
         }
         for r in rows
     ]
@@ -100,6 +103,9 @@ def main():
                 "url":                l["url"],
                 "lat":                l["lat"],
                 "lng":                l["lng"],
+                "photo_url":            l["photo_url"] or "",
+                "availability_summary": l["availability_summary"] or "",
+                "tagline":              l["tagline"] or "",
             },
         )
 

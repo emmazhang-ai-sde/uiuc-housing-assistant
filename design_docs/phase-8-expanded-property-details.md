@@ -8,47 +8,92 @@ The guiding principle: **scrape whatever each company's website actually provide
 
 ---
 
+## Sub-phases
+
+| Phase | Company | Status |
+|---|---|---|
+| [8.1](phase-8.1-ug-expanded-details.md) | Universities Group | 🔄 In progress — first run done, fixes pending |
+| [8.2](phase-8.2-gsr-expanded-details.md) | Green Street Realty | ⬜ Not started — blob audit needed first |
+
+---
+
+## Scraping permissions
+
+| Site | robots.txt | Verdict |
+|---|---|---|
+| ugroupcu.com | `Disallow:` (empty — all paths open) | ✅ Permitted |
+| greenstrealty.com | `Crawl-delay: 10` respected | ✅ Permitted |
+
+---
+
 ## Common fields (target for all companies)
 
-| Field | Source |
-|---|---|
-| Proximity to campus | Computed from geocoded coordinates + UIUC reference point (depends on Phase 7) |
-| Amenities | Scraped from listing page (private balcony, garage, covered parking, etc.) |
-| Bus line access | Scraped or cross-referenced with MTD GTFS data |
-| Laundry | Scraped (on-site vs. in-unit) |
-| Utility fees | Scraped from listing detail page |
-| Lease dates | Scraped from listing detail page |
-| Exterior photo | Scraped from listing page (first image) |
+| Field | Source | Status |
+|---|---|---|
+| Proximity to campus | Computed from geocoded coordinates (Phase 7) | ✅ Done |
+| Campus area | Scraped (`area` field) | ✅ UG done, GSR done |
+| Exterior photo | Scraped from listing index page | ✅ UG done |
+| Availability summary | Scraped from listing index page | ✅ UG done |
+| Amenities | Scraped from listing detail page | ⬜ Not yet |
+| Bus line access | MTD GTFS cross-reference | ⬜ Not yet |
+| Laundry | Scraped from listing detail page | ⬜ Not yet |
+| Utility fees | Scraped from listing detail page | ⬜ Not yet |
+| Lease dates | Scraped from listing detail page | ⬜ Not yet |
 
 ---
 
 ## Company-specific fields
 
-Some companies publish details that others don't. These are captured as additional fields when available:
-
-| Field | Company | Notes |
+| Field | Company | Status |
 |---|---|---|
-| Floor-level notes | Universities Group | Per-floor comments (e.g. "3rd floor — corner unit, quieter") |
-| Per-floor pricing | Universities Group | Price variation by floor, not just a single low/high range |
-| *(others TBD)* | GSR / new companies | To be discovered when expanding each scraper |
+| Floor-level notes | Universities Group | ⬜ Not yet |
+| Per-floor pricing | Universities Group | ⬜ Not yet |
+| *(others TBD)* | GSR / new companies | To be discovered when auditing detail pages |
 
 ---
 
-## Implementation approach
+## Pipeline schema additions (all companies)
 
-- For each company, inspect the listing detail page and document every field it exposes **before** writing any scraper code
-- Expand each scraper to pull detail-page fields in addition to the existing list-page data
-- Use a flexible `extras: dict` column in SQLite to store company-specific fields without schema migrations for every new field
-- Add the most universally useful fields as first-class Chroma metadata; company-specific extras live in the detail payload only
-- Frontend: replace the direct link-out with a click that opens a detail drawer/modal; the "View on website" link moves inside the drawer
+New columns added to SQLite `listings` table and Chroma metadata in this phase:
+
+| Column | Type | Populated by |
+|---|---|---|
+| `photo_url` | TEXT | Scraper (company index page) |
+| `availability_summary` | TEXT | Scraper (company index page) |
+| `tagline` | TEXT | Scraper (company index page) |
+
+GSR records leave these as `""` until Phase 8.2 is implemented.
+
+---
+
+## Pipeline re-run behavior
+
+When only one company's raw JSON is updated, the three pipeline steps behave as follows:
+
+| Step | Behavior | Cost |
+|---|---|---|
+| `normalize` | **Full rebuild** — drops and recreates the entire `listings` table from all `data/*_raw.json` files every run. No per-company mode. Before overwriting, reads geocoded `lat`/`lng` from the previous snapshot and restores them into the new DB — so geocode.py only sees truly new addresses. | Fast (pure JSON → SQLite, seconds regardless of size) |
+| `geocode` | **Incremental** — queries `WHERE lat IS NULL` only; already-geocoded rows are skipped. Effective because normalize now preserves coords from the previous snapshot. | Only new/unknown addresses hit Nominatim; ~1.1 s delay applies only to them |
+| `ingest` | **Incremental** — diffs existing Chroma IDs against the new snapshot; only adds, re-embeds, or removes changed listings. | Only changed/new/removed documents are touched |
+
+**Practical implication:** updating UG data only and re-running all three steps is safe and efficient. `normalize` re-processes all companies but finishes in seconds; `geocode` and `ingest` automatically limit work to what actually changed.
+
+---
+
+## Frontend
+
+Tracked in [`frontend/CHANGELOG.md`](../frontend/CHANGELOG.md).
 
 ---
 
 ## Checklist
 
-- [ ] For each company, audit the listing detail page and document all available fields before scraping
-- [ ] Expand GSR scraper to pull detail-page fields
-- [ ] Expand UG scraper to pull detail-page fields (incl. floor-level notes and per-floor pricing)
-- [ ] Add `extras` dict column to SQLite schema for company-specific fields
-- [ ] Add common fields as Chroma metadata; surface company-specific extras in detail payload
-- [ ] Build detail drawer/modal in frontend
+- [x] Confirm scraping permissions for all target sites
+- [x] Add `photo_url`, `availability_summary`, `tagline` to SQLite schema and Chroma metadata
+- [x] Add new fields to `Listing` interface (`frontend/lib/api.ts`)
+- [x] Phase 8.1 — UG scraper expanded (first run complete, fixes in progress)
+- [ ] Phase 8.1 — UG scraper fixes: junk URL filter, context restart, crawl delay increase
+- [ ] Phase 8.1 — UG re-run and pipeline (`normalize` → `geocode` → `ingest`)
+- [ ] Phase 8.2 — Audit GSR detail pages; document all available fields
+- [ ] Phase 8.2 — Expand GSR scraper (amenities, laundry, utilities, lease dates, photo)
+- [ ] Frontend — build `DrawerPanel` component

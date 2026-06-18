@@ -55,57 +55,67 @@ export default function ListingCard({ listing, maxPricePerBed = null }: { listin
   const addressLines = splitAddressLines(addressMain)
 
   return (
-    <article className="relative bg-white rounded-3xl p-4 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.14)] transition-shadow group flex flex-col gap-3">
+    <article className="relative bg-white rounded-3xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.14)] transition-shadow group flex flex-col overflow-hidden">
 
-      {/* Availability badge — top-right corner */}
-      <div className="absolute top-4 right-4">
+      {/* Availability badge — absolute over photo (or card top if no photo) */}
+      <div className="absolute top-4 right-4 z-10">
         <AvailabilityBadge availability={listing.availability} />
       </div>
 
-      {/* Company logo */}
-      {COMPANY_LOGOS[listing.company]
-        ? <img src={COMPANY_LOGOS[listing.company]} alt={listing.company} className="h-3.5 object-contain object-left" />
-        : <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">{listing.company}</div>
-      }
+      {/* Exterior photo — always rendered; blank placeholder when no photo_url */}
+      <div className="h-36 shrink-0 bg-neutral-100">
+        {listing.photo_url && (
+          <img src={listing.photo_url} alt="" className="w-full h-full object-cover" />
+        )}
+      </div>
 
-      {/* Address — pr leaves room for the badge */}
-      <h3 className="font-bold text-neutral-900 text-sm leading-snug pr-16">
-        {addressLines.map((line, i) => (
-          <span key={i} className="block">{line}</span>
-        ))}
-        {addressCode && <span className="block text-neutral-900 font-medium text-xs mt-0.5">{addressCode}</span>}
-      </h3>
+      {/* Content */}
+      <div className="p-4 flex flex-col gap-3 flex-1">
+        {/* Company logo */}
+        {COMPANY_LOGOS[listing.company]
+          ? <img src={COMPANY_LOGOS[listing.company]} alt={listing.company} className="h-3.5 object-contain object-left" />
+          : <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">{listing.company}</div>
+        }
 
-      <div className="flex flex-col gap-2 mt-auto">
-        {/* Layout */}
-        <div className="text-xs text-neutral-400 font-medium">{listing.unit_type}{bedsLabelStr ? ` · ${bedsLabelStr}` : ""}</div>
+        {/* Address — pr leaves room for the badge when there is no photo */}
+        <h3 className="font-bold text-neutral-900 text-sm leading-snug pr-16">
+          {addressLines.map((line, i) => (
+            <span key={i} className="block">{line}</span>
+          ))}
+          {addressCode && <span className="block text-neutral-900 font-medium text-xs mt-0.5">{addressCode}</span>}
+        </h3>
 
-        {/* Rent — emphasized as the key data point, with the CTA alongside it */}
-        <div className="flex items-end justify-between gap-2">
-          <div>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xl font-bold text-neutral-900 tracking-tight">
-              {isSingleOccupancy
-                ? <>{priceTotal}<span className="text-sm text-neutral-400 font-medium">/mo</span></>
-                : <>{priceBed}<span className="text-sm text-neutral-400 font-medium">/bed</span></>
-              }
-              {overBudget && (
-                <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[#F5BBA0] text-black">
-                  over budget
-                </span>
+        <div className="flex flex-col gap-2 mt-auto">
+          {/* Layout */}
+          <div className="text-xs text-neutral-400 font-medium">{listing.unit_type}{bedsLabelStr ? ` · ${bedsLabelStr}` : ""}</div>
+
+          {/* Rent — emphasized as the key data point, with the CTA alongside it */}
+          <div className="flex items-end justify-between gap-2">
+            <div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xl font-bold text-neutral-900 tracking-tight">
+                {isSingleOccupancy
+                  ? <>{priceTotal}<span className="text-sm text-neutral-400 font-medium">/mo</span></>
+                  : <>{priceBed}<span className="text-sm text-neutral-400 font-medium">/bed</span></>
+                }
+                {overBudget && (
+                  <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[#F5BBA0] text-black">
+                    over budget
+                  </span>
+                )}
+              </div>
+              {!isSingleOccupancy && (
+                <div className="text-xs text-neutral-400 mt-0.5">{priceTotal} total</div>
               )}
             </div>
-            {!isSingleOccupancy && (
-              <div className="text-xs text-neutral-400 mt-0.5">{priceTotal} total</div>
-            )}
+            <a
+              href={listing.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-bold text-neutral-900 bg-neutral-100 hover:bg-black hover:text-white px-3 py-1.5 rounded-full transition-colors shrink-0"
+            >
+              View Listing →
+            </a>
           </div>
-          <a
-            href={listing.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-bold text-neutral-900 bg-neutral-100 hover:bg-black hover:text-white px-3 py-1.5 rounded-full transition-colors shrink-0"
-          >
-            View Listing →
-          </a>
         </div>
       </div>
     </article>
