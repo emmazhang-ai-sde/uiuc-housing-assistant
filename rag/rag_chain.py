@@ -13,20 +13,31 @@ from pathlib import Path
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent))
 
-os.environ["TRANSFORMERS_OFFLINE"] = "1"
-
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
 from config import CHROMA_DIR, EMBED_MODEL, LLM_MODEL, K_SEMANTIC, SCORE_GAP, PRICE_FLEX_MARGIN
 
+# ── LLM provider selection ─────────────────────────────────────────────────────
+# Set LLM_PROVIDER=groq  (recommended — works locally and in cloud deployment)
+# Set LLM_PROVIDER=ollama (optional — requires local Ollama daemon + pulled model)
+_provider = os.getenv("LLM_PROVIDER", "ollama").lower()
+
+if _provider == "groq":
+    from langchain_groq import ChatGroq
+    llm = ChatGroq(
+        model="llama-3.1-8b-instant",
+        api_key=os.environ["GROQ_API_KEY"],
+    )
+else:
+    from langchain_ollama import ChatOllama
+    llm = ChatOllama(model=LLM_MODEL)
+
 # ── Shared resources ──────────────────────────────────────────────────────────
 embeddings  = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
 vectorstore = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
-llm         = ChatOllama(model=LLM_MODEL)
 
 
 def parse_json_output(text: str) -> dict:

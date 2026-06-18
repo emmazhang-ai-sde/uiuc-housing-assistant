@@ -20,9 +20,10 @@ ENV/
 .env
 .env.*
 *.env
+!.env.example
 
-# ChromaDB vector store (large, regenerable via ingest.py)
-chroma_db/
+# ChromaDB vector store — committed so Railway can serve it without rebuilding on deploy
+# chroma_db/
 
 # SQLite databases (regenerable via scraper + normalizer)
 *.db

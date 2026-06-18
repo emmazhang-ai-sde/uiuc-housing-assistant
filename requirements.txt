@@ -5,7 +5,8 @@ langchain-community==0.4.2
 langchain-text-splitters==1.1.2
 langchain-chroma==1.1.0
 langchain-huggingface==1.2.2
-langchain-nvidia-ai-endpoints     # Phase 3 cloud LLM; no local version yet
+langchain-groq                     # cloud LLM (Groq free tier; replaces NVIDIA)
+langchain-nvidia-ai-endpoints     # kept for reference; replaced by Groq
 
 # ── Vector store & embeddings ───────────────────────────────────────────────
 chromadb==1.5.9 
