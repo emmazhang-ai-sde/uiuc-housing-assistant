@@ -64,10 +64,13 @@ export async function fetchStatus(): Promise<DataStatus> {
 }
 
 // Phase 6: accepts explicit filters alongside the NL query
-export async function search(query: string, filters: Filters): Promise<SearchResponse> {
+// token: Supabase JWT access token — passed as Authorization header to FastAPI
+export async function search(query: string, filters: Filters, token?: string): Promise<SearchResponse> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  if (token) headers["Authorization"] = `Bearer ${token}`
   const res = await fetch(`${API_URL}/api/search`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ query, filters }),
   })
   if (!res.ok) throw new Error(`API error: ${res.status}`)

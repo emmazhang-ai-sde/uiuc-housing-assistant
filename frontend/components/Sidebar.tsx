@@ -1,15 +1,29 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { fetchStatus, DataStatus } from "@/lib/api"
 import { COMPANIES } from "@/lib/companies"
+import { createClient } from "@/lib/supabase/client"
 
 export default function Sidebar({ onClear }: { onClear: () => void }) {
-  const [status, setStatus] = useState<DataStatus | null>(null)
+  const [status, setStatus]   = useState<DataStatus | null>(null)
+  const [email, setEmail]     = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     fetchStatus().then(setStatus).catch(() => {})
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null)
+    })
   }, [])
+
+  async function handleSignOut() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
 
   const scrapedLabel = status?.last_scraped
     ? new Date(status.last_scraped + "T00:00:00").toLocaleDateString("en-US", {
@@ -97,14 +111,27 @@ export default function Sidebar({ onClear }: { onClear: () => void }) {
         </section>
       </div>
 
-      {/* Clear chat */}
-      <div className="p-4">
-        <button
-          onClick={onClear}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-neutral-700 bg-neutral-50 hover:bg-neutral-100 rounded-full transition-colors"
-        >
-          🗑 Clear chat
-        </button>
+      {/* Footer: user + actions */}
+      <div className="p-4 border-t border-neutral-100 space-y-2">
+        {email && (
+          <p className="text-xs text-center truncate px-1" style={{ color: "#7B90A0" }}>
+            {email}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <button
+            onClick={onClear}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-700 bg-neutral-50 hover:bg-neutral-100 rounded-full transition-colors"
+          >
+            🗑 Clear
+          </button>
+          <button
+            onClick={handleSignOut}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-neutral-500 bg-neutral-50 hover:bg-neutral-100 rounded-full transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </aside>
   )

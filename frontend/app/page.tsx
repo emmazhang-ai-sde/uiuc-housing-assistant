@@ -6,6 +6,7 @@ import UserBubble from "@/components/UserBubble"
 import AssistantMessage from "@/components/AssistantMessage"
 import FilterPanel from "@/components/FilterPanel"
 import { search, Listing, Filters, DEFAULT_FILTERS } from "@/lib/api"
+import { createClient } from "@/lib/supabase/client"
 import PropertyDrawer from "@/components/PropertyDrawer"
 
 type Message =
@@ -44,7 +45,9 @@ export default function Home() {
     setMessages(prev => [...prev, { role: "user", text: q, filters: filtersSnapshot }])
     setLoading(true)
     try {
-      const res = await search(q, filtersSnapshot)
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await search(q, filtersSnapshot, session?.access_token)
       setMessages(prev => [
         ...prev,
         { role: "assistant", answer: res.answer, listings: res.listings, maxPricePerBed, query: q, filters: filtersSnapshot },

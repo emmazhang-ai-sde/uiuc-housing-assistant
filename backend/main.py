@@ -1,12 +1,28 @@
 import os
 import sqlite3
-from fastapi import FastAPI
+import jwt
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from rag.rag_chain import extract_filters, merge_filters, build_where, get_filtered_docs, filter_by_location, summarize
 from config import SNAPSHOTS_DIR
 
 app = FastAPI()
+
+_security   = HTTPBearer()
+_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(_security)):
+    try:
+        jwt.decode(
+            credentials.credentials,
+            _JWT_SECRET,
+            algorithms=["HS256"],
+            audience="authenticated",
+        )
+    except jwt.PyJWTError as e:
+        raise HTTPException(status_code=401, detail=f"Invalid or expired token: {e}")
 
 _raw = os.getenv("ALLOWED_ORIGINS", "*")
 _origins = [o.strip() for o in _raw.split(",")] if _raw != "*" else ["*"]
@@ -52,7 +68,7 @@ def status():
 
 
 @app.post("/api/search")
-def search(req: SearchRequest):
+def search(req: SearchRequest, _=Depends(verify_token)):
     # Step 1: extract structured filters from the NL query
     extracted = extract_filters(req.query)
 
