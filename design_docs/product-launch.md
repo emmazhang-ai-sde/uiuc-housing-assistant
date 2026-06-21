@@ -29,20 +29,20 @@ This is a non-commercial portfolio project that scrapes publicly accessible hous
 | **Private Beta** | ~30 invited @illinois.edu students | After waitlist review |
 | **Public Launch** | All @illinois.edu students | After beta feedback |
 
-### 1.5.2 Coming Soon page — **Implemented**
+### 1.5.2 Coming Soon page — **Live**
 
 File: `frontend/app/coming-soon/page.tsx`
 
-URL: `uiuc-housing-ai.com` (root `/`, when `NEXT_PUBLIC_LAUNCH_MODE=coming_soon`)
+URL: `uiuc-housing-ai.com` (root `/`, when `LAUNCH_MODE=coming_soon` in Vercel)
 
 Content (as built):
 - Headline: **"AI-Powered Housing Search for UIUC Students"**
 - Subheadline: "Search hundreds of real listings near campus using plain English — no filters, no scrolling, just ask."
 - Badge: "Private Beta — Coming Soon"
-- Email input: collects `@illinois.edu` addresses; front-end validates domain before submit
-- "Notify me" button → inserts into Supabase `waitlist` table via anon key
-- Duplicate email: catches Postgres error code `23505` → shows "You're already on the list!"
-- Success state: "You're on the list! We'll email {email} when beta opens."
+- NetID input: user types only the NetID prefix; `@illinois.edu` is appended in the UI and on submit
+- "Notify me" button → inserts full email into Supabase `waitlist` table via anon key
+- Duplicate email: Postgres error code `23505` → treated same as success (shows success card, no red error)
+- Success state: "You're on the list! We'll email {netid}@illinois.edu when beta opens."
 
 Design: `bg-neutral-100`, white card with soft shadow, `#7B90A0` accent (Morandi).
 
@@ -67,7 +67,7 @@ The Coming Soon page uses the Supabase anon key to insert — no login required.
 
 ### 1.5.4 Access control via `LAUNCH_MODE` env var
 
-`proxy.ts` checks `NEXT_PUBLIC_LAUNCH_MODE`:
+`proxy.ts` (Next.js Edge Middleware) reads `LAUNCH_MODE`:
 
 | Value | Unauthenticated user sees |
 |-------|--------------------------|
@@ -76,9 +76,21 @@ The Coming Soon page uses the Supabase anon key to insert — no login required.
 
 Authenticated users (invited beta testers) always reach the real app regardless of `LAUNCH_MODE`.
 
-**Vercel env vars to set:**
-- Now: `NEXT_PUBLIC_LAUNCH_MODE=coming_soon`
-- When beta opens: change to `NEXT_PUBLIC_LAUNCH_MODE=live`
+**Vercel env vars:**
+- Now: `LAUNCH_MODE=coming_soon`
+- When beta opens: change to `LAUNCH_MODE=live` → triggers auto-redeploy
+
+> **Gotcha — use `LAUNCH_MODE`, not `NEXT_PUBLIC_LAUNCH_MODE`:**
+> `NEXT_PUBLIC_` variables are baked into the client bundle at build time and are not reliably available in Next.js Edge Middleware (proxy.ts) at runtime. Regular server-side env vars (no prefix) are injected into the Edge Runtime by Vercel at request time and work correctly.
+
+> **Gotcha — Vercel env var UI value vs note:**
+> When adding an env var via Environments → Production → Add Environment Variable, there are two text fields: **Value** and **Note (Optional)**. The value (`coming_soon`) must go in the **Value** field. The Note field is just a label for your own reference — it is NOT the variable's value and will not be used.
+
+> **Gotcha — Vercel env var location:**
+> Environment Variables for a project are NOT in Team Settings. Go to: project page → Settings → Environments → click **Production** → scroll down to **Environment Variables** section → **Add Environment Variable**.
+
+> **Gotcha — Supabase anon key format:**
+> Supabase now shows two tabs on the API Keys page: "Publishable and secret API keys" (new `sb_publishable_...` format) and "Legacy anon, service_role API keys". The existing `@supabase/ssr` client (`createBrowserClient` / `createServerClient`) requires the **Legacy** JWT format (`eyJhbGci...`). Do not use the new `sb_publishable_...` key.
 
 ### 1.5.5 Beta invite flow
 
@@ -815,11 +827,11 @@ The safest design has the browser call the LLM API **directly** — the key neve
 ## Checklist
 
 - [ ] 1 — Start posting build progress publicly (LinkedIn / Twitter)
-- [x] 1.5.2 — Coming Soon page implemented (`frontend/app/coming-soon/page.tsx`)
-- [ ] 1.5.3 — Create `waitlist` table in Supabase SQL Editor
-- [ ] 1.5.4 — Set `NEXT_PUBLIC_LAUNCH_MODE=coming_soon` in Vercel env vars (Production environment)
-- [ ] 1.5.4 — Add `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` to Vercel env vars (use Legacy tab in Supabase)
-- [ ] 1.5 — Redeploy Vercel; verify waitlist form stores emails in Supabase
+- [x] 1.5.2 — Coming Soon page implemented and live (`frontend/app/coming-soon/page.tsx`)
+- [x] 1.5.3 — `waitlist` table created in Supabase with RLS + public insert policy
+- [x] 1.5.4 — `LAUNCH_MODE=coming_soon` set in Vercel Production env vars
+- [x] 1.5.4 — `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` added to Vercel (Legacy JWT format)
+- [x] 1.5 — Coming Soon page live at `uiuc-housing-ai.com`; waitlist form working
 - [x] 2.2 — Groq LLM implemented; `.env.example` created; tested locally
 - [x] 2.3 — Deploy FastAPI to Railway; verify `/api/search`
 - [x] 2.4 — Deploy Next.js to Vercel; verify end-to-end search
