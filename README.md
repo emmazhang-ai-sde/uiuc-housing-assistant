@@ -17,183 +17,33 @@ Next.js + React chat UI backed by a FastAPI server — ask a question, get listi
 ![Screenshot](screenshot.png)
 
 
-## Architecture — How RAG + LangChain Work
+## Architecture — RAG Pipeline
 
-The system runs in two phases: **Build** (run once to index listings) and **Query** (runs on every student question).
+The system runs in two phases: **Build** (index listings into Chroma once) and **Query** (answer each student question).
 
-### Phase 1 — Build the Knowledge Base (`ingest.py`)
+### Query pipeline — 5 steps
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        DATA PIPELINE                            │
-└─────────────────────────────────────────────────────────────────┘
+1. **LLM extracts structured parameters** — `"2BR under $900 near Grainger"` → `{beds: 2, max_price_per_bed: 900, location_hint: "Grainger"}`
+2. **Chroma metadata pre-filter** — narrow the candidate pool by exact criteria (price, beds, availability) before touching vectors
+3. **Semantic similarity retrieval** — embed the query with `all-MiniLM-L6-v2`; rank the filtered pool (k=50); trim off-topic results by score gap
+4. **Proximity filter** — Haversine formula drops listings farther than 0.5 mi from the named landmark
+5. **LLM generates summary** — retrieved listings are passed as context; LLM writes one sentence summarizing what was found
 
-  Green Street          normalize_           ingest.py
-  Realty website  ───►  green_street.py ───► (LangChain)
-  (Playwright           raw JSON ──►
-   scraper)             SQLite DB
-                          │
-                          │  sqlite3.connect()
-                          ▼
-                   ┌─────────────┐
-                   │  SQLite DB  │   489 listings
-                   │  listings   │   (address, beds,
-                   │  table      │    price, url…)
-                   └──────┬──────┘
-                          │
-                          │  LangChain Document()
-                          ▼
-                   ┌─────────────────────────────┐
-                   │  LangChain Documents         │
-                   │                             │
-                   │  page_content: "2BR apt at  │
-                   │  503 E White St, $875/bed…" │
-                   │                             │
-                   │  metadata: {beds:2,          │
-                   │   price_low:875, url:…}      │
-                   └──────────────┬──────────────┘
-                                  │
-                                  │  HuggingFaceEmbeddings
-                                  │  all-MiniLM-L6-v2
-                                  ▼
-                   ┌─────────────────────────────┐
-                   │  Embedding Model             │
-                   │                             │
-                   │  "2BR apt at 503 E White…"  │
-                   │        │                    │
-                   │        ▼                    │
-                   │  [0.23, -0.41, 0.87, …]     │  ← 384-dim vector
-                   │  (numerical "meaning"        │
-                   │   fingerprint)               │
-                   └──────────────┬──────────────┘
-                                  │
-                                  │  Chroma.from_documents()
-                                  ▼
-                   ┌─────────────────────────────┐
-                   │       chroma_db/             │
-                   │   (Chroma Vector Store)      │
-                   │                             │
-                   │   doc_1 → [0.23,-0.41,…]    │
-                   │   doc_2 → [0.11, 0.67,…]    │
-                   │   doc_3 → [-0.05,0.33,…]    │
-                   │      … 489 vectors …         │
-                   └─────────────────────────────┘
-                        persisted to disk ✅
-```
+This is standard RAG: **Retrieve → Augment LLM context → Generate.**
 
-### Phase 2 — Answer a Student's Question (`rag_chain.py` + `app.py`)
+### AI tech stack
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        QUERY PIPELINE                           │
-│                  (LangChain LCEL chain)                         │
-└─────────────────────────────────────────────────────────────────┘
+| Component | Technology |
+|---|---|
+| Vector database | ChromaDB — semantic search |
+| Embedding model | `all-MiniLM-L6-v2` (HuggingFace Sentence Transformers, runs locally, bundled into Railway) |
+| Structured output extraction | LLM parses natural language query into a JSON filter object |
+| Hybrid retrieval | Vector similarity + metadata exact-match filter combined |
+| LLM (production) | Groq API — `llama-3.1-8b-instant` |
+| LLM (local dev) | Ollama — `llama3.1:8b` |
+| RAG framework | LangChain (`langchain-chroma`, `langchain-huggingface`, `langchain-groq`, `langchain-ollama`) |
 
-  Student types in Next.js UI (frontend/) → FastAPI (backend/main.py)
-  ────────────────────────────────────────────────────────────────────
-  "2BR under $900/bed — what's available?"
-          │
-          │  chain.invoke(question)
-          ▼
-  ┌──────────────────────────────────────────────────────────┐
-  │  STEP 1 — Embed the question (same model as ingest)      │
-  │                                                          │
-  │  "2BR under $900/bed…"  ──►  [0.19, -0.38, 0.91, …]    │
-  └───────────────────────────────────┬──────────────────────┘
-                                      │
-                                      ▼
-  ┌──────────────────────────────────────────────────────────┐
-  │  STEP 2 — Vector similarity search in Chroma (k=6)       │
-  │                                                          │
-  │  Query vector vs. all 489 stored vectors                 │
-  │                                                          │
-  │   doc_47  similarity: 0.94  ◄── best match              │
-  │   doc_112 similarity: 0.91                               │
-  │   doc_203 similarity: 0.88                               │
-  │   doc_8   similarity: 0.85                               │
-  │   doc_301 similarity: 0.83                               │
-  │   doc_77  similarity: 0.79                               │
-  │                                                          │
-  │  → Returns top 6 LangChain Document objects              │
-  └───────────────────────────────────┬──────────────────────┘
-                                      │  retriever.invoke()
-                                      │  also used by app.py
-                                      │  to build the table
-                                      ▼
-  ┌──────────────────────────────────────────────────────────┐
-  │  STEP 3 — Format docs into plain text (format_docs)      │
-  │                                                          │
-  │  "503 E White St · 2BR · $875/bed · Available…           │
-  │   ---                                                    │
-  │   601 S 6th St · 2BR · $860/bed · Leased…               │
-  │   ---  …"                                                │
-  └───────────────────────────────────┬──────────────────────┘
-                                      │
-                                      ▼
-  ┌──────────────────────────────────────────────────────────┐
-  │  STEP 4 — Fill the PromptTemplate                        │
-  │                                                          │
-  │  "You are a UIUC housing assistant…                      │
-  │                                                          │
-  │   LISTINGS:                                              │
-  │   {context}  ◄── the 6 retrieved docs go here           │
-  │                                                          │
-  │   STUDENT QUESTION:                                      │
-  │   {question} ◄── the original query goes here           │
-  │                                                          │
-  │   INSTRUCTIONS: …format as 📍🛏💰📅…"                   │
-  └───────────────────────────────────┬──────────────────────┘
-                                      │
-                                      ▼
-  ┌──────────────────────────────────────────────────────────┐
-  │  STEP 5 — Local LLM generates the answer (ChatOllama)    │
-  │                                                          │
-  │   llama3.1:8b running via Ollama                         │
-  │   (no internet, no API cost)                             │
-  │                                                          │
-  │  Input:  filled prompt (listings + question)             │
-  │  Output: formatted markdown response                     │
-  └───────────────────────────────────┬──────────────────────┘
-                                      │
-                                      ▼
-  ┌──────────────────────────────────────────────────────────┐
-  │  STEP 6 — StrOutputParser                                │
-  │                                                          │
-  │  Strips the LLM message object → plain Python string     │
-  └───────────────────────────────────┬──────────────────────┘
-                                      │
-                                      ▼
-  ┌──────────────────────────────────────────────────────────┐
-  │  Next.js frontend renders the response                   │
-  │                                                          │
-  │  ┌──────────────────────────────────────────────────┐   │
-  │  │  Listing Cards (grid)                            │   │
-  │  │  address · unit type · price/bed · availability  │   │
-  │  └──────────────────────────────────────────────────┘   │
-  │  ┌──────────────────────────────────────────────────┐   │
-  │  │  Summary Table (sortable by Beds or Price/mo)    │   │
-  │  │  Address | Unit | Beds↑ | Price/bed | Price/mo↑  │   │
-  │  │  503 E W.│ 2BR  │  2   │  $875     │  $1,750    │   │
-  │  │  …       │  …   │  …   │  …        │  …         │   │
-  │  └──────────────────────────────────────────────────┘   │
-  └──────────────────────────────────────────────────────────┘
-```
-
-### The LangChain LCEL Chain in One Line
-
-The entire query pipeline (Steps 1–6) is expressed as a single composable chain in `rag_chain.py`:
-
-```python
-chain = (
-    {"context": retriever | format_docs,        # Steps 1 + 2 + 3
-     "question": RunnablePassthrough()}          # passes question as-is
-    | prompt                                     # Step 4
-    | llm                                        # Step 5
-    | StrOutputParser()                          # Step 6
-)
-```
-
-The `|` pipe operator passes the output of each step into the input of the next — just like Unix pipes.
+For annotated pipeline diagrams and LangChain LCEL chain details, see [`design_docs/ai-pipeline.md`](design_docs/ai-pipeline.md).
 
 ---
 
@@ -201,13 +51,11 @@ The `|` pipe operator passes the output of each step into the input of the next 
 
 | Layer | Technology |
 |---|---|
-| **LLM** | Ollama · `llama3.1:8b` (local, no API cost) |
-| **RAG framework** | LangChain + Chroma vector store |
-| **Embeddings** | `all-MiniLM-L6-v2` via `sentence-transformers` |
 | **Scraping** | Playwright (headless Chromium) |
 | **Database** | SQLite (versioned snapshots in `snapshots/`) |
 | **Backend** | FastAPI + Uvicorn |
 | **Frontend** | Next.js (React, TypeScript, Tailwind) |
+| **Deployment** | Railway (backend) + Vercel (frontend) |
 | **Language** | Python 3.14 / TypeScript |
 
 
