@@ -19,6 +19,78 @@ This is a non-commercial portfolio project that scrapes publicly accessible hous
 
 ---
 
+## 1.5 Pre-Launch: Coming Soon Page & Beta Waitlist
+
+### 1.5.1 Launch phases
+
+| Phase | Who can access | When |
+|-------|---------------|------|
+| **Coming Soon** | No one — visitors see waitlist page only | Now → beta invite sent |
+| **Private Beta** | ~30 invited @illinois.edu students | After waitlist review |
+| **Public Launch** | All @illinois.edu students | After beta feedback |
+
+### 1.5.2 Coming Soon page — **Implemented**
+
+File: `frontend/app/coming-soon/page.tsx`
+
+URL: `uiuc-housing-ai.com` (root `/`, when `NEXT_PUBLIC_LAUNCH_MODE=coming_soon`)
+
+Content (as built):
+- Headline: **"AI-Powered Housing Search for UIUC Students"**
+- Subheadline: "Search hundreds of real listings near campus using plain English — no filters, no scrolling, just ask."
+- Badge: "Private Beta — Coming Soon"
+- Email input: collects `@illinois.edu` addresses; front-end validates domain before submit
+- "Notify me" button → inserts into Supabase `waitlist` table via anon key
+- Duplicate email: catches Postgres error code `23505` → shows "You're already on the list!"
+- Success state: "You're on the list! We'll email {email} when beta opens."
+
+Design: `bg-neutral-100`, white card with soft shadow, `#7B90A0` accent (Morandi).
+
+### 1.5.3 Waitlist storage — Supabase `waitlist` table
+
+Run in Supabase SQL Editor:
+```sql
+CREATE TABLE waitlist (
+  id         uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
+  email      text        UNIQUE NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE waitlist ENABLE ROW LEVEL SECURITY;
+
+-- Anyone (including unauthenticated visitors) can add their email
+CREATE POLICY "Public insert" ON waitlist
+  FOR INSERT WITH CHECK (true);
+```
+
+The Coming Soon page uses the Supabase anon key to insert — no login required.
+
+### 1.5.4 Access control via `LAUNCH_MODE` env var
+
+`proxy.ts` checks `NEXT_PUBLIC_LAUNCH_MODE`:
+
+| Value | Unauthenticated user sees |
+|-------|--------------------------|
+| `coming_soon` | `/coming-soon` (waitlist page) |
+| `live` | `/login` (normal auth flow) |
+
+Authenticated users (invited beta testers) always reach the real app regardless of `LAUNCH_MODE`.
+
+**Vercel env vars to set:**
+- Now: `NEXT_PUBLIC_LAUNCH_MODE=coming_soon`
+- When beta opens: change to `NEXT_PUBLIC_LAUNCH_MODE=live`
+
+### 1.5.5 Beta invite flow
+
+1. Review waitlist in Supabase → `SELECT * FROM waitlist ORDER BY created_at`
+2. Pick ~30 testers
+3. In Supabase → Authentication → Users → **Invite user** (sends a magic link directly)
+4. Beta tester clicks link → session created → lands on real app
+5. Collect feedback for 1–2 weeks, fix issues
+6. Set `LAUNCH_MODE=live` → public launch
+
+---
+
 ## 2. Deploy — Vercel (frontend) + Railway (backend)
 
 ### 2.1 Pre-deploy status
@@ -111,26 +183,38 @@ The `NEXT_PUBLIC_` prefix bakes the value into the browser bundle at build time 
   - Most common causes: wrong `NEXT_PUBLIC_API_URL`, or CORS not yet configured
 - Both Railway and Vercel auto-redeploy within ~2 min on every `git push` to `main`
 
-### 2.5 Custom Domain (optional)
+### 2.5 Custom Domain
 
-Register a domain (e.g. `uiuchousing.xyz`, ~$10/yr) and add it in Vercel → Project → Settings → Domains. Makes the project feel official; Vercel handles SSL automatically.
+Domain: **`uiuc-housing-ai.com`** — registered on Cloudflare.
+
+**How it was connected (2026-06-19):**
+
+1. Vercel → project → Settings → Domains → enter `uiuc-housing-ai.com` → Add
+2. Vercel showed "Invalid Configuration" and prompted to update DNS on Cloudflare
+3. Clicked **DNS Records** tab → Vercel offered **Auto configure** (OAuth flow to Cloudflare)
+4. Clicked **Authorize** → Vercel automatically added the required A record and CNAME to Cloudflare
+5. DNS propagated within a few minutes; `uiuc-housing-ai.com` now serves the frontend
+
+**Old Vercel subdomain:** `uiuc-housing-assistant-langchain-ra.vercel.app` was removed (not redirected — it had never been shared publicly).
+
+Vercel handles SSL automatically. No manual DNS record entry was needed.
 
 ### 2.6 Tighten CORS
 
-Once the Vercel URL is known, update `ALLOWED_ORIGINS` on Railway:
+Once the custom domain is live, update `ALLOWED_ORIGINS` on Railway:
 
 1. Service card → Variables tab → edit `ALLOWED_ORIGINS`
    - Before: `*`
-   - After: `https://uiuc-housing-assistant.vercel.app`
+   - After: `https://uiuc-housing-ai.com`
 2. Multiple domains (e.g. preview + production): comma-separated — `backend/main.py` splits on `,` automatically
 3. Save → Railway auto-redeploys
 
 Verify:
 ```bash
 curl -I -X OPTIONS https://<railway-url>/api/search \
-  -H "Origin: https://uiuc-housing-assistant.vercel.app" \
+  -H "Origin: https://uiuc-housing-ai.com" \
   -H "Access-Control-Request-Method: POST"
-# Expected: Access-Control-Allow-Origin: https://uiuc-housing-assistant.vercel.app
+# Expected: Access-Control-Allow-Origin: https://uiuc-housing-ai.com
 ```
 
 ### 2.7 What actually happened — deployment troubleshooting log
@@ -260,12 +344,12 @@ End-to-end search returned real listings on first try after locking CORS in step
 
 ---
 
-**Final live URLs (as of 2026-06-18)**
+**Final live URLs (as of 2026-06-19)**
 
 | Service | URL |
 |---------|-----|
 | Backend (Railway) | `https://alluring-joy-production-a6f2.up.railway.app` |
-| Frontend (Vercel) | `https://uiuc-housing-assistant-langchain-ra.vercel.app` |
+| Frontend | `https://uiuc-housing-ai.com` (custom domain via Cloudflare; old Vercel subdomain removed) |
 
 ---
 
@@ -318,14 +402,20 @@ PyJWT==2.9.0   # verifies Supabase JWT tokens in FastAPI
 
 ---
 
-### 3.5 Step 1 — Create Supabase project _(you do this, ~5 min)_
+### 3.5 Step 1 — Create Supabase project _(done: project `uknyhpwzvdevxfxkpxmy`)_
 
 1. [supabase.com](https://supabase.com) → New Project; name `uiuc-housing-assistant`, region US East
-2. **Project Settings** 
-  → **API Keys**
-    - → **anon / public key** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-    - → **JWT Secret** (under "JWT Settings") → `SUPABASE_JWT_SECRET`
-  → **Data API** **API URL** → `NEXT_PUBLIC_SUPABASE_URL`
+2. **Project Settings → API Keys**
+
+   > **Supabase new UI note (2026):** Supabase now shows two tabs on the API Keys page:
+   > - **"Publishable and secret API keys"** — new `sb_publishable_...` / `sb_secret_...` format. Do NOT use these with `@supabase/ssr` — incompatible with existing `createBrowserClient` / `createServerClient` calls.
+   > - **"Legacy anon, service_role API keys"** — the classic `anon` and `service_role` JWTs. Use these.
+
+   From the **Legacy** tab:
+   - **anon / public key** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **JWT Secret** (under Settings → JWT Settings) → `SUPABASE_JWT_SECRET`
+
+   **Project URL:** Settings → API Keys page → scroll down to **Data API** section → **API URL** → `NEXT_PUBLIC_SUPABASE_URL`
 
 3. **Project Settings → API → Data API** — configure these three toggles:
 
@@ -725,10 +815,15 @@ The safest design has the browser call the LLM API **directly** — the key neve
 ## Checklist
 
 - [ ] 1 — Start posting build progress publicly (LinkedIn / Twitter)
+- [x] 1.5.2 — Coming Soon page implemented (`frontend/app/coming-soon/page.tsx`)
+- [ ] 1.5.3 — Create `waitlist` table in Supabase SQL Editor
+- [ ] 1.5.4 — Set `NEXT_PUBLIC_LAUNCH_MODE=coming_soon` in Vercel env vars (Production environment)
+- [ ] 1.5.4 — Add `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` to Vercel env vars (use Legacy tab in Supabase)
+- [ ] 1.5 — Redeploy Vercel; verify waitlist form stores emails in Supabase
 - [x] 2.2 — Groq LLM implemented; `.env.example` created; tested locally
 - [x] 2.3 — Deploy FastAPI to Railway; verify `/api/search`
 - [x] 2.4 — Deploy Next.js to Vercel; verify end-to-end search
-- [ ] 2.5 — Register custom domain (optional)
+- [x] 2.5 — Custom domain `uiuc-housing-ai.com` live (Cloudflare + Vercel auto-configure)
 - [x] 2.6 — Tighten CORS: set `ALLOWED_ORIGINS` to Vercel domain
 - [ ] 3 — Set up Supabase Auth; restrict to `@illinois.edu`; wire `@supabase/ssr` in Next.js
 - [ ] 4.3 — Create DB schema (users, sessions, messages, usage)

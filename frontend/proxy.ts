@@ -2,6 +2,11 @@ import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 
 export async function proxy(request: NextRequest) {
+  // Skip auth in local development — Supabase free tier only allows 2 emails/hour
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -23,11 +28,14 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
-  const isPublic = path.startsWith("/login") || path.startsWith("/auth/callback")
+  const isPublic = path.startsWith("/login") ||
+                   path.startsWith("/auth/callback") ||
+                   path.startsWith("/coming-soon")
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
-    url.pathname = "/login"
+    const launchMode = process.env.NEXT_PUBLIC_LAUNCH_MODE ?? "live"
+    url.pathname = launchMode === "coming_soon" ? "/coming-soon" : "/login"
     return NextResponse.redirect(url)
   }
 
