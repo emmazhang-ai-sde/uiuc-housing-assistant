@@ -34,7 +34,7 @@ export async function proxy(request: NextRequest) {
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
-    const launchMode = process.env.NEXT_PUBLIC_LAUNCH_MODE ?? "live"
+    const launchMode = process.env.LAUNCH_MODE ?? "live"
     url.pathname = launchMode === "coming_soon" ? "/coming-soon" : "/login"
     return NextResponse.redirect(url)
   }
