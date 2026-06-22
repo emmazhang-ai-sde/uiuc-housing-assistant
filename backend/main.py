@@ -10,10 +10,15 @@ from config import SNAPSHOTS_DIR
 
 app = FastAPI()
 
-_security   = HTTPBearer()
+_security   = HTTPBearer(auto_error=False)
 _JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
+_DEV_MODE   = os.getenv("DEV_MODE", "false").lower() == "true"
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(_security)):
+    if _DEV_MODE:
+        return
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Missing token")
     try:
         jwt.decode(
             credentials.credentials,
