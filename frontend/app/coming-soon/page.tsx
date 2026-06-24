@@ -15,7 +15,7 @@ export default function ComingSoonPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.has("preview")) {
-      setNetid("uiuc-student")
+      setNetid("netid")
       setPosition(42)
       setTotalCount(42)
       setDone(true)
@@ -85,8 +85,8 @@ export default function ComingSoonPage() {
               { src: "/logos/company-logo-green-street-realty.png", alt: "Green Street Realty" },
               { src: "/logos/company-logo-university-group.png",    alt: "University Group" },
               { src: "/logos/company-logo-mhm-properties.png",      alt: "MHM Properties" },
-              { src: "/logos/company-logo-yugo.png",                alt: "Yugo" },
-              { src: "/logos/company-logo-seven.svg",               alt: "Seven" },
+              { src: "/logos/company-logo-yugo.webp",                alt: "Yugo" },
+              { src: "/logos/company-logo-707.svg",                 alt: "707" },
               { src: "/logos/company-logo-hub.svg",                 alt: "HUB" },
               { src: "/logos/company-logo-dean.svg",                alt: "Dean" },
               { src: "/logos/company-logo-roland.png",              alt: "Roland" },
@@ -106,16 +106,16 @@ export default function ComingSoonPage() {
         <div className="w-full">
           {done ? (
             <div className="space-y-1.5 py-2">
-              <p className="text-lg font-semibold text-neutral-900">
+              <p className="text-lg font-bold" style={{ color: "#2d8a4e" }}>
                 You&apos;re on the list
                 {position !== null && (
-                  <span className="text-neutral-900 font-normal"> — #{position}</span>
+                  <span> — #{position}</span>
                 )}
                 .
               </p>
               <p className="text-base text-neutral-900">
                 We&apos;ll email{" "}
-                <span className="font-mono" style={{ color: "#A16207" }}>
+                <span className="font-mono font-bold" style={{ color: "rgb(255, 95, 5)" }}>
                   {netid.trim().toLowerCase()}@illinois.edu
                 </span>{" "}
                 when beta opens.
@@ -150,7 +150,7 @@ export default function ComingSoonPage() {
         </div>
 
         {/* Why waitlist */}
-        <div className="w-full border-t border-neutral-200 pt-8 space-y-2 text-center">
+        <div className="w-full border-t border-black pt-8 space-y-2 text-center">
           <p className="text-base font-semibold text-neutral-900">Why a waitlist?</p>
           <p className="text-base text-neutral-900 leading-relaxed">
             I&apos;m not entirely sure how many people the backend can handle at once, so I&apos;m starting small.{" "}
@@ -159,7 +159,7 @@ export default function ComingSoonPage() {
         </div>
 
         {/* Can't wait section */}
-        <div className="w-full border-t border-neutral-200 pt-8 space-y-3 text-center">
+        <div className="w-full border-t border-black pt-8 space-y-3 text-center">
           <p className="text-base font-semibold text-neutral-900">Need housing before we launch? We&apos;ve got you.</p>
           <p className="text-base text-neutral-900 leading-relaxed">
           Join our 小红书 group <span className="font-semibold">UIUC-housing-ai website</span> and{" "}
