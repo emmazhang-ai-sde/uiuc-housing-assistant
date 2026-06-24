@@ -191,7 +191,7 @@ export default function ComingSoonPage() {
             rel="noopener noreferrer"
           >
             <img
-              src="/rednote-group-qr.jpeg"
+              src="/logos/rednote-qr.jpeg"
               alt="RedNote QR code"
               className="mx-auto w-72 h-72 object-cover rounded-xl"
             />
