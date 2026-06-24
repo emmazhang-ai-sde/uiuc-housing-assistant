@@ -11,6 +11,7 @@ export default function ComingSoonPage() {
   const [error, setError]       = useState("")
   const [loading, setLoading]   = useState(false)
   const [totalCount, setTotalCount] = useState<number | null>(null)
+  const [lang, setLang] = useState<"EN" | "CN">("EN")
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -159,43 +160,82 @@ export default function ComingSoonPage() {
         </div>
 
         {/* Can't wait section */}
-        <div className="w-full border-t border-black pt-8 space-y-3 text-center">
-          <p className="text-base font-semibold text-neutral-900">Need housing before we launch? We&apos;ve got you.</p>
-          <p className="text-base text-neutral-900 leading-relaxed">
-          Join our 小红书 group <span className="font-semibold">UIUC-housing-ai website</span> and{" "}
-            <a
-              href="https://www.xiaohongshu.com/user/profile/68d566db0000000021025f29"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold underline underline-offset-2"
-            >
-              @momo找工日记
-            </a>
-            {" "}(me) your housing requirements — I'll search manually and send you screenshots.
+        <div className="w-full border-t border-black pt-8 space-y-4 text-center">
+          <p className="text-base font-semibold text-neutral-900">
+            {lang === "EN" ? "Need housing before we launch? I’ll search manually for you." : "上线之前需要找房？我先帮你手动查。"}
           </p>
-          <p className="text-sm text-neutral-900">
-            RedNote →{" "}
-            <a
-              href="https://www.xiaohongshu.com/user/profile/68d566db0000000021025f29"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono font-semibold underline underline-offset-2"
+
+          {/* Toggle */}
+          <div className="border-t border-black w-full pt-4 flex justify-center gap-0">
+            <button
+              onClick={() => setLang("EN")}
+              className={`px-4 py-1.5 text-sm font-semibold border border-neutral-900 rounded-l-lg transition-colors cursor-pointer ${lang === "EN" ? "bg-neutral-900 text-white" : "bg-white text-neutral-900 hover:bg-neutral-100"}`}
             >
-              momo找工日记
-            </a>
-            {" "}→ 群聊 → <strong>UIUC-housing-ai website</strong>
-          </p>
-          <a
-            href="https://www.xiaohongshu.com/user/profile/68d566db0000000021025f29"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              src="/logos/rednote-qr.jpeg"
-              alt="RedNote QR code"
-              className="mx-auto w-72 h-72 object-cover rounded-xl"
-            />
-          </a>
+              EN
+            </button>
+            <button
+              onClick={() => setLang("CN")}
+              className={`px-4 py-1.5 text-sm font-semibold border border-neutral-900 rounded-r-lg transition-colors cursor-pointer ${lang === "CN" ? "bg-neutral-900 text-white" : "bg-white text-neutral-900 hover:bg-neutral-100"}`}
+            >
+              CN
+            </button>
+          </div>
+
+          {lang === "EN" ? (
+            <p className="text-base text-neutral-900">
+              On Reddit?{" "}
+              <a
+                href="https://www.reddit.com/r/uiuc_housing/comments/1ue4x31/comment/oth4qi9/?context=3"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline underline-offset-2"
+              >
+                DM me
+              </a>
+              {" "}your requirements — I&apos;ll search manually and send you screenshots.
+            </p>
+          ) : (
+            <>
+              <p className="text-base text-neutral-900 text-left">On Xiaohongshu (小红书)?</p>
+              <ol className="text-base text-neutral-900 leading-relaxed text-left space-y-1 list-decimal list-inside">
+                <li>搜索并关注{" "}
+                  <a
+                    href="https://www.xiaohongshu.com/user/profile/68d566db0000000021025f29"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    @momo在coding
+                  </a>
+                </li>
+                <li>点击「群聊」，加入 <span className="font-semibold">UIUC-housing-ai website</span></li>
+                <li>艾特我，告诉我你的找房需求——我会手动搜索，把截图发给你</li>
+              </ol>
+              <p className="text-sm text-neutral-900">
+                小红书 →{" "}
+                <a
+                  href="https://www.xiaohongshu.com/user/profile/68d566db0000000021025f29"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono font-semibold underline underline-offset-2"
+                >
+                  @momo在coding
+                </a>
+                {" "}→ 群聊 → <strong>UIUC-housing-ai website</strong>
+              </p>
+              <a
+                href="https://www.xiaohongshu.com/user/profile/68d566db0000000021025f29"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="/logos/rednote-qr.jpeg"
+                  alt="RedNote QR code"
+                  className="mx-auto w-72 h-auto object-contain rounded-xl"
+                />
+              </a>
+            </>
+          )}
         </div>
 
       </div>
