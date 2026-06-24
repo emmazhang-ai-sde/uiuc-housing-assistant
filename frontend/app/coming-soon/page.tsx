@@ -154,7 +154,7 @@ export default function ComingSoonPage() {
           <p className="text-base font-semibold text-neutral-900">Why a waitlist?</p>
           <p className="text-base text-neutral-900 leading-relaxed">
             I&apos;m not entirely sure how many people the backend can handle at once, so I&apos;m starting small.{" "}
-            <span className="font-bold" style={{ color: "rgb(255, 95, 5)" }}>Waitlist members will get first access when beta opens.</span>
+            <span className="font-bold" style={{ color: "#2d8a4e" }}>Waitlist members will get first access when beta opens.</span>
           </p>
         </div>
 
