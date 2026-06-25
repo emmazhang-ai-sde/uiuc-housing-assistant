@@ -12,6 +12,12 @@ export default function ComingSoonPage() {
   const [loading, setLoading]   = useState(false)
   const [totalCount, setTotalCount] = useState<number | null>(null)
   const [lang, setLang] = useState<"EN" | "CN">("EN")
+  const [referral, setReferral] = useState<string>("")
+  const [otherText, setOtherText] = useState<string>("")
+  const [netidFocused, setNetidFocused] = useState(false)
+
+  const referralSourcesCN = ["小红书 (RedNote)", "微信 (WeChat)"]
+  const referralSourcesEN = ["Reddit", "LinkedIn", "X"]
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -37,7 +43,11 @@ export default function ComingSoonPage() {
     setLoading(true)
     setError("")
     const supabase = createClient()
-    const { error: err } = await supabase.from("waitlist").insert({ email })
+    const referralValue = referral === "Others" ? (otherText.trim() || "Others") : referral
+    const { error: err } = await supabase.from("waitlist").insert({
+      email,
+      ...(referralValue ? { referral: referralValue } : {}),
+    })
     if (err && err.code !== "23505") {
       setError(err.message)
     } else {
@@ -97,7 +107,7 @@ export default function ComingSoonPage() {
             ))}
           </div>
           {totalCount !== null && totalCount > 0 && (
-            <p className="text-base font-semibold" style={{ color: "rgb(255, 95, 5)" }}>
+            <p className="text-base font-semibold underline underline-offset-2" style={{ color: "rgb(255, 95, 5)" }}>
 🔥 {totalCount} UIUC student{totalCount !== 1 ? "s" : ""} already on the waitlist!
             </p>
           )}
@@ -124,12 +134,81 @@ export default function ComingSoonPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Referral source */}
+              <div className="flex flex-col gap-2 text-left">
+                <p className="text-sm font-semibold mt-1 mb-1" style={{ color: "rgb(255, 95, 5)" }}>How did you hear about us?</p>
+                {[referralSourcesCN, referralSourcesEN].map((group, i) => (
+                  <div key={i} className="flex flex-wrap gap-2">
+                    {group.map(source => (
+                      <button
+                        key={source}
+                        type="button"
+                        onClick={() => setReferral(prev => prev === source ? "" : source)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+                          referral === source
+                            ? "text-white"
+                            : "bg-white text-neutral-700 border-neutral-300 hover:border-neutral-500"
+                        }`}
+                        style={referral === source ? { backgroundColor: "rgb(255, 95, 5)", borderColor: "rgb(255, 95, 5)" } : {}}
+                      >
+                        {source}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+                {/* Friends + Others row */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReferral(prev => prev === "Friends" ? "" : "Friends")}
+                    className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+                      referral === "Friends"
+                        ? "text-white"
+                        : "bg-white text-neutral-700 border-neutral-300 hover:border-neutral-500"
+                    }`}
+                    style={referral === "Friends" ? { backgroundColor: "rgb(255, 95, 5)", borderColor: "rgb(255, 95, 5)" } : {}}
+                  >
+                    Friends
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReferral(prev => prev === "Others" ? "" : "Others")}
+                    className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+                      referral === "Others"
+                        ? "text-white"
+                        : "bg-white text-neutral-700 border-neutral-300 hover:border-neutral-500"
+                    }`}
+                    style={referral === "Others" ? { backgroundColor: "rgb(255, 95, 5)", borderColor: "rgb(255, 95, 5)" } : {}}
+                  >
+                    Others
+                  </button>
+                  {referral === "Others" && (
+                    <input
+                      type="text"
+                      value={otherText}
+                      onChange={e => setOtherText(e.target.value)}
+                      placeholder="Tell us how you found us"
+                      className="flex-1 px-3 py-2 text-sm rounded-xl border focus:outline-none bg-white text-neutral-900 placeholder-neutral-400 transition-colors"
+                      style={{ borderColor: "rgb(255, 95, 5)" }}
+                    />
+                  )}
+                </div>
+              </div>
               <div className="flex flex-col gap-2">
-                <div className="flex items-center rounded-xl border border-neutral-200 bg-neutral-50 overflow-hidden focus-within:border-neutral-400 focus-within:bg-white transition-all">
+                <p className="text-sm font-semibold text-left mt-1 mb-1" style={{ color: "rgb(255, 95, 5)" }}>Enter your NetID to join</p>
+                <div
+                  className="flex items-center rounded-xl border overflow-hidden transition-all"
+                  style={{
+                    borderColor: netidFocused ? "rgb(255, 95, 5)" : "rgb(229, 229, 229)",
+                    backgroundColor: "white",
+                  }}
+                >
                   <input
                     type="text"
                     value={netid}
                     onChange={e => setNetid(e.target.value)}
+                    onFocus={() => setNetidFocused(true)}
+                    onBlur={() => setNetidFocused(false)}
                     placeholder="write your netid here"
                     required
                     className="flex-1 px-4 py-3 text-base placeholder-neutral-400 focus:outline-none bg-transparent" style={{ color: "rgb(255, 95, 5)" }}
@@ -159,14 +238,10 @@ export default function ComingSoonPage() {
           </p>
         </div>
 
-        {/* Can't wait section */}
+        {/* Can’t wait section */}
         <div className="w-full border-t border-black pt-8 space-y-4 text-center">
-          <p className="text-base font-semibold text-neutral-900">
-            {lang === "EN" ? "Need housing before we launch? I’ll search manually for you." : "上线之前需要找房？我先帮你手动查。"}
-          </p>
-
           {/* Toggle */}
-          <div className="border-t border-black w-full pt-4 flex justify-center gap-0">
+          <div className="flex justify-center gap-0">
             <button
               onClick={() => setLang("EN")}
               className={`px-4 py-1.5 text-sm font-semibold border border-neutral-900 rounded-l-lg transition-colors cursor-pointer ${lang === "EN" ? "bg-neutral-900 text-white" : "bg-white text-neutral-900 hover:bg-neutral-100"}`}
@@ -180,6 +255,10 @@ export default function ComingSoonPage() {
               CN
             </button>
           </div>
+
+          <p className="text-base font-semibold text-neutral-900">
+            {lang === "EN" ? "Need housing before we launch? I’ll search manually for you." : "上线之前需要找房？我先帮你手动查。"}
+          </p>
 
           {lang === "EN" ? (
             <p className="text-base text-neutral-900">
