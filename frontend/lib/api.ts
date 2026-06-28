@@ -29,20 +29,22 @@ export interface Listing {
 // Phase 6: explicit UI filters sent alongside every NL query
 export interface Filters {
   beds: number[] | null
-  available_only: boolean | null
+  availability_window: "now" | "june_2026" | "july_2026" | "august_2026" | "leased" | null
   max_price_per_bed: number | null
   company: string | null
   buffer_type: "percent" | "fixed" | "exact" | null  // how the price buffer is applied
   buffer_value: number | null                         // % or $ amount; null when type is "exact"
+  property_type: string | null                        // "Apartment" | "House" | "Single Family Home"
 }
 
 export const DEFAULT_FILTERS: Filters = {
   beds: null,
-  available_only: null,
+  availability_window: null,
   max_price_per_bed: null,
   company: null,
   buffer_type: "percent",
   buffer_value: 15,
+  property_type: null,
 }
 
 export interface SearchResponse {

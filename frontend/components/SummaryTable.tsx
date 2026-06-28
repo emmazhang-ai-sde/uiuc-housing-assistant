@@ -12,8 +12,10 @@ const STATUS_BADGE_STYLE = {
   unavailable: "bg-neutral-100 text-black",
 } as const
 
-type SortKey = "price" | "beds" | "availability"
+type SortKey = "price" | "beds" | "availability" | "walk"
 type SortDir = "asc" | "desc"
+
+export type TableRow = { listing: Listing; walkMins: number | null; driveMins: number | null }
 
 function priceStr(low: number | null | undefined, high: number | null | undefined): string {
   if (low == null) return "—"
@@ -93,8 +95,8 @@ export default function SummaryTable({
   listings,
   maxPricePerBed,
 }: {
-  listings: Listing[]
-  maxPricePerBed: number | null  // Phase 6: used to badge over-budget rows
+  listings: TableRow[]
+  maxPricePerBed: number | null
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("price")
   const [sortDir, setSortDir] = useState<SortDir>("asc")
@@ -103,6 +105,8 @@ export default function SummaryTable({
   const tableRef = useRef<HTMLDivElement>(null)
 
   if (!listings.length) return null
+
+  const hasWalk = listings.some(r => r.walkMins != null)
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -116,20 +120,25 @@ export default function SummaryTable({
   const sorted = [...listings].sort((a, b) => {
     let diff = 0
     if (sortKey === "price") {
-      diff = priceValue(a) - priceValue(b)
+      diff = priceValue(a.listing) - priceValue(b.listing)
     } else if (sortKey === "beds") {
-      diff = a.beds - b.beds
-    } else {
-      diff = availabilitySortValue(a.availability) - availabilitySortValue(b.availability)
+      diff = a.listing.beds - b.listing.beds
+    } else if (sortKey === "availability") {
+      diff = availabilitySortValue(a.listing.availability) - availabilitySortValue(b.listing.availability)
+    } else if (sortKey === "walk") {
+      if (a.walkMins == null && b.walkMins == null) diff = 0
+      else if (a.walkMins == null) return 1
+      else if (b.walkMins == null) return -1
+      else diff = a.walkMins - b.walkMins
     }
-    if (diff === 0) diff = priceValue(a) - priceValue(b)
+    if (diff === 0) diff = priceValue(a.listing) - priceValue(b.listing)
     return sortDir === "asc" ? diff : -diff
   })
 
   async function copyTable() {
     try {
-      const html = tableRowsHtml(sorted)
-      const tsv = tableRowsTsv(sorted)
+      const html = tableRowsHtml(sorted.map(r => r.listing))
+      const tsv = tableRowsTsv(sorted.map(r => r.listing))
 
       if (navigator.clipboard && "ClipboardItem" in window) {
         await navigator.clipboard.write([
@@ -187,11 +196,12 @@ export default function SummaryTable({
           <colgroup>
             <col className="w-[4%]" />
             <col className="w-[10%]" />
-            <col className="w-[26%]" />
-            <col className="w-[22%]" />
+            <col className={hasWalk ? "w-[22%]" : "w-[26%]"} />
+            <col className={hasWalk ? "w-[18%]" : "w-[22%]"} />
             <col className="w-[8%]" />
-            <col className="w-[12%]" />
-            <col className="w-[18%]" />
+            <col className={hasWalk ? "w-[11%]" : "w-[12%]"} />
+            <col className={hasWalk ? "w-[16%]" : "w-[18%]"} />
+            {hasWalk && <col className="w-[11%]" />}
           </colgroup>
           <thead>
             <tr className="text-[11px] font-bold uppercase text-neutral-400 tracking-wider">
@@ -217,10 +227,18 @@ export default function SummaryTable({
               >
                 Availability <SortArrow col="availability" sortKey={sortKey} dir={sortDir} />
               </th>
+              {hasWalk && (
+                <th
+                  className="px-3 py-3.5 bg-neutral-50 whitespace-nowrap cursor-pointer select-none hover:text-neutral-600 transition-colors"
+                  onClick={() => handleSort("walk")}
+                >
+                  Walk <SortArrow col="walk" sortKey={sortKey} dir={sortDir} />
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {sorted.map((l, i) => {
+            {sorted.map(({ listing: l, walkMins }, i) => {
               const statusStyle = STATUS_BADGE_STYLE[availabilityStatus(l.availability)]
               const overBudget =
                 maxPricePerBed !== null &&
@@ -262,6 +280,11 @@ export default function SummaryTable({
                       ))}
                     </span>
                   </td>
+                  {hasWalk && (
+                    <td className="px-3 py-3.5 text-xs text-neutral-500 tabular-nums">
+                      {walkMins != null ? `~${walkMins} min` : "—"}
+                    </td>
+                  )}
                 </tr>
               )
             })}

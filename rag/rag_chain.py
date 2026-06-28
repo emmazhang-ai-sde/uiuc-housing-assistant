@@ -60,7 +60,7 @@ def parse_json_output(text: str) -> dict:
 
 EXTRACT_PROMPT = """You are parsing a UIUC student's housing search query.
 Extract structured search parameters. If a field is not mentioned, set it to null.
-
+{history}
 Query: {query}
 
 Return ONLY valid JSON — no prose, no markdown fences:
@@ -68,15 +68,23 @@ Return ONLY valid JSON — no prose, no markdown fences:
   "beds": <integer or null>,
   "max_price_per_bed": <integer or null>,
   "max_price_total": <integer or null>,
-  "available_only": <true | false | null>,
+  "availability_window": <"now" | "june_2026" | "july_2026" | "august_2026" | "leased" | null>,
   "location_hint": "<string or null>"
 }}
 
+availability_window rules:
+- "now" → query mentions available now, immediate move-in, or move-in today
+- "june_2026" → query mentions June or June 2026
+- "july_2026" → query mentions July or July 2026
+- "august_2026" → query mentions August, fall semester, or fall 2026
+- "leased" → query asks about leased or unavailable listings
+- null → not mentioned
+
 Examples:
-- "1 bed under $900 available" → {{"beds": 1, "max_price_per_bed": 900, "available_only": true, "max_price_total": null, "location_hint": null}}
-- "cheap 2br near campus" → {{"beds": 2, "max_price_per_bed": null, "max_price_total": null, "available_only": null, "location_hint": "campus"}}
-- "show me everything" → {{"beds": null, "max_price_per_bed": null, "max_price_total": null, "available_only": null, "location_hint": null}}
-- "studio apartment available" → {{"beds": 0, "max_price_per_bed": null, "max_price_total": null, "available_only": true, "location_hint": null}}
+- "1 bed under $900 available now" → {{"beds": 1, "max_price_per_bed": 900, "availability_window": "now", "max_price_total": null, "location_hint": null}}
+- "cheap 2br near campus" → {{"beds": 2, "max_price_per_bed": null, "max_price_total": null, "availability_window": null, "location_hint": "campus"}}
+- "show me everything" → {{"beds": null, "max_price_per_bed": null, "max_price_total": null, "availability_window": null, "location_hint": null}}
+- "studio available for fall" → {{"beds": 0, "max_price_per_bed": null, "max_price_total": null, "availability_window": "august_2026", "location_hint": null}}
 """
 
 _extract_chain = (
@@ -86,11 +94,19 @@ _extract_chain = (
 )
 
 
-def extract_filters(query: str) -> dict:
-    """Extract structured filter params from a natural language query.
-    Returns empty dict on failure — caller falls back to unfiltered search."""
+def extract_filters(query: str, history: list[dict] | None = None) -> dict:
+    # [Step 3] Prepend last 3 exchanges so the LLM can resolve multi-turn references
+    # (e.g. "那附近" → location from a previous message, "what about 2BR?" → keep prior filters)
+    history_text = ""
+    if history:
+        lines = []
+        for msg in history[-6:]:
+            role = "User" if msg["role"] == "user" else "Assistant"
+            lines.append(f"{role}: {msg['content']}")
+        history_text = "Recent conversation:\n" + "\n".join(lines) + "\n\n"
+
+    raw = _extract_chain.invoke({"query": query, "history": history_text})
     try:
-        raw = _extract_chain.invoke({"query": query})
         return parse_json_output(raw)
     except Exception:
         return {}
@@ -147,11 +163,23 @@ def build_where(filters: dict) -> dict | None:
         ceiling = int(filters["max_price_total"] * (1 + PRICE_FLEX_MARGIN))
         clauses.append({"price_total_low": {"$lte": ceiling}})
 
-    if filters.get("available_only"):
-        clauses.append({"is_available": {"$eq": True}})
+    window = filters.get("availability_window")
+    if window == "now":
+        clauses.append({"is_available_now": {"$eq": True}})
+    elif window == "june_2026":
+        clauses.append({"is_available_june": {"$eq": True}})
+    elif window == "july_2026":
+        clauses.append({"is_available_july": {"$eq": True}})
+    elif window == "august_2026":
+        clauses.append({"is_available_august": {"$eq": True}})
+    elif window == "leased":
+        clauses.append({"is_leased": {"$eq": True}})
 
     if filters.get("company"):
         clauses.append({"company": {"$eq": filters["company"]}})
+
+    if filters.get("property_type"):
+        clauses.append({"property_type": {"$eq": filters["property_type"]}})
 
     if not clauses:
         return None
@@ -190,6 +218,7 @@ _LANDMARK_REGISTRY: list[tuple[list[str], tuple[float, float]]] = [
     (["main quad", "quad"],                            (40.1072, -88.2270)),
     (["arc", "recreation center"],                     (40.1016, -88.2370)),
     (["green street", "green st", "campustown"],       (40.1096, -88.2100)),
+    (["green and 6th", "green/6th", "green st/6th", "6th and green", "6th street and green"], (40.1102, -88.2302)),
     (["fresh international", "fresh market"],          (40.1112, -88.2445)),
     (["far east grocery", "far east market"],          (40.1157, -88.2323)),
     (["mcdonald", "mcdonalds"],                        (40.1105, -88.2298)),

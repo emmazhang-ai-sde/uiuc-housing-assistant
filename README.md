@@ -152,8 +152,7 @@ python -m pipeline.ingest
 **Terminal 1 — Backend:**
 ```bash
 source .venv/bin/activate
-uvicorn backend.main:app --reload --port 8000
-# → http://localhost:8001
+Q# → http://localhost:8001
 ```
 
 **Terminal 2 — Frontend:**

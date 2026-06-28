@@ -47,9 +47,15 @@ export const LANDMARKS: Landmark[] = [
 
   // ── Streets / districts ──────────────────────────────────────────────────
   {
-    name: "Green Street (Campustown)",
-    lat: 40.1096, lng: -88.2100,
-    aliases: ["green street", "green st", "campustown"],
+    name: "Green St & 6th St Intersection (Target)",
+    lat: 40.1102, lng: -88.2302,
+    aliases: ["green and 6th", "green/6th", "green st/6th", "6th and green", "6th street and green"],
+  },
+
+  {
+    name: "Green St & 5th St Intersection (Potbelly/Raising Cane's)",
+    lat: 40.11028704108461, lng: -88.23205324281514,
+    aliases: ["green and 5th", "green/5th", "green st/5th", "5th and green", "5th street and green"],
   },
 
   // ── Grocery / food ───────────────────────────────────────────────────────
@@ -63,18 +69,8 @@ export const LANDMARKS: Landmark[] = [
     lat: 40.1157, lng: -88.2323,
     aliases: ["far east", "far east grocery", "far east market", "asian grocery"],
   },
-  {
-    name: "McDonald's (Green St)",
-    lat: 40.1105, lng: -88.2298,
-    aliases: ["mcdonald's", "mcdonalds", "mcd", "mickey d's"],
-  },
 
-  // ── Retail / pharmacy ────────────────────────────────────────────────────
-  {
-    name: "Target (Campustown)",
-    lat: 40.1102, lng: -88.2302,
-    aliases: ["target", "campus target"],
-  },
+
   {
     name: "Walgreens (Green St)",
     lat: 40.1100, lng: -88.2327,

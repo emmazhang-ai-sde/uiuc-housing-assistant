@@ -1,28 +1,57 @@
-function inlineComputedStyles(source: Element, target: Element) {
-  const computed = window.getComputedStyle(source)
-  const targetElement = target as HTMLElement
+import { toBlob } from "html-to-image"
 
-  for (const property of computed) {
-    targetElement.style.setProperty(
-      property,
-      computed.getPropertyValue(property),
-      computed.getPropertyPriority(property)
-    )
+async function fetchDataUrl(src: string): Promise<string | null> {
+  try {
+    // Route external images through a server-side proxy to bypass CORS restrictions.
+    // Same-origin URLs (e.g. /logos/...) are fetched directly.
+    const url = src.startsWith("http")
+      ? `/api/proxy-image?url=${encodeURIComponent(src)}`
+      : src
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
   }
-
-  Array.from(source.children).forEach((sourceChild, index) => {
-    const targetChild = target.children[index]
-    if (targetChild) inlineComputedStyles(sourceChild, targetChild)
-  })
 }
 
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image()
-    image.onload = () => resolve(image)
-    image.onerror = reject
-    image.src = src
-  })
+// 1×1 transparent GIF — a safe data URL placeholder that html-to-image can inline
+// without making any network requests.
+const BLANK_GIF =
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+
+// Pre-inline <img> elements so SVG foreignObject can render them.
+// Images that can't be fetched (CORS-blocked) get their src replaced with a blank
+// data URL — keeping the external URL on the element would cause html-to-image's
+// internal SVG pipeline to attempt the load and reject with an error event.
+async function inlineImages(element: HTMLElement) {
+  const imgs = Array.from(element.querySelectorAll("img")) as HTMLImageElement[]
+  await Promise.all(
+    imgs.map(async (img) => {
+      const src = img.getAttribute("src") ?? ""
+      if (!src || src.startsWith("data:")) return
+      const dataUrl = await fetchDataUrl(src)
+      if (dataUrl) {
+        img.src = dataUrl
+      } else {
+        img.src = BLANK_GIF
+        img.style.visibility = "hidden"
+        const placeholder = document.createElement("div")
+        placeholder.style.cssText =
+          "position:absolute;inset:0;background:#e5e5e5;border-radius:inherit;"
+        if (img.parentElement) {
+          img.parentElement.style.position = "relative"
+          img.parentElement.appendChild(placeholder)
+        }
+      }
+    })
+  )
 }
 
 export function downloadBlob(blob: Blob, filename: string) {
@@ -37,44 +66,14 @@ export function downloadBlob(blob: Blob, filename: string) {
 }
 
 export async function elementToPngBlob(element: HTMLElement, scale = 2): Promise<Blob> {
-  await document.fonts.ready
-
-  const rect = element.getBoundingClientRect()
-  const width = Math.ceil(rect.width)
-  const height = Math.ceil(rect.height)
-  const clone = element.cloneNode(true) as HTMLElement
-
-  inlineComputedStyles(element, clone)
-  clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml")
-  clone.style.width = `${width}px`
-  clone.style.height = `${height}px`
-  clone.style.margin = "0"
-
-  const serialized = new XMLSerializer().serializeToString(clone)
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-      <foreignObject width="100%" height="100%">
-        ${serialized}
-      </foreignObject>
-    </svg>
-  `
-  const image = await loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`)
-  const canvas = document.createElement("canvas")
-  canvas.width = width * scale
-  canvas.height = height * scale
-
-  const context = canvas.getContext("2d")
-  if (!context) throw new Error("Canvas is not available.")
-
-  context.scale(scale, scale)
-  context.drawImage(image, 0, 0)
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
-      if (blob) resolve(blob)
-      else reject(new Error("Could not create PNG."))
-    }, "image/png")
+  await inlineImages(element)
+  const blob = await toBlob(element, {
+    pixelRatio: scale,
+    backgroundColor: "#f5f5f5",
+    skipFonts: false,
   })
+  if (!blob) throw new Error("html-to-image toBlob returned null")
+  return blob
 }
 
 export async function downloadElementPng(element: HTMLElement, filename: string) {

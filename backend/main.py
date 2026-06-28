@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from rag.rag_chain import extract_filters, merge_filters, build_where, get_filtered_docs, filter_by_location, summarize
 from config import SNAPSHOTS_DIR
 
+
 app = FastAPI()
 
 _security   = HTTPBearer(auto_error=False)
@@ -44,10 +45,11 @@ app.add_middleware(
 class FilterParams(BaseModel):
     beds: int | list[int] | None = None
     max_price_per_bed: int | None = None
-    available_only: bool | None = None
+    availability_window: str | None = None  # "now" | "june_2026" | "july_2026" | "august_2026" | "leased"
     company: str | None = None
     buffer_type: str | None = None   # "percent" | "fixed" | "exact"
     buffer_value: float | None = None
+    property_type: str | None = None  # "Apartment" | "House" | "Single Family Home"
 
 
 class SearchRequest(BaseModel):
@@ -94,6 +96,30 @@ def search(req: SearchRequest, _=Depends(verify_token)):
     # Step 4: LLM writes a one-line summary (no listing selection)
     summary = summarize(req.query, listings, merged)
 
+    return {
+        "answer":          summary,
+        "listings":        listings,
+        "filters_applied": {k: v for k, v in merged.items() if v is not None},
+    }
+
+
+# [Step 3] Conversational chat endpoint — accepts history so extract_filters can resolve
+# multi-turn references like "那附近" or "what about 2BR?"
+class ChatRequest(BaseModel):
+    conversation_id: str
+    message: str
+    history: list[dict] = []   # [{"role": "user"|"assistant", "content": str}]
+
+
+@app.post("/chat")
+async def chat(req: ChatRequest, _=Depends(verify_token)):
+    extracted = extract_filters(req.message, history=req.history)
+    merged    = merge_filters(extracted, {})
+    where     = build_where(merged)
+    docs      = get_filtered_docs(req.message, where)
+    docs      = filter_by_location(docs, merged.get("location_hint"))
+    listings  = [doc.metadata for doc in docs]
+    summary   = summarize(req.message, listings, merged)
     return {
         "answer":          summary,
         "listings":        listings,

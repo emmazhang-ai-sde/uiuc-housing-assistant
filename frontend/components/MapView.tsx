@@ -96,9 +96,10 @@ function priceLabel(l: Listing): string {
 
 interface Props {
   listings: Listing[]
+  walkMinsByUrl?: Record<string, number | null>
 }
 
-export default function MapView({ listings }: Props) {
+export default function MapView({ listings, walkMinsByUrl }: Props) {
   const [popup, setPopup]                   = useState<Listing | null>(null)
   const [landmarkPopup, setLandmarkPopup]   = useState<Landmark | null>(null)
   const mapped = listings.filter(l => l.lat != null && l.lng != null)
@@ -219,6 +220,9 @@ export default function MapView({ listings }: Props) {
               <div className={popup.is_available ? "text-green-700 font-medium" : "text-neutral-400"}>
                 {popup.availability}
               </div>
+              {walkMinsByUrl?.[popup.url] != null && (
+                <div className="text-neutral-500 text-[11px]">~{walkMinsByUrl[popup.url]} min walk</div>
+              )}
             </div>
           </Popup>
         )}

@@ -11,7 +11,7 @@ import PropertyDrawer from "@/components/PropertyDrawer"
 
 type Message =
   | { role: "user"; text: string; filters: Filters }
-  | { role: "assistant"; answer: string; listings: Listing[]; maxPricePerBed: number | null; query: string; filters: Filters }
+  | { role: "assistant"; answer: string; listings: Listing[]; maxPricePerBed: number | null; query: string; filters: Filters; filtersApplied: Record<string, unknown> }
 
 const SUGGESTED = [
   "2BR under $900/bed — what's available?",
@@ -50,12 +50,12 @@ export default function Home() {
       const res = await search(q, filtersSnapshot, session?.access_token)
       setMessages(prev => [
         ...prev,
-        { role: "assistant", answer: res.answer, listings: res.listings, maxPricePerBed, query: q, filters: filtersSnapshot },
+        { role: "assistant", answer: res.answer, listings: res.listings, maxPricePerBed, query: q, filters: filtersSnapshot, filtersApplied: res.filters_applied },
       ])
     } catch {
       setMessages(prev => [
         ...prev,
-        { role: "assistant", answer: "Something went wrong — is the backend running on port 8000?", listings: [], maxPricePerBed: null, query: q, filters: filtersSnapshot },
+        { role: "assistant", answer: "Something went wrong — is the backend running on port 8000?", listings: [], maxPricePerBed: null, query: q, filters: filtersSnapshot, filtersApplied: {} },
       ])
     } finally {
       setLoading(false)
@@ -63,13 +63,13 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen bg-neutral-100 overflow-hidden">
+    <div className="flex h-screen bg-neutral-100 overflow-hidden print:h-auto print:overflow-visible">
       <Sidebar onClear={() => setMessages([])} />
 
       <div className="flex flex-col flex-1 min-w-0">
 
         {/* Chat thread */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 print:overflow-visible">
           {messages.length === 0 ? (
             <EmptyState onSuggest={submit} />
           ) : (
@@ -84,6 +84,7 @@ export default function Home() {
                       maxPricePerBed={m.maxPricePerBed}
                       query={m.query}
                       filters={m.filters}
+                      filtersApplied={m.filtersApplied}
                       onSelect={setSelectedListing}
                     />
               )}
@@ -94,14 +95,16 @@ export default function Home() {
         </div>
 
         {/* Filter panel — Phase 6 */}
-        <FilterPanel
-          filters={filters}
-          onChange={setFilters}
-          onInteract={() => setComposerActive(true)}
-        />
+        <div className="print:hidden">
+          <FilterPanel
+            filters={filters}
+            onChange={setFilters}
+            onInteract={() => setComposerActive(true)}
+          />
+        </div>
 
         {/* Input bar */}
-        <div className="bg-neutral-100 px-6 py-4">
+        <div className="bg-neutral-100 px-6 py-4 print:hidden">
           <form
             onSubmit={e => { e.preventDefault(); submit(input) }}
             className={`flex gap-2 max-w-5xl mx-auto bg-white rounded-full p-1.5 transition-shadow ${

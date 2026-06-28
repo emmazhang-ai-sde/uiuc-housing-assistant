@@ -12,6 +12,27 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 - Drawer content: exterior photo, address, tagline, availability summary, amenities chips, laundry, utilities, lease dates
 - "View on website →" link inside the drawer
 
+### Walk/Drive Distance Sort & Print Support
+
+#### Added
+- `lib/osrm.ts` — OSRM routing client with `fetchWalkingSeconds` and `fetchDrivingSeconds`; results are per-listing arrays parallel to the `listings` prop
+- `AssistantMessage.tsx` — sort controls (by unit type, price, availability); landmark-based walking distance sort auto-resolved from `filtersApplied.location_hint`; walk/drive results cached per landmark per message
+- `ListingCard.tsx` — accepts `walkMins` and `driveMins` props; displays walking/driving time as small badges in the top-right corner alongside the availability badge
+- `MapView.tsx` — accepts `walkMinsByUrl` prop; shows walk time in listing popups
+- `SummaryTable.tsx` — added sortable "Walk" column (only rendered when walk data is present); refactored to accept `TableRow[]` (`{ listing, walkMins, driveMins }`) instead of `Listing[]`; `TableRow` type exported for reuse
+- `page.tsx` — `filtersApplied` field added to the assistant message type and threaded through from the API response; `print:` CSS utilities added so filter bar and input are hidden during print and the chat thread scrolls fully visible
+
+#### Changed
+- `lib/landmarks.ts` — replaced the generic "Green Street (Campustown)" and standalone McDonald's / Target pins with two precise intersection landmarks: Green & 6th St (Target) and Green & 5th St (Potbelly/Raising Cane's)
+
+#### Dependencies
+- Added `html-to-image` and `react-markdown`
+
+### Export (PNG) Rewrite
+
+#### Changed
+- `lib/exportDom.ts` — replaced the hand-rolled SVG/foreignObject/Canvas pipeline with `html-to-image`; external images are now pre-inlined via a `/api/proxy-image` server route to bypass CORS; images that still fail get a blank `data:` GIF placeholder so the export never throws on missing assets
+
 ### UI Polish Round 2
 
 #### Added
@@ -20,10 +41,15 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 #### Changed
 - `Sidebar.tsx` — "About" section restructured: data sources and listing counts as indented bullet lists; each company logo on its own line
-- `FilterPanel.tsx` — filter bar centered (`justify-center`); buffer control always visible (greyed out via `opacity-35 pointer-events-none` until a max price is set) instead of hidden conditionally
+- `FilterPanel.tsx` — filter bar centered (`justify-center`); buffer control always visible (greyed out via `opacity-35 pointer-events-none` until a max price is set) instead of hidden conditionally; **filter labels changed to `text-black font-bold`** (was `text-neutral-400`); inactive pill buttons changed to `text-neutral-900` (was `text-neutral-600`); buffer type order changed to `exact → +% → +$`; "All" source button is now always highlighted when `company === null` (removed `sourceTouched` guard)
 - `AssistantMessage.tsx` — card grid changed from 2 → 4 → settled on 3 columns per row
 - `ListingCard.tsx` — redesigned for 3-column layout: reduced padding/font sizes, elements stacked vertically; availability badge moved to top-right corner (absolute positioning); badge changed from `<span>` to `inline-block` so wrapped text renders as one solid background instead of per-line fragments; availability text splits at every comma, colon, or exclamation mark (lookbehind regex, punctuation retained); address font size increased one step
 - `SummaryTable.tsx` — company logos enlarged (`h-5` → `h-7`); "Link" column removed, address is now the hyperlink (Morandi `#7B90A0`, hover `#556070`); availability column uses same comma/colon/exclamation wrapping as card view
+
+### Coming-Soon Form Validation
+
+#### Added
+- `coming-soon/page.tsx` — `referralError` and `netidError` state; both fields are now validated before submission; error state renders inline with a yellow highlight and a "Please fill out this field. 💗" message on the label; referral source is always written to the database (no conditional spread); field label font size bumped from `text-sm` to `text-base`; `required` attribute removed from the NetID input in favour of custom JS validation
 
 ---
 

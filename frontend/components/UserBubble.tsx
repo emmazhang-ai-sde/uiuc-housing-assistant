@@ -10,81 +10,67 @@ const BED_OPTIONS: { label: string; value: number | null }[] = [
   { label: "4+",     value: 4 },
 ]
 
-const BUFFER_OPTIONS = [
-  ["percent", "+%"],
-  ["fixed", "+$"],
-  ["exact", "exact"],
-] as const
+const AVAIL_OPTIONS: { label: string; value: "now" | "june_2026" | "july_2026" | "august_2026" | "leased" | null }[] = [
+  { label: "All",     value: null },
+  { label: "Now",     value: "now" },
+  { label: "Jun '26", value: "june_2026" },
+  { label: "Jul '26", value: "july_2026" },
+  { label: "Aug '26", value: "august_2026" },
+  { label: "Leased",  value: "leased" },
+]
+
+const labelCls  = "text-black font-bold text-xs shrink-0"
+const pillBase  = "px-3 py-1 rounded-full text-xs font-medium"
+const pillOn    = `${pillBase} bg-black text-white`
+const pillOff   = `${pillBase} bg-neutral-100 text-neutral-900`
 
 function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
   const selectedBeds = filters.beds ?? []
-  const bufferType = filters.buffer_type ?? "percent"
-  const bufferValue = filters.buffer_value ?? (bufferType === "fixed" ? 50 : 15)
+  const bufferType   = filters.buffer_type ?? "percent"
+  const bufferValue  = filters.buffer_value ?? (bufferType === "fixed" ? 50 : 15)
 
   return (
-    <div className="w-full rounded-2xl bg-white px-5 py-3 text-sm shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)]">
-      <div className="grid grid-cols-[1.35fr_1fr_1.1fr] gap-6 w-full">
+    <div className="w-full rounded-2xl bg-white px-5 py-3 text-sm shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] flex flex-col gap-2">
+
+      {/* 2-col grid: Type+Beds | Max$/bed+Buffer */}
+      <div className="grid grid-cols-2 gap-6 w-full">
         <div className="flex flex-col gap-2 min-w-0">
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="w-16 text-neutral-400 text-xs font-medium shrink-0">Beds</span>
+          <div className="flex items-center gap-5 shrink-0">
+            <span className={`w-16 ${labelCls}`}>Type</span>
             <div className="flex gap-1">
-              {BED_OPTIONS.map(({ label, value }) => {
-                const active = value !== null && selectedBeds.includes(value)
-                return (
-                  <span
-                    key={label}
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      active
-                        ? "bg-black text-white"
-                        : "bg-neutral-100 text-neutral-600"
-                    }`}
-                  >
-                    {label}
-                  </span>
-                )
-              })}
+              {([null, "Apartment", "House"] as const).map(v => (
+                <span key={v ?? "all"} className={filters.property_type === v ? pillOn : pillOff}>
+                  {v ?? "All"}
+                </span>
+              ))}
             </div>
           </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="w-16 text-neutral-400 text-xs font-medium shrink-0">Availability</span>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium w-[124px] text-center shrink-0 ${
-              filters.available_only
-                ? "bg-black text-white"
-                : "bg-neutral-100 text-neutral-600"
-            }`}>
-              {filters.available_only ? "Available only ✓" : "All listings"}
-            </span>
+          <div className="flex items-center gap-5 shrink-0">
+            <span className={`w-16 ${labelCls}`}>Beds</span>
+            <div className="flex gap-1">
+              {BED_OPTIONS.map(({ label, value }) => (
+                <span key={label} className={value !== null && selectedBeds.includes(value) ? pillOn : pillOff}>
+                  {label}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
         <div className="flex flex-col gap-2 min-w-0">
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="w-20 text-neutral-400 text-xs font-medium shrink-0">Max $/bed</span>
+          <div className="flex items-center gap-5 shrink-0">
+            <span className={`w-20 ${labelCls}`}>Max $/bed</span>
             <span className="inline-flex w-16 items-center gap-1 rounded-full bg-neutral-100 py-1 pl-3 pr-2 text-xs text-neutral-700">
               <span className="text-neutral-400">$</span>
               <span>{filters.max_price_per_bed ?? "900"}</span>
             </span>
           </div>
-
-          <div className={`flex items-center gap-2 shrink-0 ${filters.max_price_per_bed === null ? "opacity-35" : ""}`}>
-            <span className="w-20 text-neutral-400 text-xs font-medium shrink-0">Buffer</span>
+          <div className={`flex items-center gap-5 shrink-0 ${filters.max_price_per_bed === null ? "opacity-35" : ""}`}>
+            <span className={`w-20 ${labelCls}`}>Buffer</span>
             <div className="flex gap-1 items-center">
-              {BUFFER_OPTIONS.map(([type, label]) => {
-                const active = bufferType === type
-                return (
-                  <span
-                    key={type}
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      active
-                        ? "bg-black text-white"
-                        : "bg-neutral-100 text-neutral-600"
-                    }`}
-                  >
-                    {label}
-                  </span>
-                )
-              })}
+              {([ ["exact", "exact"], ["percent", "+%"], ["fixed", "+$"] ] as const).map(([type, label]) => (
+                <span key={type} className={bufferType === type ? pillOn : pillOff}>{label}</span>
+              ))}
               {bufferType !== "exact" && (
                 <span className="w-11 rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-700">
                   {bufferValue}
@@ -93,34 +79,34 @@ function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col gap-2 items-end min-w-0">
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-neutral-400 text-xs font-medium shrink-0">Source</span>
-            <div className="flex gap-1">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                filters.company === null
-                  ? "bg-neutral-100 text-neutral-600"
-                  : "bg-black text-white"
-              }`}>
-                All
-              </span>
-              {COMPANIES.map(({ name, logo }) => {
-                const active = filters.company === name
-                return (
-                  <span
-                    key={name}
-                    title={name}
-                    className={`px-2.5 py-1 rounded-full ${
-                      active ? "bg-black" : "bg-neutral-100"
-                    }`}
-                  >
-                    <img src={logo} alt={name} className="h-4 object-contain" />
-                  </span>
-                )
-              })}
-            </div>
-          </div>
+      {/* Availability — full-width row */}
+      <div className="flex items-center gap-5 shrink-0">
+        <span className={`w-16 ${labelCls}`}>Availability</span>
+        <div className="flex gap-1">
+          {AVAIL_OPTIONS.map(({ label, value }) => (
+            <span key={value ?? "all"} className={filters.availability_window === value ? pillOn : pillOff}>
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Source — full-width row */}
+      <div className="flex items-center gap-5 shrink-0">
+        <span className={`w-16 ${labelCls}`}>Source</span>
+        <div className="flex gap-1">
+          <span className={filters.company === null ? pillOn : pillOff}>All</span>
+          {COMPANIES.map(({ name, logo }) => (
+            <span
+              key={name}
+              title={name}
+              className={`px-2.5 py-1 rounded-full ${filters.company === name ? "bg-black" : "bg-neutral-100"}`}
+            >
+              <img src={logo} alt={name} className="h-4 object-contain" />
+            </span>
+          ))}
         </div>
       </div>
     </div>

@@ -19,24 +19,33 @@ const BED_OPTIONS: { label: string; value: number | null }[] = [
   { label: "4+",     value: 4 },   // backend uses $gte 4 for this case
 ]
 
+const AVAIL_OPTIONS: { label: string; value: "now" | "june_2026" | "july_2026" | "august_2026" | "leased" | null }[] = [
+  { label: "All",     value: null },
+  { label: "Now",     value: "now" },
+  { label: "Jun '26", value: "june_2026" },
+  { label: "Jul '26", value: "july_2026" },
+  { label: "Aug '26", value: "august_2026" },
+  { label: "Leased",  value: "leased" },
+]
+
 export default function FilterPanel({ filters, onChange, onInteract }: Props) {
+  const labelCls = "text-black font-bold text-xs shrink-0"
   const [bedsTouched, setBedsTouched] = useState(false)
-  const [availabilityTouched, setAvailabilityTouched] = useState(false)
   const [bufferTouched, setBufferTouched] = useState(false)
   const [sourceTouched, setSourceTouched] = useState(false)
 
   function clearFilters() {
     setBedsTouched(false)
-    setAvailabilityTouched(false)
     setBufferTouched(false)
     setSourceTouched(false)
     onChange({
       beds: null,
-      available_only: null,
+      availability_window: null,
       max_price_per_bed: null,
       company: null,
       buffer_type: "percent",
       buffer_value: 15,
+      property_type: null,
     })
   }
 
@@ -65,11 +74,30 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
     <div className="px-6 pt-3">
       <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-3 flex flex-col gap-2 text-sm">
 
-        <div className="grid grid-cols-[1.35fr_1fr_1.1fr] gap-6 w-full">
+        <div className="grid grid-cols-2 gap-6 w-full">
+          {/* Col 1: Type + Beds */}
           <div className="flex flex-col gap-2 min-w-0">
-            {/* Beds */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="w-16 text-neutral-400 text-xs font-medium shrink-0">Beds</span>
+            <div className="flex items-center gap-5 shrink-0">
+              <span className={`w-16 ${labelCls}`}>Type</span>
+              <div className="flex gap-1">
+                {([null, "Apartment", "House"] as const).map(value => {
+                  const active = filters.property_type === value
+                  return (
+                    <button
+                      key={value ?? "all"}
+                      onClick={() => handleChange({ ...filters, property_type: active ? null : value })}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        active ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
+                      }`}
+                    >
+                      {value ?? "All"}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="flex items-center gap-5 shrink-0">
+              <span className={`w-16 ${labelCls}`}>Beds</span>
               <div className="flex gap-1">
                 {BED_OPTIONS.map(({ label, value }) => {
                   const active = value === null
@@ -80,9 +108,7 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
                       key={label}
                       onClick={() => toggleBed(value)}
                       className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                        active
-                          ? "bg-black text-white"
-                          : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                        active ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
                       }`}
                     >
                       {label}
@@ -91,30 +117,12 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
                 })}
               </div>
             </div>
-
-            {/* Availability */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="w-16 text-neutral-400 text-xs font-medium shrink-0">Availability</span>
-              <button
-                onClick={() => {
-                  setAvailabilityTouched(true)
-                  handleChange({ ...filters, available_only: filters.available_only ? null : true })
-                }}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors w-[124px] text-center shrink-0 ${
-                  filters.available_only || availabilityTouched
-                    ? "bg-black text-white"
-                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                }`}
-              >
-                {filters.available_only ? "Available only ✓" : "All listings"}
-              </button>
-            </div>
           </div>
 
+          {/* Col 2: Max $/bed + Buffer */}
           <div className="flex flex-col gap-2 min-w-0">
-            {/* Max price/bed */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="w-20 text-neutral-400 text-xs font-medium shrink-0">Max $/bed</span>
+            <div className="flex items-center gap-5 shrink-0">
+              <span className={`w-20 ${labelCls}`}>Max $/bed</span>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none">$</span>
                 <input
@@ -126,21 +134,16 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
                   value={filters.max_price_per_bed ?? ""}
                   onChange={e => {
                     const value = e.target.value.replace(/\D/g, "").slice(0, 4)
-                    handleChange({
-                      ...filters,
-                      max_price_per_bed: value ? Number(value) : null,
-                    })
+                    handleChange({ ...filters, max_price_per_bed: value ? Number(value) : null })
                   }}
                   className="pl-6 pr-2 py-1 w-16 rounded-full text-xs text-neutral-700 bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-glow-300"
                 />
               </div>
             </div>
-
-            {/* Buffer — always visible; disabled until a price is set */}
-            <div className={`flex items-center gap-2 shrink-0 transition-opacity ${filters.max_price_per_bed === null ? "opacity-35 pointer-events-none" : ""}`}>
-              <span className="w-20 text-neutral-400 text-xs font-medium shrink-0">Buffer</span>
+            <div className={`flex items-center gap-5 shrink-0 transition-opacity ${filters.max_price_per_bed === null ? "opacity-35 pointer-events-none" : ""}`}>
+              <span className={`w-20 ${labelCls}`}>Buffer</span>
               <div className="flex gap-1 items-center">
-                {([ ["percent", "+%"], ["fixed", "+$"], ["exact", "exact"] ] as const).map(([type, label]) => {
+                {([ ["exact", "exact"], ["percent", "+%"], ["fixed", "+$"] ] as const).map(([type, label]) => {
                   const active = bufferTouched && (filters.buffer_type ?? "percent") === type
                   return (
                     <button
@@ -154,9 +157,7 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
                         })
                       }}
                       className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                        active
-                          ? "bg-black text-white"
-                          : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                        active ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
                       }`}
                     >
                       {label}
@@ -180,47 +181,62 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="flex flex-col gap-2 items-end min-w-0">
-            {/* Source */}
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-neutral-400 text-xs font-medium shrink-0">Source</span>
-              <div className="flex gap-1">
+        {/* Availability — full-width row */}
+        <div className="flex items-center gap-5 shrink-0">
+          <span className={`w-16 ${labelCls}`}>Availability</span>
+          <div className="flex gap-1">
+            {AVAIL_OPTIONS.map(({ label, value }) => {
+              const active = filters.availability_window === value
+              return (
                 <button
-                  onClick={() => {
-                    setSourceTouched(true)
-                    handleChange({ ...filters, company: null })
-                  }}
+                  key={label}
+                  onClick={() => handleChange({ ...filters, availability_window: value })}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    filters.company === null && sourceTouched
-                      ? "bg-black text-white"
-                      : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                    active ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
                   }`}
                 >
-                  All
+                  {label}
                 </button>
-                {COMPANIES.map(({ name, logo }) => {
-                  const active = filters.company === name
-                  return (
-                    <button
-                      key={name}
-                      onClick={() => {
-                        setSourceTouched(true)
-                        handleChange({ ...filters, company: active ? null : name })
-                      }}
-                      title={name}
-                      className={`px-2.5 py-1 rounded-full transition-colors ${
-                        active
-                          ? "bg-black"
-                          : "bg-neutral-100 hover:bg-neutral-200"
-                      }`}
-                    >
-                      <img src={logo} alt={name} className="h-4 object-contain" />
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Source — full-width bottom row */}
+        <div className="flex items-center gap-5 shrink-0 pt-1">
+          <span className={`w-16 ${labelCls}`}>Source</span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => {
+                setSourceTouched(true)
+                handleChange({ ...filters, company: null })
+              }}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                filters.company === null ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
+              }`}
+            >
+              All
+            </button>
+            {COMPANIES.map(({ name, logo }) => {
+              const active = filters.company === name
+              return (
+                <button
+                  key={name}
+                  onClick={() => {
+                    setSourceTouched(true)
+                    handleChange({ ...filters, company: active ? null : name })
+                  }}
+                  title={name}
+                  className={`px-2.5 py-1 rounded-full transition-colors ${
+                    active ? "bg-black" : "bg-neutral-100 hover:bg-neutral-200"
+                  }`}
+                >
+                  <img src={logo} alt={name} className="h-4 object-contain" />
+                </button>
+              )
+            })}
           </div>
         </div>
 

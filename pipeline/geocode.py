@@ -24,6 +24,21 @@ USER_AGENT    = "uiuc-housing-assistant/1.0 (sz94@illinois.edu)"
 # Keys are substrings of the raw address; first match wins.
 # TODO: fill in the remaining entries via Google Maps before running ingest.
 MANUAL_COORDS: dict[str, tuple[float, float]] = {
+    # ── FIXME: KNOWN BAD GEOCODES ────────────────────────────────────────────────
+    # These addresses were confirmed misgeocoded via ORS walking-distance check:
+    # ORS gave ~4 min walk vs Google Maps ~17 min for "911 S Locust" from Green St & 6th.
+    # Other two have coordinates outside Champaign entirely (Chicago area / Dundee IL).
+    #
+    # To fix: open Google Maps → search address → right-click → "What's here?" → copy lat/lng
+    # Then add here as:   "911 S Locust":   (40.XXXXX, -88.XXXXX),
+    # Then run:  python -c "import sqlite3; ..."   (NULL out lat/lng for these addresses)
+    #            python -m pipeline.geocode   (re-geocodes via MANUAL_COORDS)
+    #            python -m pipeline.ingest    (pushes updated coords to ChromaDB)
+    #
+    # "911 S Locust"  — stored (40.1069,-88.2407); actual ~17 min walk from Green/6th
+    # "605 S. Fifth"  — stored (41.88,-87.71) = Chicago; should be Champaign
+    # "Helen Ct"      — stored (42.01,-88.18) = Dundee IL; should be Champaign
+    # ─────────────────────────────────────────────────────────────────────────────
     # Verified via Nominatim (street-level)
     "W. John":        (40.10892, -88.26153),  # 1017, 1019 W. John St
     "715 Balboa":     (40.09484, -88.25396),  # 715 Balboa Dr., Champaign

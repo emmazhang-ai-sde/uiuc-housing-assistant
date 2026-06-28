@@ -48,10 +48,14 @@ function AvailabilityBadge({ availability }: { availability: string }) {
 export default function ListingCard({
   listing,
   maxPricePerBed = null,
+  walkMins = null,
+  driveMins = null,
   onSelect,
 }: {
   listing: Listing
   maxPricePerBed?: number | null
+  walkMins?: number | null
+  driveMins?: number | null
   onSelect?: (listing: Listing) => void
 }) {
   const priceBed   = priceStr(listing.price_per_bed_low, listing.price_per_bed_high)
@@ -59,6 +63,7 @@ export default function ListingCard({
   const bedsLabelStr = bedsLabel(listing.beds, listing.unit_type)
   const isSingleOccupancy = listing.beds <= 1
   const overBudget = maxPricePerBed !== null && listing.price_per_bed_high !== null && listing.price_per_bed_high > maxPricePerBed
+  const isUnavailable = availabilityStatus(listing.availability) === "unavailable"
   const { main: addressMain, code: addressCode } = splitAddress(listing.address)
   const addressLines = splitAddressLines(addressMain)
 
@@ -69,14 +74,27 @@ export default function ListingCard({
     >
 
       {/* Availability badge — absolute over photo (or card top if no photo) */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-1">
         <AvailabilityBadge availability={listing.availability} />
+        {walkMins != null && (
+          <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full uppercase bg-white/90 text-neutral-600 shadow-sm">
+            ~{walkMins} min walk
+          </span>
+        )}
+        {driveMins != null && (
+          <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full uppercase bg-white/90 text-neutral-600 shadow-sm">
+            ~{driveMins} min drive
+          </span>
+        )}
       </div>
 
       {/* Exterior photo — always rendered; blank placeholder when no photo_url */}
-      <div className="h-36 shrink-0 bg-neutral-100">
+      <div className="relative h-36 shrink-0 bg-neutral-100">
         {listing.photo_url && (
           <img src={listing.photo_url} alt="" className="w-full h-full object-cover" />
+        )}
+        {isUnavailable && (
+          <div className="absolute inset-0 bg-white/60" />
         )}
       </div>
 

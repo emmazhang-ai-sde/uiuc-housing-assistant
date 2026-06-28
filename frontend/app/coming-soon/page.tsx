@@ -15,6 +15,8 @@ export default function ComingSoonPage() {
   const [referral, setReferral] = useState<string>("")
   const [otherText, setOtherText] = useState<string>("")
   const [netidFocused, setNetidFocused] = useState(false)
+  const [referralError, setReferralError] = useState(false)
+  const [netidError, setNetidError] = useState(false)
 
   const referralSourcesCN = ["小红书 (RedNote)", "微信 (WeChat)"]
   const referralSourcesEN = ["Reddit", "LinkedIn", "X"]
@@ -38,7 +40,8 @@ export default function ComingSoonPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = netid.trim().toLowerCase().replace(/@illinois\.edu$/i, "")
-    if (!trimmed) return
+    if (!trimmed) { setNetidError(true); return }
+    if (!referral) { setReferralError(true); return }
     const email = `${trimmed}@illinois.edu`
     setLoading(true)
     setError("")
@@ -46,7 +49,7 @@ export default function ComingSoonPage() {
     const referralValue = referral === "Others" ? (otherText.trim() || "Others") : referral
     const { error: err } = await supabase.from("waitlist").insert({
       email,
-      ...(referralValue ? { referral: referralValue } : {}),
+      referral: referralValue,
     })
     if (err && err.code !== "23505") {
       setError(err.message)
@@ -136,14 +139,19 @@ export default function ComingSoonPage() {
             <form onSubmit={handleSubmit} className="space-y-3">
               {/* Referral source */}
               <div className="flex flex-col gap-2 text-left">
-                <p className="text-sm font-semibold mt-1 mb-1" style={{ color: "rgb(255, 95, 5)" }}>How did you hear about us?</p>
+                <p className="text-base font-semibold mt-1 mb-1 flex items-center gap-2 flex-wrap">
+                  <span style={{ backgroundColor: referralError ? "#fef08a" : "transparent", borderRadius: "2px", padding: referralError ? "0 4px" : "0", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ color: "rgb(255, 95, 5)" }}>How did you hear about us?</span>
+                    {referralError && <span className="text-base font-semibold italic text-neutral-900">Please fill out this field. 💗</span>}
+                  </span>
+                </p>
                 {[referralSourcesCN, referralSourcesEN].map((group, i) => (
                   <div key={i} className="flex flex-wrap gap-2">
                     {group.map(source => (
                       <button
                         key={source}
                         type="button"
-                        onClick={() => setReferral(prev => prev === source ? "" : source)}
+                        onClick={() => { setReferral(prev => prev === source ? "" : source); setReferralError(false) }}
                         className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
                           referral === source
                             ? "text-white"
@@ -160,7 +168,7 @@ export default function ComingSoonPage() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setReferral(prev => prev === "Friends" ? "" : "Friends")}
+                    onClick={() => { setReferral(prev => prev === "Friends" ? "" : "Friends"); setReferralError(false) }}
                     className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
                       referral === "Friends"
                         ? "text-white"
@@ -172,7 +180,7 @@ export default function ComingSoonPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setReferral(prev => prev === "Others" ? "" : "Others")}
+                    onClick={() => { setReferral(prev => prev === "Others" ? "" : "Others"); setReferralError(false) }}
                     className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
                       referral === "Others"
                         ? "text-white"
@@ -195,7 +203,12 @@ export default function ComingSoonPage() {
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <p className="text-sm font-semibold text-left mt-1 mb-1" style={{ color: "rgb(255, 95, 5)" }}>Enter your NetID to join</p>
+                <p className="text-base font-semibold text-left mt-1 mb-1 flex items-center gap-2 flex-wrap">
+                  <span style={{ backgroundColor: netidError ? "#fef08a" : "transparent", borderRadius: "2px", padding: netidError ? "0 4px" : "0", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ color: "rgb(255, 95, 5)" }}>Enter your NetID to join</span>
+                    {netidError && <span className="text-base font-semibold italic text-neutral-900">Please fill out this field. 💗</span>}
+                  </span>
+                </p>
                 <div
                   className="flex items-center rounded-xl border overflow-hidden transition-all"
                   style={{
@@ -206,11 +219,10 @@ export default function ComingSoonPage() {
                   <input
                     type="text"
                     value={netid}
-                    onChange={e => setNetid(e.target.value)}
+                    onChange={e => { setNetid(e.target.value); setNetidError(false) }}
                     onFocus={() => setNetidFocused(true)}
                     onBlur={() => setNetidFocused(false)}
                     placeholder="write your netid here"
-                    required
                     className="flex-1 px-4 py-3 text-base placeholder-neutral-400 focus:outline-none bg-transparent" style={{ color: "rgb(255, 95, 5)" }}
                   />
                   <span className="pr-4 text-base font-semibold select-none" style={{ color: "rgb(255, 95, 5)" }}>@illinois.edu</span>

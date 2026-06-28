@@ -28,6 +28,19 @@ def compute_is_available(status: str) -> bool:
     return "available" in s and "not available" not in s and "leased" not in s
 
 
+def compute_availability_windows(status: str) -> dict:
+    """Pre-compute per-window boolean flags from the raw availability string.
+    Multiple flags can be True simultaneously (e.g. now + august_2026)."""
+    s = (status or "").lower()
+    return {
+        "is_available_now":    "available now" in s or "immediate move-in" in s or "move-in today" in s,
+        "is_available_june":   "june 2026" in s or ("june move-in special" in s and "august 2026" not in s),
+        "is_available_july":   "july 2026" in s,
+        "is_available_august": "august 2026" in s,
+        "is_leased":           "leased" in s,
+    }
+
+
 def get_latest_db() -> Path:
     latest_file = Path(SNAPSHOTS_DIR) / "latest.txt"
     if not latest_file.exists():
@@ -107,6 +120,7 @@ def main():
                 "price_total_high":   l["price_total_high"],
                 "availability":       l["availability"],
                 "is_available":       compute_is_available(l["availability"]),
+                **compute_availability_windows(l["availability"]),
                 "area":               l["area"],
                 "url":                l["url"],
                 "lat":                l["lat"],
