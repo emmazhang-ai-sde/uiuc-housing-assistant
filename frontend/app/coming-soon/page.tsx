@@ -1,8 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Nunito_Sans } from "next/font/google"
 import confetti from "canvas-confetti"
 import { createClient } from "@/lib/supabase/client"
+
+const nunitoSans = Nunito_Sans({ subsets: ["latin"] })
 
 export default function ComingSoonPage() {
   const [netid, setNetid]       = useState("")
@@ -78,7 +81,7 @@ export default function ComingSoonPage() {
   }
 
   return (
-    <div className="min-h-dvh w-full flex items-center justify-center bg-white px-6 py-16">
+    <div className={`min-h-dvh w-full flex items-center justify-center bg-white px-6 py-16 ${nunitoSans.className}`}>
       <div className="w-full max-w-md flex flex-col items-center gap-10 text-center">
 
         {/* Badge */}
