@@ -134,6 +134,7 @@ def main():
                 "utility_fees":         l["utility_fees"] or "",
                 "brochure_url":         l["brochure_url"] or "",
                 "property_type":        l["property_type"] or "",
+                "is_penthouse":         "penthouse" in (l["unit_type"] or "").lower(),
             },
         )
 

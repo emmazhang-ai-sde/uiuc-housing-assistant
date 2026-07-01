@@ -68,6 +68,18 @@ def format_price_range(low: int | None, high: int | None) -> str:
 
 # ── Normalizer ───────────────────────────────────────────────────────────────
 
+def infer_property_type(unit_type: str, raw: str) -> str:
+    ut = unit_type.lower()
+    if re.search(r"\btownhouse\b", ut):
+        return "Townhouse"
+    if re.search(r"\bhouse\b", ut):
+        return "House"
+    m = re.match(r"^(\d+)\s+bed", ut)
+    if m and int(m.group(1)) >= 5:
+        return "House"
+    return raw
+
+
 def normalize(record: dict) -> dict:
     ppb_low,  ppb_high  = parse_price_range(record.get("price_per_bed", ""))
     ptot_low, ptot_high = parse_price_range(record.get("price_total",   ""))
@@ -112,7 +124,7 @@ def normalize(record: dict) -> dict:
         "company":            company,
         "address":            address,
         "area":               area,
-        "property_type":      record.get("property_type", "").strip(),
+        "property_type":      infer_property_type(unit_type, record.get("property_type", "").strip()),
         "roommate_match":     1 if roommate else 0,
         "unit_type":          unit_type,
         "beds":               parse_int(beds),
@@ -200,7 +212,7 @@ def db_fingerprint(db_path: Path) -> str:
     """MD5 of all content rows, sorted for stable comparison."""
     conn = sqlite3.connect(db_path)
     rows = conn.execute(
-        "SELECT address, unit_type, beds, baths, sqft, "
+        "SELECT address, unit_type, property_type, beds, baths, sqft, "
         "price_per_bed_low, price_per_bed_high, "
         "price_total_low, price_total_high, availability, url "
         "FROM listings ORDER BY address, unit_type"

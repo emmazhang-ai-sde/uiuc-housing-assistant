@@ -59,32 +59,75 @@ def parse_json_output(text: str) -> dict:
 # Baths is intentionally excluded — that field is not stored in Chroma metadata.
 
 EXTRACT_PROMPT = """You are parsing a UIUC student's housing search query.
-Extract structured search parameters. If a field is not mentioned, set it to null.
+Extract structured search parameters. Set a field only when the query explicitly mentions it — otherwise set it to null.
 {history}
 Query: {query}
 
 Return ONLY valid JSON — no prose, no markdown fences:
 {{
   "beds": <integer or null>,
+  "min_price_per_bed": <integer or null>,
   "max_price_per_bed": <integer or null>,
   "max_price_total": <integer or null>,
   "availability_window": <"now" | "june_2026" | "july_2026" | "august_2026" | "leased" | null>,
-  "location_hint": "<string or null>"
+  "location_hint": "<string or null>",
+  "property_type": <"Apartment" | "House" | "Townhouse" | "Single Family Home" | null>,
+  "penthouse": <true | null>
 }}
 
+beds rules — set only when explicitly mentioned:
+- "studio" or "efficiency" → 0
+- "1 bed", "1br", "one bedroom" → 1
+- "2 bed", "2br", "two bedroom" → 2
+- "3 bed", "3br" → 3
+- "4 bed", "4br" → 4
+- "5 bed", "5br", "5+", "5 or more", "large group" → 5
+- null → not mentioned
+
+price direction — FIRST decide if each amount is a FLOOR or a CEILING from the wording, BEFORE picking a field:
+- FLOOR words (a minimum the user will accept): "above", "over", "more than", "greater than", "at least", "no less than", "starting at", "$X and up", "nothing under $X", "avoid cheap ones under $X" → this is a min, set min_price_per_bed
+- CEILING words (a maximum budget): "under", "below", "less than", "at most", "up to", "max", "no more than", "within $X", "budget of $X" → this is a max
+- A range ("$1000 to $1300", "between $1000 and $1300", "$1000-$1300") sets BOTH: min_price_per_bed = 1000 and max_price_per_bed = 1300
+- CRITICAL: "above/over/more than $X" is ALWAYS a floor. Never place that amount in max_price_per_bed or max_price_total.
+
+min_price_per_bed (the FLOOR from the rule above):
+- Set it to X whenever a floor is stated ("above $1500", "at least $900", "nothing under $1000") or as the low end of a range
+- null if no lower bound is mentioned
+
+max_price_per_bed vs max_price_total (only for a CEILING amount):
+- Set max_price_per_bed when user says "per person", "per bed", "each", or the amount is ≤ $1,500
+- Set max_price_total when user says "total", "per month for the whole unit", or the amount is > $1,500
+- Set both to null if no ceiling is mentioned (a floor-only query like "above $1500" leaves BOTH max fields null)
+
 availability_window rules:
-- "now" → query mentions available now, immediate move-in, or move-in today
-- "june_2026" → query mentions June or June 2026
-- "july_2026" → query mentions July or July 2026
-- "august_2026" → query mentions August, fall semester, or fall 2026
-- "leased" → query asks about leased or unavailable listings
+- "now" → available now, immediate move-in, move in today, move in this month
+- "june_2026" → June, June 2026
+- "july_2026" → July, July 2026
+- "august_2026" → August, fall semester, fall 2026
+- "leased" → already leased, unavailable, show me what's gone
+- null → not mentioned
+
+property_type rules — set only when the query clearly refers to a building type:
+- "townhouse", "townhome" → "Townhouse"
+- "single family", "single-family", "detached house" → "Single Family Home"
+- "house" → "House"
+- "apartment", "apt", "condo", "unit" → "Apartment"
+- null → not mentioned or ambiguous
+
+penthouse rules:
+- true → query mentions "penthouse"
 - null → not mentioned
 
 Examples:
-- "1 bed under $900 available now" → {{"beds": 1, "max_price_per_bed": 900, "availability_window": "now", "max_price_total": null, "location_hint": null}}
-- "cheap 2br near campus" → {{"beds": 2, "max_price_per_bed": null, "max_price_total": null, "availability_window": null, "location_hint": "campus"}}
-- "show me everything" → {{"beds": null, "max_price_per_bed": null, "max_price_total": null, "availability_window": null, "location_hint": null}}
-- "studio available for fall" → {{"beds": 0, "max_price_per_bed": null, "max_price_total": null, "availability_window": "august_2026", "location_hint": null}}
+- "1 bed under $900 available now" → {{"beds": 1, "min_price_per_bed": null, "max_price_per_bed": 900, "max_price_total": null, "availability_window": "now", "location_hint": null, "property_type": null, "penthouse": null}}
+- "studio between $1000 and $1300, nothing under $1000" → {{"beds": 0, "min_price_per_bed": 1000, "max_price_per_bed": 1300, "max_price_total": null, "availability_window": null, "location_hint": null, "property_type": null, "penthouse": null}}
+- "studios above $1,500" → {{"beds": 0, "min_price_per_bed": 1500, "max_price_per_bed": null, "max_price_total": null, "availability_window": null, "location_hint": null, "property_type": null, "penthouse": null}}
+- "1br over $1200 per bed" → {{"beds": 1, "min_price_per_bed": 1200, "max_price_per_bed": null, "max_price_total": null, "availability_window": null, "location_hint": null, "property_type": null, "penthouse": null}}
+- "cheap 2br near campus" → {{"beds": 2, "min_price_per_bed": null, "max_price_per_bed": null, "max_price_total": null, "availability_window": null, "location_hint": "campus", "property_type": null, "penthouse": null}}
+- "studio available for fall" → {{"beds": 0, "min_price_per_bed": null, "max_price_per_bed": null, "max_price_total": null, "availability_window": "august_2026", "location_hint": null, "property_type": null, "penthouse": null}}
+- "4 bedroom house under $3000/month" → {{"beds": 4, "min_price_per_bed": null, "max_price_per_bed": null, "max_price_total": 3000, "availability_window": null, "location_hint": null, "property_type": "House", "penthouse": null}}
+- "penthouse apartment downtown" → {{"beds": null, "min_price_per_bed": null, "max_price_per_bed": null, "max_price_total": null, "availability_window": null, "location_hint": "downtown", "property_type": "Apartment", "penthouse": true}}
+- "show me everything" → {{"beds": null, "min_price_per_bed": null, "max_price_per_bed": null, "max_price_total": null, "availability_window": null, "location_hint": null, "property_type": null, "penthouse": null}}
 """
 
 _extract_chain = (
@@ -132,15 +175,15 @@ def build_where(filters: dict) -> dict | None:
     if filters.get("beds") is not None:
         bed_filter = filters["beds"]
         selected_beds = bed_filter if isinstance(bed_filter, list) else [bed_filter]
-        exact_beds = sorted({int(bed) for bed in selected_beds if int(bed) < 4})
-        has_four_plus = any(int(bed) >= 4 for bed in selected_beds)
+        exact_beds = sorted({int(bed) for bed in selected_beds if int(bed) < 5})
+        has_five_plus = any(int(bed) >= 5 for bed in selected_beds)
 
         bed_clauses = []
         if exact_beds:
             bed_clauses.append({"beds": {"$in": exact_beds}})
-        # 4+ button sends beds=4; use $gte so it catches 4, 5, 6-bedroom units too
-        if has_four_plus:
-            bed_clauses.append({"beds": {"$gte": 4}})
+        # 5+ button sends beds=5; use $gte so it catches 5, 6, 16-bedroom units too
+        if has_five_plus:
+            bed_clauses.append({"beds": {"$gte": 5}})
 
         if len(bed_clauses) == 1:
             clauses.append(bed_clauses[0])
@@ -159,6 +202,11 @@ def build_where(filters: dict) -> dict | None:
             ceiling = int(price)
         clauses.append({"price_per_bed_low": {"$lte": ceiling}})
 
+    # Price floor — e.g. "nothing under $1000". Filter on the low (headline) price
+    # shown on the card, so a listing advertised below the floor never appears.
+    if filters.get("min_price_per_bed") is not None:
+        clauses.append({"price_per_bed_low": {"$gte": int(filters["min_price_per_bed"])}})
+
     if filters.get("max_price_total") is not None:
         ceiling = int(filters["max_price_total"] * (1 + PRICE_FLEX_MARGIN))
         clauses.append({"price_total_low": {"$lte": ceiling}})
@@ -174,12 +222,19 @@ def build_where(filters: dict) -> dict | None:
         clauses.append({"is_available_august": {"$eq": True}})
     elif window == "leased":
         clauses.append({"is_leased": {"$eq": True}})
+    # No specific window, but caller wants only rentable units (default when a student
+    # is actively searching) — exclude anything fully leased.
+    elif filters.get("available_only"):
+        clauses.append({"is_available": {"$eq": True}})
 
     if filters.get("company"):
         clauses.append({"company": {"$eq": filters["company"]}})
 
     if filters.get("property_type"):
         clauses.append({"property_type": {"$eq": filters["property_type"]}})
+
+    if filters.get("penthouse"):
+        clauses.append({"is_penthouse": {"$eq": True}})
 
     if not clauses:
         return None

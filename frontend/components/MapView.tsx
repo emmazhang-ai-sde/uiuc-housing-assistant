@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, forwardRef, useImperativeHandle } from "react"
 import Map, { Marker, Popup, Source, Layer } from "react-map-gl/maplibre"
+import type { MapRef } from "react-map-gl/maplibre"
 import type { FillLayerSpecification, LineLayerSpecification } from "maplibre-gl"
-import { Listing } from "@/lib/api"
+import { Listing, Filters } from "@/lib/api"
 import { LANDMARKS, Landmark } from "@/lib/landmarks"
 import { COMPANY_LOGOS } from "@/lib/companies"
 import { availabilityStatus, bedsLabel } from "@/lib/availability"
+import { exportMapAsHtml } from "@/lib/exportMap"
 
 const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron"
 const MAP_HEIGHT = "clamp(560px, 60vh, 720px)"
@@ -96,19 +98,46 @@ function priceLabel(l: Listing): string {
 
 interface Props {
   listings: Listing[]
+  filters: Filters
   walkMinsByUrl?: Record<string, number | null>
+  mapHeight?: string
+  className?: string
 }
 
-export default function MapView({ listings, walkMinsByUrl }: Props) {
+export interface MapViewHandle {
+  saveMapHtml: () => Promise<void>
+}
+
+const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, filters, walkMinsByUrl, mapHeight, className }, ref) {
   const [popup, setPopup]                   = useState<Listing | null>(null)
   const [landmarkPopup, setLandmarkPopup]   = useState<Landmark | null>(null)
+  const [saving, setSaving]                 = useState(false)
+  const mapRef                              = useRef<MapRef>(null)
   const mapped = listings.filter(l => l.lat != null && l.lng != null)
 
+  async function saveMapImage() {
+    const mapInstance = mapRef.current?.getMap()
+    if (!mapInstance) return
+    setSaving(true)
+    try {
+      await exportMapAsHtml(mapInstance, listings, filters)
+    } catch (e) {
+      console.error("Map export failed:", e)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  useImperativeHandle(ref, () => ({ saveMapHtml: saveMapImage }))
+
   return (
-    <div className="rounded-3xl overflow-hidden shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)]">
+    <div className={className ?? "relative rounded-3xl overflow-hidden shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)]"}>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Map
+        ref={mapRef}
+        {...({ preserveDrawingBuffer: true } as any)}
         initialViewState={DEFAULT_VIEW}
-        style={{ width: "100%", height: MAP_HEIGHT }}
+        style={{ width: "100%", height: mapHeight ?? MAP_HEIGHT }}
         mapStyle={MAP_STYLE}
         onClick={() => { setPopup(null); setLandmarkPopup(null) }}
       >
@@ -235,4 +264,6 @@ export default function MapView({ listings, walkMinsByUrl }: Props) {
       )}
     </div>
   )
-}
+})
+
+export default MapView

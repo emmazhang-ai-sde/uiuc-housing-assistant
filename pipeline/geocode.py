@@ -55,6 +55,19 @@ MANUAL_COORDS: dict[str, tuple[float, float]] = {
     # Property names without street addresses — matched by name substring
     "Stoneway Condos": (40.13209, -88.30133), # Stoneway Ct, Champaign IL 61822
     "Windsor Duplexes": (40.09383, -88.19336), # 907 E Harding Dr, Urbana IL 61801
+    # Nominatim matches "S 3rd St, Champaign" to Fisher, IL (a village in Champaign County).
+    # Correct coordinates from Nominatim "South Third Street, Midtown, Champaign".
+    "409 S 3rd": (40.11329, -88.23551),
+    # Nominatim matches "56 1/2 E Green St" to Bulgaria (lat 42.44, lng 25.63) — the "1/2"
+    # in the address breaks geocoding. Same coords as the correctly-geocoded "56 E Green".
+    "56 1/2 E Green": (40.11041, -88.23939),
+    # These two addresses have marketing suffixes after an em-dash. clean_address() strips
+    # them but leaves "60 E Green, IL" / "60 E. Green, IL" without a city, so Nominatim
+    # matches a different E Green St in central Illinois (~40.648). Same coords as the
+    # correctly-geocoded "60 E Green St, Champaign".
+    # Keys use the em-dash to avoid matching "60 E Green St, Champaign" (already correct).
+    "60 E Green –": (40.11042, -88.23897),
+    "60 E. Green":     (40.11042, -88.23897),
 }
 
 

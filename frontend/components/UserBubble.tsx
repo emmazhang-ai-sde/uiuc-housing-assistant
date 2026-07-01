@@ -7,7 +7,8 @@ const BED_OPTIONS: { label: string; value: number | null }[] = [
   { label: "1",      value: 1 },
   { label: "2",      value: 2 },
   { label: "3",      value: 3 },
-  { label: "4+",     value: 4 },
+  { label: "4",      value: 4 },
+  { label: "5+",     value: 5 },
 ]
 
 const AVAIL_OPTIONS: { label: string; value: "now" | "june_2026" | "july_2026" | "august_2026" | "leased" | null }[] = [
@@ -113,11 +114,22 @@ function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
   )
 }
 
+function hasActiveFilters(f: Filters): boolean {
+  return (
+    f.beds !== null ||
+    f.availability_window !== null ||
+    f.max_price_per_bed !== null ||
+    f.company !== null ||
+    f.property_type !== null ||
+    f.penthouse !== null
+  )
+}
+
 export default function UserBubble({ text, filters }: { text: string; filters: Filters }) {
   return (
     <div className="flex justify-end items-start gap-3 mt-10 mb-4">
       <div className="flex max-w-[80%] flex-col items-end gap-3">
-        <ReadOnlyFilterSnapshot filters={filters} />
+        {hasActiveFilters(filters) && <ReadOnlyFilterSnapshot filters={filters} />}
         <div className="bg-neutral-900 rounded-3xl rounded-tr-lg px-5 py-3.5 text-[15px] text-white font-medium leading-relaxed">
           {text}
         </div>

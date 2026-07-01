@@ -16,7 +16,8 @@ const BED_OPTIONS: { label: string; value: number | null }[] = [
   { label: "1",      value: 1 },
   { label: "2",      value: 2 },
   { label: "3",      value: 3 },
-  { label: "4+",     value: 4 },   // backend uses $gte 4 for this case
+  { label: "4",      value: 4 },
+  { label: "5+",     value: 5 },   // backend uses $gte 5 for this case
 ]
 
 const AVAIL_OPTIONS: { label: string; value: "now" | "june_2026" | "july_2026" | "august_2026" | "leased" | null }[] = [
@@ -29,7 +30,7 @@ const AVAIL_OPTIONS: { label: string; value: "now" | "june_2026" | "july_2026" |
 ]
 
 export default function FilterPanel({ filters, onChange, onInteract }: Props) {
-  const labelCls = "text-black font-bold text-xs shrink-0"
+  const labelCls = "text-black font-bold text-xs shrink-0 w-20"
   const [bedsTouched, setBedsTouched] = useState(false)
   const [bufferTouched, setBufferTouched] = useState(false)
   const [sourceTouched, setSourceTouched] = useState(false)
@@ -46,6 +47,7 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
       buffer_type: "percent",
       buffer_value: 15,
       property_type: null,
+      penthouse: null,
     })
   }
 
@@ -74,31 +76,61 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
     <div className="px-6 pt-3">
       <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-3 flex flex-col gap-2 text-sm">
 
-        <div className="grid grid-cols-2 gap-6 w-full">
+        <div className="flex flex-wrap gap-x-6 gap-y-3 w-full">
           {/* Col 1: Type + Beds */}
-          <div className="flex flex-col gap-2 min-w-0">
-            <div className="flex items-center gap-5 shrink-0">
-              <span className={`w-16 ${labelCls}`}>Type</span>
-              <div className="flex gap-1">
-                {([null, "Apartment", "House"] as const).map(value => {
+          <div className="flex flex-col gap-2 min-w-[240px] flex-1">
+            <div className="flex flex-wrap items-start gap-x-5 gap-y-1">
+              <span className={`pt-1 ${labelCls}`}>Type</span>
+              <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+                {([
+                  { value: null,        label: "All" },
+                  { value: "Apartment",          label: "Apartment" },
+                  { value: "House",              label: "House" },
+                  { value: "Townhouse",          label: "Townhouse" },
+                  { value: "Single Family Home", label: "Single Family" },
+                ] as const).map(({ value, label }) => {
                   const active = filters.property_type === value
                   return (
                     <button
                       key={value ?? "all"}
-                      onClick={() => handleChange({ ...filters, property_type: active ? null : value })}
+                      onClick={() => handleChange({ ...filters, property_type: active ? null : value, penthouse: null })}
                       className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                         active ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
                       }`}
                     >
-                      {value ?? "All"}
+                      {label}
                     </button>
                   )
                 })}
               </div>
             </div>
-            <div className="flex items-center gap-5 shrink-0">
-              <span className={`w-16 ${labelCls}`}>Beds</span>
-              <div className="flex gap-1">
+            {filters.property_type === "Apartment" && (
+              <div className="flex flex-wrap items-start gap-x-5 gap-y-1">
+                <span className={`pt-1 ${labelCls}`}>Subtype</span>
+                <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+                  {([
+                    { value: null,  label: "All" },
+                    { value: true,  label: "Penthouse" },
+                  ] as const).map(({ value, label }) => {
+                    const active = filters.penthouse === value
+                    return (
+                      <button
+                        key={label}
+                        onClick={() => handleChange({ ...filters, penthouse: active ? null : value })}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          active ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            <div className="flex flex-wrap items-start gap-x-5 gap-y-1">
+              <span className={`pt-1 ${labelCls}`}>Beds</span>
+              <div className="flex flex-wrap gap-1 flex-1 min-w-0">
                 {BED_OPTIONS.map(({ label, value }) => {
                   const active = value === null
                     ? filters.beds === null && bedsTouched
@@ -117,12 +149,9 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
                 })}
               </div>
             </div>
-          </div>
 
-          {/* Col 2: Max $/bed + Buffer */}
-          <div className="flex flex-col gap-2 min-w-0">
-            <div className="flex items-center gap-5 shrink-0">
-              <span className={`w-20 ${labelCls}`}>Max $/bed</span>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+              <span className={`${labelCls}`}>Max $/bed</span>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none">$</span>
                 <input
@@ -140,9 +169,10 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
                 />
               </div>
             </div>
-            <div className={`flex items-center gap-5 shrink-0 transition-opacity ${filters.max_price_per_bed === null ? "opacity-35 pointer-events-none" : ""}`}>
-              <span className={`w-20 ${labelCls}`}>Buffer</span>
-              <div className="flex gap-1 items-center">
+
+            <div className={`flex flex-wrap items-center gap-x-5 gap-y-1 transition-opacity ${filters.max_price_per_bed === null ? "opacity-35 pointer-events-none" : ""}`}>
+              <span className={`${labelCls}`}>Buffer</span>
+              <div className="flex flex-wrap gap-1 items-center">
                 {([ ["exact", "exact"], ["percent", "+%"], ["fixed", "+$"] ] as const).map(([type, label]) => {
                   const active = bufferTouched && (filters.buffer_type ?? "percent") === type
                   return (
@@ -181,62 +211,63 @@ export default function FilterPanel({ filters, onChange, onInteract }: Props) {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Availability — full-width row */}
-        <div className="flex items-center gap-5 shrink-0">
-          <span className={`w-16 ${labelCls}`}>Availability</span>
-          <div className="flex gap-1">
-            {AVAIL_OPTIONS.map(({ label, value }) => {
-              const active = filters.availability_window === value
-              return (
-                <button
-                  key={label}
-                  onClick={() => handleChange({ ...filters, availability_window: value })}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    active ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
-                  }`}
-                >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+          {/* Col 2: Availability + Source */}
+          <div className="flex flex-col gap-2 min-w-[240px] flex-1">
+            <div className="flex flex-wrap items-start gap-x-5 gap-y-1">
+              <span className={`pt-1 ${labelCls}`}>Availability</span>
+              <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+                {AVAIL_OPTIONS.map(({ label, value }) => {
+                  const active = filters.availability_window === value
+                  return (
+                    <button
+                      key={label}
+                      onClick={() => handleChange({ ...filters, availability_window: value })}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        active ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
 
-        {/* Source — full-width bottom row */}
-        <div className="flex items-center gap-5 shrink-0 pt-1">
-          <span className={`w-16 ${labelCls}`}>Source</span>
-          <div className="flex gap-1">
-            <button
-              onClick={() => {
-                setSourceTouched(true)
-                handleChange({ ...filters, company: null })
-              }}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                filters.company === null ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
-              }`}
-            >
-              All
-            </button>
-            {COMPANIES.map(({ name, logo }) => {
-              const active = filters.company === name
-              return (
+            <div className="flex flex-wrap items-start gap-x-5 gap-y-1">
+              <span className={`pt-1 ${labelCls}`}>Source</span>
+              <div className="flex flex-wrap gap-1 flex-1 min-w-0">
                 <button
-                  key={name}
                   onClick={() => {
                     setSourceTouched(true)
-                    handleChange({ ...filters, company: active ? null : name })
+                    handleChange({ ...filters, company: null })
                   }}
-                  title={name}
-                  className={`px-2.5 py-1 rounded-full transition-colors ${
-                    active ? "bg-black" : "bg-neutral-100 hover:bg-neutral-200"
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    filters.company === null ? "bg-black text-white" : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
                   }`}
                 >
-                  <img src={logo} alt={name} className="h-4 object-contain" />
+                  All
                 </button>
-              )
-            })}
+                {COMPANIES.map(({ name, logo }) => {
+                  const active = filters.company === name
+                  return (
+                    <button
+                      key={name}
+                      onClick={() => {
+                        setSourceTouched(true)
+                        handleChange({ ...filters, company: active ? null : name })
+                      }}
+                      title={name}
+                      className={`px-2.5 py-1 rounded-full transition-colors ${
+                        active ? "bg-black" : "bg-neutral-100 hover:bg-neutral-200"
+                      }`}
+                    >
+                      <img src={logo} alt={name} className="h-4 object-contain" />
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </div>
 

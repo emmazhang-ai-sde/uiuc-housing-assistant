@@ -4,6 +4,76 @@ All notable changes to the UIUC Housing Assistant are recorded here.
 
 ---
 
+## [Unreleased] — Auth UI split, login branding, FilterPanel reflow, price-floor extraction fix
+
+### Added
+- `frontend/components/UserMenu.tsx` — user control in `AppHeader`: avatar + email/**Log out** dropdown when signed in, **Log In** link when signed out; reacts to `supabase.auth.onAuthStateChange`
+- `frontend/app/login/page.tsx` — **Log In / Sign Up** segmented toggle. Sign Up keeps the beta-waitlist RPC check + `shouldCreateUser: true`; Log In skips the waitlist check, uses `shouldCreateUser: false`, and shows a "no account found — try Sign Up" fallback. Login card now shows the product logo (`frontend/public/logo.png`) and uses the **Nunito Sans** font (scoped to `/login` via `next/font/google`)
+
+### Changed
+- `frontend/components/FilterPanel.tsx` — responsive rewrite: `grid grid-cols-2` → `flex flex-wrap` with `min-w-0` on every row so pills wrap under their label instead of overlapping at narrow widths; columns stack below `min-w-[240px]`. Narrow-width stacking order is now Type → Beds → Max $/bed → Buffer → Availability → Source; all row labels unified to one width so the first option lines up across rows
+- `frontend/components/AppHeader.tsx` — renders `<UserMenu />` right-aligned next to the Chat/Map tabs
+
+### Fixed
+- `rag/rag_chain.py` — `extract_filters` mis-parsed price **floors**: "studios above $1,500" (and "over / more than $X") was dropped (→ "No limit") or inverted into a ceiling by the `>$1,500 → max_price_total` heuristic. Reworked the `EXTRACT_PROMPT` price section to decide floor-vs-ceiling from the wording first (floor words → `min_price_per_bed`; "above/over is always a floor, never a max field") + added worked examples. Verified: "above $1,500" → `min_price_per_bed: 1500` on all runs; ranges/ceilings/availability unchanged. Detail in `design-docs/agent/chat-pipeline-and-reliability-fixes.md` §4.6
+
+---
+
+## [Unreleased] — Map View Tab
+
+### Added
+- `backend/main.py` — `GET /api/listings`: queries SQLite directly (no LLM / vector search); supports `beds[]`, `max_price_per_bed`, `buffer_type`, `buffer_value`, `availability_window`, `company`, `property_type`, `penthouse` query params; returns full `Listing` shape matching frontend interface; availability mapped via SQL LIKE patterns; tested against 883-listing dataset
+- `design-docs/map-view-tab/` — full feature spec: layout, filter bar design, implementation steps, test results, per-step change tables
+
+---
+
+## 2026-06-29 — Step 4: LangGraph Agent + Map/Table Export
+
+### Added
+- `rag/agent.py` — LangGraph-based agent: `create_agent` (LangChain 1.x) + `MemorySaver` checkpointer; `housing_search` tool decorated with `@tool(response_format="content_and_artifact")` returns `(str summary, list[dict] listings)`; `_summarize_listings()` injects real listing data so the LLM cannot hallucinate addresses or prices; system prompt instructs model to use tool data only
+- `design-docs/agent/groq-tool-calling.md` — merged from two earlier drafts; documents the `<function=...>` XML format vs OpenAI JSON issue, root causes (wrong LangChain API + model training), the `create_agent` fix, and a model comparison table (8b ❌, 70b ✅ but 100k TPD exhausted, scout 17b ✅ current default); see doc for rate-limit table and fallback recommendations
+- `frontend/lib/exportMap.ts` — `exportMapAsHtml()`: exports the current map state as a self-contained interactive HTML file; includes all listing markers (price pins, popup with photo/address/price/availability), landmark dots, Main Quad polygon, and a bed-type filter bar; filename follows `uiuc-housing-map-{slug}.html` convention
+- Frontend: copy table + save table PNG + save map HTML actions moved to `AssistantMessage.tsx`; each view tab (Cards / Table / Map) now has its own export controls in the toolbar
+
+### Changed
+- `backend/main.py` `/chat` endpoint — replaced five-step RAG pipeline with `await agent.ainvoke()`; `thread_id` from `conversation_id` drives `MemorySaver` per-conversation isolation; listings extracted from first `ToolMessage` where `msg.name == "housing_search"` via `msg.artifact`
+- `frontend/components/MapView.tsx` — converted to `forwardRef<MapViewHandle>`; `MapViewHandle.saveMapHtml()` imperative handle exposed to parent; accepts `filters: Filters` prop passed through to `exportMapAsHtml`; `mapRef` attached with `preserveDrawingBuffer: true`
+- `frontend/components/SummaryTable.tsx` — converted to `forwardRef`; copy/save state and actions moved up to `AssistantMessage`; `tableRowsHtml` and `tableRowsTsv` exported for use in parent; accepts `filters: Filters` prop; table PNG filename follows `uiuc-housing-table-{slug}.png` slug convention
+- `config.py` — `CHROMA_DIR` changed from `"./chroma_db"` (relative) to absolute path via `__file__` (matches `EMBED_MODEL`); prevents path resolution errors when uvicorn is started from a different working directory
+- LLM selection: `/chat` agent uses `meta-llama/llama-4-scout-17b-16e-instruct` on Groq (`LLM_PROVIDER=groq`) or `ChatOllama(LLM_MODEL)` locally; `/api/search` continues to use `llama3.1:8b` for `extract_filters` + `summarize` (no tool calling required)
+
+### Fixed (dev mode)
+- `frontend/app/api/chat/route.ts` — auth check wrapped in `if (process.env.NODE_ENV !== "development")`; without this the chat endpoint returned 401 in local dev (no Supabase session)
+- `frontend/app/api/conversations/route.ts` — GET returns `[]` in dev; POST returns `{ id: crypto.randomUUID() }` in dev, bypassing Supabase
+- `frontend/app/api/conversations/[id]/messages/route.ts` — GET returns `[]` in dev; POST returns `{ id: crypto.randomUUID() }` in dev
+- `frontend/hooks/useChat.ts` — `newConversation()`: `if (!data?.id) return` guards against undefined id entering state when API call fails; `sendMessage()`: wrapped in try/catch/finally — `setIsLoading(false)` now always fires in finally (previously an error would leave the chat permanently in loading state)
+- `frontend/components/chat/ConversationSidebar.tsx` — `key={conv.id ?? i}` fallback prevents React key warning when `conv.id` is temporarily undefined after a failed POST
+
+---
+
+## 2026-06-28 — Design docs restructure + geocoding manual lookup doc + bad-geocode fixes
+
+### Changed
+- `design_docs/` + `design_docs-agent/` → merged into single `design-docs/` folder (hyphen, not underscore)
+- Contents reorganised into three subdirectories:
+  - `design-docs/agent/` — agent architecture docs (`agent-architecture.md`, `layer-1/2/3-*.md`)
+  - `design-docs/agent-implementation-steps/` — `step-1` through `step-6`
+  - `design-docs/ai-pipeline-implementation-phases/` — `phase-1` through `phase-9` + `ai-pipeline.md`
+- Standalone docs (`competitive-analysis`, `filter-system`, `export`, `print-friendly-layout`, etc.) remain at `design-docs/` root
+
+### Added
+- `design-docs/geocoding-manual-lookup.md` — documents three Nominatim failure modes (Champaign County ambiguity, `1/2` fraction crash, em-dash suffix stripping city name); includes diagnosis commands, entry guidelines, full `MANUAL_COORDS` table, and unresolved bad-geocode list
+- `pipeline/geocode.py` `MANUAL_COORDS`: added entries for `409 S 3rd` (misgeocoded to Fisher, IL), `56 1/2 E Green` (misgeocoded to Bulgaria), `60 E Green –` and `60 E. Green` (misgeocoded to Bloomington/Normal area)
+- `snapshots/listings_2026-06-17.db` + ChromaDB: coordinates corrected for all four addresses above
+
+---
+
+## 2026-06-28 — Export PNG filename convention & image layout
+
+- Frontend: structured filename slugs from filter state; per-image header bar — see [`frontend/CHANGELOG.md`](frontend/CHANGELOG.md)
+
+---
+
 ## [Unreleased] — Customizable price buffer + UI polish round 2 + planning docs
 
 > Not yet pushed. Date will be filled in (replacing this heading) at the next push/commit — see note in `feedback-changelog-dating.md` memory.

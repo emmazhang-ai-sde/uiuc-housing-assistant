@@ -112,11 +112,52 @@ Style: `font-size: 11px`, `color: #737373`, `font-family: sans-serif`, `padding:
 
 ---
 
+## Save Action Pattern
+
+All save buttons share the same async status lifecycle: `idle → saving → idle` (success) or `idle → saving → failed → idle` (failure resets after 1.6 s). This is extracted into two reusable pieces:
+
+### `frontend/hooks/useSaveAction.ts`
+
+```ts
+const { status, trigger } = useSaveAction()
+// status: "idle" | "saving" | "failed"
+// trigger(fn: () => Promise<void>) — sets status, calls fn, handles reset
+```
+
+### `frontend/components/SaveButton.tsx`
+
+Renders a dark pill button whose label reflects the current status.
+
+```tsx
+<SaveButton
+  status={status}          // from useSaveAction()
+  onClick={handleSave}
+  label="Save map HTML"    // shown when idle
+  savingLabel="Saving…"   // optional, defaults to "Saving…"
+  disabled={!hasFilter}   // optional extra disabled condition
+  title="tooltip text"    // optional tooltip
+  className="text-xs"     // optional className override
+/>
+```
+
+`AssistantMessage.tsx` uses three independent `useSaveAction()` instances (cards, table, map). `app/map/page.tsx` uses one instance for the map HTML export; the button is additionally disabled when no filters are active (to prevent full-database exports).
+
+---
+
+## Map HTML Export (Map Tab)
+
+The standalone Map tab (`/map`) exposes a **Save map HTML** button in the top-right corner. It calls `MapViewHandle.saveMapHtml()` via a ref — the same export path used inside `AssistantMessage`. The button is disabled when no filters are set; hovering shows: *"No filters selected yet — try picking one above."*
+
+---
+
 ## Files
 
 | File | Role |
 |---|---|
 | `frontend/lib/exportDom.ts` | `buildExportSlug`, `downloadElementPng`, `downloadBlob`, `elementToPngBlob` |
+| `frontend/hooks/useSaveAction.ts` | Reusable save status hook (`useSaveAction`) |
+| `frontend/components/SaveButton.tsx` | Reusable save pill button |
 | `frontend/components/AssistantMessage.tsx` | `saveCardImages()` — cards export logic |
 | `frontend/components/SummaryTable.tsx` | `saveTableImage()` — table export, receives `filters: Filters` prop |
+| `frontend/app/map/page.tsx` | Map tab save button — filter-gated map HTML export |
 | `frontend/app/api/proxy-image/route.ts` | Server-side image proxy for CORS-blocked property photo domains |

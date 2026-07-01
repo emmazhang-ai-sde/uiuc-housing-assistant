@@ -105,6 +105,89 @@ class FilterParams(BaseModel):
 
 ---
 
+## NL Filter Extraction (`EXTRACT_PROMPT` in `rag/rag_chain.py`)
+
+When a user types a query in the chat box, the system runs a fast LLM call to extract structured filter parameters from the natural language before retrieval. This happens in `extract_filters()` via `EXTRACT_PROMPT`.
+
+### How it works
+
+The prompt is a **natural language → structured parameter mapping table**. The LLM reads the rules and converts free-text input into a typed JSON object — no `if/else` code in Python. The rules in the prompt are the control flow.
+
+```
+User types:                 "4 bedroom house under $3000/month for fall"
+                                        ↓
+EXTRACT_PROMPT rules fire:
+  "4 bedroom"           →   beds = 4
+  "house"               →   property_type = "House"
+  "under $3000/month"   →   max_price_total = 3000  (amount > $1,500 → total, not per-bed)
+  "fall"                →   availability_window = "august_2026"
+                                        ↓
+extract_filters() returns:  { beds: 4, property_type: "House", max_price_total: 3000, availability_window: "august_2026" }
+```
+
+### Trigger word rules (as of 2026-06-29)
+
+**beds:**
+| User says | Value |
+|-----------|-------|
+| "studio", "efficiency" | `0` |
+| "1 bed", "1br", "one bedroom" | `1` |
+| "2 bed", "2br", "two bedroom" | `2` |
+| "3 bed", "3br" | `3` |
+| "4 bed", "4+", "4 or more", "large group" | `4` |
+| not mentioned | `null` |
+
+**max_price_per_bed vs max_price_total:**
+- Amount ≤ $1,500 OR user says "per person / per bed / each" → `max_price_per_bed`
+- Amount > $1,500 OR user says "total / per month for the whole unit" → `max_price_total`
+
+**availability_window:**
+| User says | Value |
+|-----------|-------|
+| "available now", "immediate move-in", "move in today" | `"now"` |
+| "June", "June 2026" | `"june_2026"` |
+| "July", "July 2026" | `"july_2026"` |
+| "August", "fall semester", "fall 2026" | `"august_2026"` |
+| "already leased", "unavailable", "show me what's gone" | `"leased"` |
+| not mentioned | `null` |
+
+**property_type:**
+| User says | Value |
+|-----------|-------|
+| "house", "townhouse", "townhome", "single family" | `"House"` |
+| "apartment", "apt", "condo", "unit" | `"Apartment"` |
+| not mentioned or ambiguous | `null` |
+
+**penthouse:**
+| User says | Value |
+|-----------|-------|
+| "penthouse" | `true` |
+| not mentioned | `null` |
+
+### Priority: NL extraction vs UI filters
+
+`merge_filters()` merges the two sources. **Explicit UI filter values always win over NL-extracted values.**
+
+```python
+def merge_filters(extracted: dict, explicit: dict) -> dict:
+    merged = {**extracted}
+    for k, v in explicit.items():
+        if v is not None:
+            merged[k] = v   # explicit overrides NL
+    return merged
+```
+
+This means if a user has the "House" pill active in the UI and also types "show me apartments", the UI filter takes precedence.
+
+### Adding a new extractable filter
+
+1. Add the field to the JSON schema in `EXTRACT_PROMPT`
+2. Add a rules section with explicit trigger words
+3. Add at least one example in the Examples block that exercises the new field
+4. Make sure `build_where()` handles the field (see section below)
+
+---
+
 ## Backend: `build_where()` (`rag/rag_chain.py`)
 
 Converts the merged filter dict to Chroma's `$where` DSL:

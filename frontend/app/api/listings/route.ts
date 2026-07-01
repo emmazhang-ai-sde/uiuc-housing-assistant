@@ -1,23 +1,17 @@
-// [Step 3] Next.js proxy — forwards /api/chat requests to the Python backend.
-// Auth check here ensures only logged-in users can reach the backend.
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   if (process.env.NODE_ENV !== "development") {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 
-  const body = await req.json()
+  const search = req.nextUrl.search
   let res: Response
   try {
-    res = await fetch(`${process.env.BACKEND_URL}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
+    res = await fetch(`${process.env.BACKEND_URL}/api/listings${search}`)
   } catch {
     return NextResponse.json({ error: "Could not reach backend" }, { status: 502 })
   }
@@ -26,7 +20,7 @@ export async function POST(req: NextRequest) {
   try {
     data = await res.json()
   } catch {
-    return NextResponse.json({ error: "Backend returned an invalid response", status: res.status }, { status: 502 })
+    return NextResponse.json({ error: "Backend returned invalid response" }, { status: 502 })
   }
 
   return NextResponse.json(data, { status: res.status })

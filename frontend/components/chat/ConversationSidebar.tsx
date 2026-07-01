@@ -45,8 +45,8 @@ export default function ConversationSidebar({
           </p>
         ) : (
           <ul className="space-y-0.5 px-2">
-            {conversations.map(conv => (
-              <li key={conv.id}>
+            {conversations.map((conv, i) => (
+              <li key={conv.id ?? i}>
                 <button
                   onClick={() => onSelect(conv.id)}
                   className={`w-full text-left px-3 py-2.5 rounded-xl text-sm leading-snug transition-colors ${

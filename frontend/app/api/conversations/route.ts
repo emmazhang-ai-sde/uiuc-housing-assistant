@@ -3,6 +3,8 @@ import { NextResponse } from "next/server"
 
 // GET /api/conversations
 export async function GET() {
+  if (process.env.NODE_ENV === "development") return NextResponse.json([])
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json([], { status: 401 })
@@ -17,6 +19,10 @@ export async function GET() {
 
 // POST /api/conversations
 export async function POST() {
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.json({ id: crypto.randomUUID() })
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 })

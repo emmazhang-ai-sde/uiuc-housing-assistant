@@ -1,10 +1,9 @@
 "use client"
 
-import { useRef, useState } from "react"
-import { Listing } from "@/lib/api"
+import { forwardRef, useState } from "react"
+import { Listing, Filters } from "@/lib/api"
 import { COMPANY_LOGOS } from "@/lib/companies"
 import { availabilitySortValue, availabilityStatus, bedsLabel, splitAvailabilityLines } from "@/lib/availability"
-import { downloadElementPng } from "@/lib/exportDom"
 
 const STATUS_BADGE_STYLE = {
   now:         "bg-now-100 text-neutral-900",
@@ -43,7 +42,7 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;")
 }
 
-function tableRowsHtml(listings: Listing[]): string {
+export function tableRowsHtml(listings: Listing[]): string {
   const headers = ["#", "Source", "Address", "Unit", "Beds", "Price/bed", "Total price", "Availability", "URL"]
   const rows = listings.map((listing, index) => [
     String(index + 1),
@@ -67,7 +66,7 @@ function tableRowsHtml(listings: Listing[]): string {
   `
 }
 
-function tableRowsTsv(listings: Listing[]): string {
+export function tableRowsTsv(listings: Listing[]): string {
   const headers = ["#", "Source", "Address", "Unit", "Beds", "Price/bed", "Total price", "Availability", "URL"]
   const rows = listings.map((listing, index) => [
     String(index + 1),
@@ -91,19 +90,17 @@ function SortArrow({ col, sortKey, dir }: { col: SortKey; sortKey: SortKey; dir:
   return <span className="ml-1">{dir === "asc" ? "↑" : "↓"}</span>
 }
 
-export default function SummaryTable({
-  listings,
-  maxPricePerBed,
-}: {
+const SummaryTable = forwardRef<HTMLDivElement, {
   listings: TableRow[]
   maxPricePerBed: number | null
-}) {
+  filters: Filters
+}>(function SummaryTable({
+  listings,
+  maxPricePerBed,
+  filters,
+}, tableRef) {
   const [sortKey, setSortKey] = useState<SortKey>("price")
   const [sortDir, setSortDir] = useState<SortDir>("asc")
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle")
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "failed">("idle")
-  const tableRef = useRef<HTMLDivElement>(null)
-
   if (!listings.length) return null
 
   const hasWalk = listings.some(r => r.walkMins != null)
@@ -135,62 +132,8 @@ export default function SummaryTable({
     return sortDir === "asc" ? diff : -diff
   })
 
-  async function copyTable() {
-    try {
-      const html = tableRowsHtml(sorted.map(r => r.listing))
-      const tsv = tableRowsTsv(sorted.map(r => r.listing))
-
-      if (navigator.clipboard && "ClipboardItem" in window) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([html], { type: "text/html" }),
-            "text/plain": new Blob([tsv], { type: "text/plain" }),
-          }),
-        ])
-      } else {
-        await navigator.clipboard.writeText(tsv)
-      }
-
-      setCopyStatus("copied")
-    } catch {
-      setCopyStatus("failed")
-    } finally {
-      window.setTimeout(() => setCopyStatus("idle"), 1600)
-    }
-  }
-
-  async function saveTableImage() {
-    if (!tableRef.current) return
-    setSaveStatus("saving")
-    try {
-      await downloadElementPng(tableRef.current, "uiuc-housing-table.png")
-      setSaveStatus("idle")
-    } catch {
-      setSaveStatus("failed")
-      window.setTimeout(() => setSaveStatus("idle"), 1600)
-    }
-  }
-
   return (
     <section className="mt-6 overflow-hidden rounded-3xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] bg-white">
-      <div className="flex items-center justify-between gap-3 border-b border-neutral-100 bg-white px-3 py-2">
-        <span className="text-xs font-semibold text-neutral-400">{sorted.length} rows</span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={copyTable}
-            className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-200"
-          >
-            {copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Copy failed" : "Copy table"}
-          </button>
-          <button
-            onClick={saveTableImage}
-            disabled={saveStatus === "saving"}
-            className="rounded-full bg-neutral-900 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {saveStatus === "saving" ? "Saving" : saveStatus === "failed" ? "Save failed" : "Save PNG"}
-          </button>
-        </div>
-      </div>
       <div ref={tableRef} className="overflow-hidden">
         <table className="w-full table-fixed text-left border-collapse text-sm text-neutral-600">
           <colgroup>
@@ -293,4 +236,6 @@ export default function SummaryTable({
       </div>
     </section>
   )
-}
+})
+
+export default SummaryTable

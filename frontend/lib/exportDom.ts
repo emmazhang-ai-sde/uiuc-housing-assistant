@@ -1,4 +1,46 @@
 import { toBlob } from "html-to-image"
+import { Filters } from "@/lib/api"
+
+export function buildExportSlug(filters: Filters): string {
+  const parts: string[] = []
+
+  if (filters.property_type) {
+    parts.push(filters.property_type.toLowerCase().replace(/\s+/g, "-"))
+  }
+
+  if (filters.beds?.length) {
+    const sorted = [...filters.beds].sort((a, b) => a - b)
+    parts.push(sorted.map(b => b === 0 ? "studio" : `${b}br`).join("-"))
+  }
+
+  if (filters.availability_window) {
+    const avMap: Record<string, string> = {
+      now:          "now",
+      june_2026:    "jun2026",
+      july_2026:    "jul2026",
+      august_2026:  "aug2026",
+      leased:       "leased",
+    }
+    parts.push(avMap[filters.availability_window] ?? filters.availability_window)
+  }
+
+  if (filters.company) {
+    const companyAbbr: Record<string, string> = {
+      "Green Street Realty": "gsr",
+      "University Group":    "ug",
+    }
+    parts.push(
+      companyAbbr[filters.company] ??
+      filters.company.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+    )
+  }
+
+  if (filters.max_price_per_bed != null) {
+    parts.push(`max${filters.max_price_per_bed}`)
+  }
+
+  return parts.length ? parts.join("-") : "all"
+}
 
 async function fetchDataUrl(src: string): Promise<string | null> {
   try {

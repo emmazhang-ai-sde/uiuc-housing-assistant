@@ -1,14 +1,18 @@
 "use client"
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react"
+import ReactMarkdown from "react-markdown"
 import dynamic from "next/dynamic"
 import ListingCard from "./ListingCard"
-import SummaryTable from "./SummaryTable"
+import SummaryTable, { tableRowsHtml, tableRowsTsv } from "./SummaryTable"
+import SaveButton from "./SaveButton"
+import type { MapViewHandle } from "./MapView"
 import { Listing, Filters } from "@/lib/api"
-import { downloadElementPng } from "@/lib/exportDom"
+import { downloadElementPng, buildExportSlug } from "@/lib/exportDom"
 import { LANDMARKS, Landmark } from "@/lib/landmarks"
 import { availabilityStatus, availabilitySortValue } from "@/lib/availability"
 import { fetchWalkingSeconds, fetchDrivingSeconds } from "@/lib/osrm"
+import { useSaveAction } from "@/hooks/useSaveAction"
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false })
 
@@ -38,8 +42,46 @@ export default function AssistantMessage({
   onSelect?: (listing: Listing) => void
 }) {
   const [view, setView] = useState<View>("cards")
-  const [cardSaveStatus, setCardSaveStatus] = useState<"idle" | "saving" | "failed">("idle")
-  const cardsRef = useRef<HTMLDivElement>(null)
+  const cardSave  = useSaveAction()
+  const tableSave = useSaveAction()
+  const mapSave   = useSaveAction()
+  const cardsRef  = useRef<HTMLDivElement>(null)
+  const tableRef  = useRef<HTMLDivElement>(null)
+  const mapViewRef = useRef<MapViewHandle>(null)
+  const [tableCopyStatus, setTableCopyStatus] = useState<"idle" | "copied" | "failed">("idle")
+
+  async function copyTable() {
+    try {
+      const html = tableRowsHtml(sortedListings.map(r => r.listing))
+      const tsv = tableRowsTsv(sortedListings.map(r => r.listing))
+      if (navigator.clipboard && "ClipboardItem" in window) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([tsv], { type: "text/plain" }),
+          }),
+        ])
+      } else {
+        await navigator.clipboard.writeText(tsv)
+      }
+      setTableCopyStatus("copied")
+    } catch {
+      setTableCopyStatus("failed")
+    } finally {
+      window.setTimeout(() => setTableCopyStatus("idle"), 1600)
+    }
+  }
+
+  function saveTableImage() {
+    if (!tableRef.current) return
+    const slug = buildExportSlug(filters)
+    tableSave.trigger(() => downloadElementPng(tableRef.current!, `uiuc-housing-table-${slug}.png`))
+  }
+
+  function saveMapHtml() {
+    if (!mapViewRef.current) return
+    mapSave.trigger(() => mapViewRef.current!.saveMapHtml())
+  }
 
   type SortBy = "default" | "unit" | "price" | "availability"
   const [sortBy, setSortBy] = useState<SortBy>("default")
@@ -126,7 +168,14 @@ export default function AssistantMessage({
 
   const answerBubble = answer ? (
     <div className="w-fit max-w-3xl bg-neutral-900 rounded-3xl rounded-tl-lg px-5 py-3.5 text-[15px] font-medium leading-relaxed text-white">
-      {answer}
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+        }}
+      >
+        {answer.replace(/\n/g, "\n\n")}
+      </ReactMarkdown>
     </div>
   ) : null
 
@@ -135,27 +184,80 @@ export default function AssistantMessage({
     if (!cardGrid) return
 
     const cards = Array.from(cardGrid.children) as HTMLElement[]
+    const total = cards.length
     const chunks: HTMLElement[][] = []
     for (let i = 0; i < cards.length; i += 9) {
       chunks.push(cards.slice(i, i + 9))
     }
 
-    setCardSaveStatus("saving")
-    try {
-      for (let i = 0; i < chunks.length; i += 1) {
+    const slug = buildExportSlug(filters)
+
+    let sortSuffix = ""
+    if (sortLandmark) {
+      const lmSlug = sortLandmark.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+      sortSuffix = `-walk-${lmSlug}`
+    } else if (sortBy === "unit") {
+      sortSuffix = `-beds-${sortDir}`
+    } else if (sortBy === "price") {
+      sortSuffix = `-price-${sortDir}`
+    } else if (sortBy === "availability") {
+      sortSuffix = `-avail-${sortDir}`
+    }
+
+    cardSave.trigger(async () => { for (let i = 0; i < chunks.length; i += 1) {
+        const suffix = chunks.length > 1 ? `-${i + 1}of${chunks.length}` : ""
+        const filename = `uiuc-housing-cards-${slug}${sortSuffix}${suffix}.png`
+
+        // Outer shell keeps the element in the viewport for html-to-image rendering
+        const shell = document.createElement("div")
+        shell.style.cssText = "position:fixed;top:0;left:0;z-index:-1;pointer-events:none;"
+
+        // Flex column: cards grid on top, footer bar on bottom
         const exportGrid = document.createElement("div")
-        // Keep in viewport so html2canvas can measure it; hide visually
-        exportGrid.style.position = "fixed"
-        exportGrid.style.top = "0"
-        exportGrid.style.left = "0"
-        exportGrid.style.zIndex = "-1"
-        exportGrid.style.pointerEvents = "none"
         exportGrid.style.width = "1120px"
-        exportGrid.style.padding = "16px"
         exportGrid.style.background = "#f5f5f5"
-        exportGrid.style.display = "grid"
-        exportGrid.style.gridTemplateColumns = "repeat(3, 1fr)"
-        exportGrid.style.gap = "12px"
+        exportGrid.style.display = "flex"
+        exportGrid.style.flexDirection = "column"
+
+        // Header bar: [unit range (left) | filename (center) | page number (right)]
+        const start = i * 9 + 1
+        const end = Math.min((i + 1) * 9, total)
+
+        const header = document.createElement("div")
+        header.style.cssText = [
+          "display:flex",
+          "align-items:center",
+          "padding:14px 20px 10px",
+          "font-size:11px",
+          "font-family:sans-serif",
+          "color:#737373",
+          "border-bottom:1px solid #e5e5e5",
+        ].join(";")
+
+        const rangeEl = document.createElement("div")
+        rangeEl.textContent = `Showing ${start}–${end} of ${total} units`
+        rangeEl.style.flex = "1"
+
+        const nameEl = document.createElement("div")
+        nameEl.textContent = filename
+        nameEl.style.flex = "1"
+        nameEl.style.textAlign = "center"
+
+        const pageEl = document.createElement("div")
+        pageEl.textContent = `${i + 1} / ${chunks.length}`
+        pageEl.style.flex = "1"
+        pageEl.style.textAlign = "right"
+
+        header.appendChild(rangeEl)
+        header.appendChild(nameEl)
+        header.appendChild(pageEl)
+        exportGrid.appendChild(header)
+
+        const cardsContainer = document.createElement("div")
+        cardsContainer.style.padding = "12px 16px 16px"
+        cardsContainer.style.display = "grid"
+        cardsContainer.style.gridTemplateColumns = "repeat(3, 1fr)"
+        cardsContainer.style.gap = "12px"
 
         chunks[i].forEach(card => {
           const clone = card.cloneNode(true) as HTMLElement
@@ -172,22 +274,20 @@ export default function AssistantMessage({
             urlLabel.style.paddingBottom = "12px"
             clone.appendChild(urlLabel)
           }
-          exportGrid.appendChild(clone)
+          cardsContainer.appendChild(clone)
         })
 
-        document.body.appendChild(exportGrid)
+        exportGrid.appendChild(cardsContainer)
+
+        shell.appendChild(exportGrid)
+        document.body.appendChild(shell)
         try {
-          await downloadElementPng(exportGrid, `uiuc-housing-cards-${i + 1}.png`)
+          await downloadElementPng(exportGrid, filename)
         } finally {
-          exportGrid.remove()
+          shell.remove()
         }
       }
-      setCardSaveStatus("idle")
-    } catch (err) {
-      console.error("Save cards PNG failed:", err)
-      setCardSaveStatus("failed")
-      window.setTimeout(() => setCardSaveStatus("idle"), 1600)
-    }
+    })
   }
 
   return (
@@ -200,12 +300,13 @@ export default function AssistantMessage({
 
         {listings.length > 0 && (
           <>
-            <SearchSummary count={listings.length} filters={filters} query={query} />
+            <SearchSummary count={listings.length} applied={filtersApplied ?? {}} filters={filters} />
 
-            {/* Sort bar */}
-            <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-3 flex items-center gap-3 text-sm flex-wrap">
-              {/* Field sort pills */}
-              <span className="text-neutral-900 text-sm font-semibold shrink-0">Sort</span>
+            {/* Sort bar + view controls */}
+            <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-3 flex flex-col gap-2 text-sm">
+              {/* Row 1: Sort pills + view toggle */}
+              <div className="flex items-center gap-3">
+              <span className="text-neutral-900 text-sm font-semibold shrink-0 w-20">Sort</span>
               <div className="flex gap-1">
                 {([["unit", "Unit"], ["price", "Price/bed"], ["availability", "Availability"]] as const).map(([key, label]) => {
                   const active = sortBy === key && !sortLandmark
@@ -234,55 +335,14 @@ export default function AssistantMessage({
                 })}
               </div>
 
-              {/* Divider */}
-              <div className="h-4 w-px bg-neutral-200 shrink-0" />
+              {/* Spacer */}
+              <div className="flex-1" />
 
-              {/* Distance sort */}
-              <span className="text-neutral-900 text-sm font-semibold shrink-0">Distance</span>
-              <select
-                value={sortLandmark?.name ?? ""}
-                onChange={e => {
-                  const lm = LANDMARKS.find(l => l.name === e.target.value) ?? null
-                  setSortLandmark(lm)
-                  if (lm) setSortBy("default")
-                }}
-                className="text-sm rounded-full border border-neutral-200 bg-neutral-100 px-3 py-1 text-neutral-700 focus:outline-none focus:ring-1 focus:ring-neutral-400"
-              >
-                <option value="">Select a landmark…</option>
-                {LANDMARKS.map(lm => (
-                  <option key={lm.name} value={lm.name}>{lm.name}</option>
-                ))}
-              </select>
-              {loadingDistances && (
-                <span className="text-xs text-neutral-400">Loading…</span>
-              )}
-              {sortLandmark && !loadingDistances && (
-                <button
-                  onClick={() => { setSortLandmark(null); setWalkSeconds(null) }}
-                  className="text-xs text-neutral-400 hover:text-neutral-700"
-                  title="Clear sort"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            {/* View controls */}
-            <div className="flex justify-end items-center gap-2 flex-wrap">
-              {view === "cards" && listings.length > 0 && (
-                <button
-                  onClick={saveCardImages}
-                  disabled={cardSaveStatus === "saving"}
-                  className="rounded-full bg-neutral-900 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {cardSaveStatus === "saving" ? "Saving cards" : cardSaveStatus === "failed" ? "Save failed" : "Save cards PNG"}
-                </button>
-              )}
-
+              {/* View toggle */}
               <div className="flex items-center gap-1 bg-neutral-100 rounded-full p-0.5">
                 <button
                   onClick={() => setView("cards")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                     view === "cards"
                       ? "bg-white text-neutral-900 shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
                       : "text-neutral-500 hover:text-neutral-700"
@@ -292,7 +352,7 @@ export default function AssistantMessage({
                 </button>
                 <button
                   onClick={() => setView("table")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                     view === "table"
                       ? "bg-white text-neutral-900 shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
                       : "text-neutral-500 hover:text-neutral-700"
@@ -302,7 +362,7 @@ export default function AssistantMessage({
                 </button>
                 <button
                   onClick={() => setView("map")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                     view === "map"
                       ? "bg-white text-neutral-900 shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
                       : "text-neutral-500 hover:text-neutral-700"
@@ -310,6 +370,56 @@ export default function AssistantMessage({
                 >
                   Map
                 </button>
+              </div>
+              </div>
+
+              {/* Row 2: Distance + action buttons */}
+              <div className="flex items-center gap-3">
+                <span className="text-neutral-900 text-sm font-semibold shrink-0 w-20">Distance</span>
+                <select
+                  value={sortLandmark?.name ?? ""}
+                  onChange={e => {
+                    const lm = LANDMARKS.find(l => l.name === e.target.value) ?? null
+                    setSortLandmark(lm)
+                    if (lm) setSortBy("default")
+                  }}
+                  className="text-sm rounded-full border border-neutral-200 bg-neutral-100 px-3 py-1 text-neutral-700 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                >
+                  <option value="">Select a landmark…</option>
+                  {LANDMARKS.map(lm => (
+                    <option key={lm.name} value={lm.name}>{lm.name}</option>
+                  ))}
+                </select>
+                {loadingDistances && (
+                  <span className="text-xs text-neutral-400">Loading…</span>
+                )}
+                {sortLandmark && !loadingDistances && (
+                  <button
+                    onClick={() => { setSortLandmark(null); setWalkSeconds(null) }}
+                    className="text-xs text-neutral-400 hover:text-neutral-700"
+                    title="Clear sort"
+                  >
+                    ✕
+                  </button>
+                )}
+                <div className="flex-1" />
+                {view === "cards" && (
+                  <SaveButton status={cardSave.status} onClick={saveCardImages} label="Save cards PNG" savingLabel="Saving cards" />
+                )}
+                {view === "table" && (
+                  <>
+                    <button
+                      onClick={copyTable}
+                      className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-200"
+                    >
+                      {tableCopyStatus === "copied" ? "Copied" : tableCopyStatus === "failed" ? "Copy failed" : "Copy table"}
+                    </button>
+                    <SaveButton status={tableSave.status} onClick={saveTableImage} label="Save table PNG" savingLabel="Saving" />
+                  </>
+                )}
+                {view === "map" && (
+                  <SaveButton status={mapSave.status} onClick={saveMapHtml} label="Save map HTML" />
+                )}
               </div>
             </div>
 
@@ -324,11 +434,11 @@ export default function AssistantMessage({
 
             {/* Table view */}
             {view === "table" && (
-              <SummaryTable listings={sortedListings} maxPricePerBed={maxPricePerBed} />
+              <SummaryTable ref={tableRef} listings={sortedListings} maxPricePerBed={maxPricePerBed} filters={filters} />
             )}
 
             {/* Map view */}
-            {view === "map" && <MapView listings={listings} walkMinsByUrl={walkMinsByUrl} />}
+            {view === "map" && <MapView ref={mapViewRef} listings={listings} filters={filters} walkMinsByUrl={walkMinsByUrl} />}
           </>
         )}
       </div>
@@ -338,32 +448,42 @@ export default function AssistantMessage({
 
 function SearchSummary({
   count,
+  applied,
   filters,
-  query,
 }: {
   count: number
+  applied: Record<string, unknown>
   filters: Filters
-  query: string
 }) {
-  function formatBeds(beds: number[] | null): string {
-    if (!beds || beds.length === 0) return "Any"
-    const sorted = [...beds].sort((a, b) => a - b)
-    const labels = sorted.map(b => {
-      if (b === 0) return "Studio"
-      if (b >= 4) return "4+"
-      return `${b}`
-    })
+  // Prefer the filters actually applied to this search (NL-extracted + panel +
+  // the available-only default); fall back to the FilterPanel snapshot otherwise.
+  const beds         = (applied.beds ?? filters.beds) as number | number[] | null
+  const minPpb       = applied.min_price_per_bed as number | undefined
+  const maxPpb       = (applied.max_price_per_bed ?? filters.max_price_per_bed) as number | null | undefined
+  const availWindow  = (applied.availability_window ?? filters.availability_window) as string | null | undefined
+  const availableOnly = applied.available_only === true
+  const propertyType = (applied.property_type ?? filters.property_type) as string | null | undefined
+  const company      = (applied.company ?? filters.company) as string | null | undefined
+  const bufferType   = (applied.buffer_type ?? filters.buffer_type) as string | null | undefined
+  const bufferValue  = (applied.buffer_value ?? filters.buffer_value) as number | null | undefined
+
+  function formatBeds(): string {
+    if (beds == null) return "Any"
+    const arr = Array.isArray(beds) ? beds : [beds]
+    if (arr.length === 0) return "Any"
+    const sorted = [...arr].sort((a, b) => a - b)
+    const labels = sorted.map(b => (b === 0 ? "Studio" : b >= 5 ? "5+" : `${b}`))
     return labels.join(", ") + (sorted.every(b => b === 0) ? "" : sorted[0] > 0 ? " bed" : "")
   }
 
   function formatBudget(): string {
-    if (!filters.max_price_per_bed) return "No limit"
-    const base = `≤ $${filters.max_price_per_bed.toLocaleString()}/bed`
-    if (filters.buffer_type === "exact") return `${base} (exact)`
-    if (filters.buffer_type === "percent" && filters.buffer_value)
-      return `${base}  +${filters.buffer_value}%`
-    if (filters.buffer_type === "fixed" && filters.buffer_value)
-      return `${base}  +$${filters.buffer_value}`
+    if (minPpb && maxPpb) return `$${minPpb.toLocaleString()}–$${maxPpb.toLocaleString()}/bed`
+    if (minPpb && !maxPpb) return `≥ $${minPpb.toLocaleString()}/bed`
+    if (!maxPpb) return "No limit"
+    const base = `≤ $${maxPpb.toLocaleString()}/bed`
+    if (bufferType === "exact") return `${base} (exact)`
+    if (bufferType === "percent" && bufferValue) return `${base}  +${bufferValue}%`
+    if (bufferType === "fixed" && bufferValue) return `${base}  +$${bufferValue}`
     return base
   }
 
@@ -374,16 +494,19 @@ function SearchSummary({
     august_2026: "Aug '26",
     leased: "Leased",
   }
-  const otherParts: string[] = []
-  if (filters.availability_window) otherParts.push(WINDOW_LABELS[filters.availability_window] ?? filters.availability_window)
-  if (filters.company) otherParts.push(filters.company)
-  if (filters.property_type) otherParts.push(filters.property_type)
+
+  const availabilityValue = availWindow
+    ? WINDOW_LABELS[availWindow] ?? availWindow
+    : availableOnly
+    ? "Available only"
+    : null
 
   const rows: { label: string; value: string }[] = [
-    { label: "Bedroom",  value: formatBeds(filters.beds) },
+    ...(propertyType ? [{ label: "Type", value: propertyType }] : []),
+    { label: "Bedroom",  value: formatBeds() },
     { label: "Budget",   value: formatBudget() },
-    { label: "Query",    value: `"${query}"` },
-    ...(otherParts.length ? [{ label: "Filter", value: otherParts.join(" · ") }] : []),
+    ...(availabilityValue ? [{ label: "Availability", value: availabilityValue }] : []),
+    { label: "Source", value: company ?? "All" },
   ]
 
   return (

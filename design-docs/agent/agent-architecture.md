@@ -25,23 +25,37 @@ Transform the current single-turn RAG pipeline into a ChatGPT-like conversationa
 ## Architecture Diagram
 
 ```
-Browser (Next.js)
-│
-│  ConversationSidebar  ←→  Supabase DB
-│  ChatWindow                (conversations + messages tables)
-│  MessageInput
-│       │
-│       │  POST /api/chat  (full history sent each request)
-│       ▼
-Python Backend (FastAPI)
-│
-│  AgentExecutor
-│  ├── ConversationBufferMemory  (rebuilt from request history)
-│  ├── Tool: housing_search      → ChromaDB (existing RAG)
-│  └── Tool: nearby_places       → Google Maps Places API
-│
-└── answer → streamed back to browser
+┌─────────────────────────── Agent (LangGraph) ──────────────────────────────┐
+│  LLM (Groq / Ollama)                                                        │
+│  - Understands natural-language intent                                      │
+│  - Maintains multi-turn conversation memory                                 │
+│  - Decides when and with what query to call housing_search                  │
+│                                                                              │
+│   ┌──────────────── housing_search tool ────────────────┐                   │
+│   │  Input:  NL query + explicit UI FilterPanel filters  │                   │
+│   │  Action: Chroma vector search → returns listings[]   │                   │
+│   │  Output: { listings: Listing[], summary_text }       │                   │
+│   └──────────────────────────────────────────────────────┘                   │
+│                                                                              │
+│  Agent receives listings[] artifact → writes final answer text               │
+└──────────────────────────────────────────────────────────────────────────────┘
+          ↓
+   { answer: string, listings: Listing[] }
+          ↓
+   Frontend: AssistantMessage
+     ├── answer bubble  (text written by the Agent LLM)
+     ├── Card View  ┐
+     ├── Table View ├── three display modes for the same listings[] array
+     └── Map View   ┘
+
+FilterPanel → UI filters → injected into housing_search via contextvars → Chroma where clause
 ```
+
+**Responsibility split:**
+- **Agent** — talks and remembers (LLM layer)
+- **housing_search tool** — queries data (retrieval layer)
+- **FilterPanel** — adds hard constraints to the tool query
+- **Card / Table / Map views** — three rendering modes for the same `listings[]`; the data is identical across all three
 
 ---
 
@@ -92,10 +106,10 @@ New chat interface added to the existing Next.js frontend. Covers:
 | Step | Layer | What gets built | Status | Doc |
 |------|-------|-----------------|--------|-----|
 | 1 | Layer 3: Frontend | Static chat UI with hardcoded messages | ✅ Complete | [step-1-static-chat-ui.md](step-1-static-chat-ui.md) |
-| 2 | Layer 1: Database | Supabase table setup, Next.js API routes, wire sidebar + history into `useChat` | 🔜 Planned | [step-2-database-api-routes.md](step-2-database-api-routes.md) |
-| 3 | Layer 2: Backend | Add `ConversationBufferMemory` to existing RAG chain | 🔜 Not started | [step-3-conversation-memory.md](step-3-conversation-memory.md) |
-| 4 | Layer 2: Backend | Upgrade to `AgentExecutor` with `housing_search` tool | 🔜 Not started | [step-4-agent-executor.md](step-4-agent-executor.md) |
-| 5 | Layer 2: Backend | Add `nearby_places` tool (Google Maps Places API) | 🔜 Not started | [step-5-nearby-places.md](step-5-nearby-places.md) |
+| 2 | Layer 1: Database | Supabase table setup, Next.js API routes, wire sidebar + history into `useChat` | ✅ Complete | [step-2-database-api-routes.md](step-2-database-api-routes.md) |
+| 3 | Layer 2: Backend | LangGraph agent + `housing_search` tool + `/chat` endpoint | ✅ Complete | [step-3-conversation-memory.md](step-3-conversation-memory.md) |
+| 4 | Layer 3: Frontend | Unified chat UI — EmptyState, FilterPanel, card/table/map views in `/chat` | ✅ Complete | [unified-chat-ui.md](unified-chat-ui.md) |
+| 5 | Layer 2: Backend | FilterPanel → `ui_filters` contextvars → `housing_search` where clause | ✅ Complete | [unified-chat-ui.md](unified-chat-ui.md) |
 | 6 | Layer 3: Frontend | Streaming token-by-token response rendering | 🔜 Not started | [step-6-streaming.md](step-6-streaming.md) |
 
 ---

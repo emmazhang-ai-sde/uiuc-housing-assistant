@@ -15,7 +15,7 @@ LLM_MODEL      = "llama3.1:8b"   # used by Ollama; Groq uses "llama-3.1-8b-insta
 EMBED_MODEL = str(_BASE_DIR / "models" / "all-MiniLM-L6-v2")
 
 # Vector store
-CHROMA_DIR = "./chroma_db"
+CHROMA_DIR = str(_BASE_DIR / "chroma_db")
 
 # Snapshots
 SNAPSHOTS_DIR = "./snapshots"

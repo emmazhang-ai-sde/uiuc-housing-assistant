@@ -4,7 +4,76 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 ---
 
+## 2026-06-28 — Export PNG: filename convention & image layout
+
+### Changed
+- `lib/exportDom.ts` — added `buildExportSlug(filters: Filters)`: produces a kebab-case slug from active filters in field order: type → beds → availability → source → budget. Special cases: `beds=0` → `studio`; `"Green Street Realty"` → `gsr`; `"University Group"` → `ug`. Returns `"all"` when no filters are active.
+- `AssistantMessage.tsx` — `saveCardImages()` filename now encodes filter slug + sort suffix + chunk suffix: `uiuc-housing-cards-{slug}{sort-suffix}{chunk-suffix}.png`. Sort suffixes: `-beds-asc/desc`, `-price-asc/desc`, `-avail-asc/desc`, `-walk-{landmark-slug}`; omitted when sort is default. Each exported PNG now includes a header bar (unit range left · filename centered · page number right, e.g. `2 / 3`) separated from the cards grid by a `1px #e5e5e5` divider.
+- `SummaryTable.tsx` — replaced `query: string` prop with `filters: Filters`; table PNG filename follows the same slug convention: `uiuc-housing-table-{slug}.png`.
+
+### Added
+- `design_docs-agent/export.md` — documents filename convention, PNG image layout, and DOM construction details.
+
+---
+
+## 2026-06-29 — Map export + table refactor + dev mode fixes
+
+### Added
+- `lib/exportMap.ts` — `exportMapAsHtml()`: generates a self-contained interactive HTML file with MapLibre GL, all listing pins (price labels + popup), landmark dots, Main Quad polygon, and a bed-type filter bar; filename: `uiuc-housing-map-{slug}.html`
+- `AssistantMessage.tsx` — **copy table** (HTML + TSV to clipboard), **save table PNG**, and **save map HTML** action buttons; each view's toolbar now has its own export controls; sort suffix included in card image filenames (`-walk-{landmark}`, `-beds-asc/desc`, `-price-asc/desc`, `-avail-asc/desc`)
+- `lib/exportDom.ts` — `buildExportSlug(filters: Filters)`: kebab-case slug from active filter state (field order: type → beds → availability → source → budget); `downloadBlob()` utility extracted for non-DOM blob downloads
+
+### Changed
+- `components/MapView.tsx` — converted to `forwardRef<MapViewHandle>`; `saveMapHtml()` imperative handle allows `AssistantMessage` to trigger export without prop drilling callbacks; `mapRef` with `preserveDrawingBuffer: true` for canvas reads; accepts `filters: Filters` prop
+- `components/SummaryTable.tsx` — converted to `forwardRef`; `tableRowsHtml` and `tableRowsTsv` are now exported functions (used by `AssistantMessage.copyTable`); copy/save state and handlers moved up to `AssistantMessage`; accepts `filters: Filters` prop; PNG filename uses `buildExportSlug`
+
+### Fixed
+- `app/api/chat/route.ts` — auth bypass in `NODE_ENV === "development"` so chat works without a Supabase session in local dev
+- `app/api/conversations/route.ts` — GET returns `[]` in dev; POST returns a random UUID without hitting Supabase
+- `app/api/conversations/[id]/messages/route.ts` — GET/POST both return early with empty/stub data in dev
+- `hooks/useChat.ts` — `newConversation()` guards against undefined conversation id; `sendMessage()` wrapped in try/catch/finally so `isLoading` always resets even on error
+- `components/chat/ConversationSidebar.tsx` — `key={conv.id ?? i}` prevents React key warning when id is temporarily undefined
+
+---
+
 ## [Unreleased]
+
+### Auth UI: Login/Sign-Up split, user menu, branding
+
+#### Added
+- `components/UserMenu.tsx` — user control in `AppHeader` (right-aligned): shows a `#7B90A0` avatar with the email's first initial when signed in; clicking opens a dropdown with the email + **Log out**. Shows a **Log In** link when signed out, and a neutral placeholder while the session resolves. Subscribes to `supabase.auth.onAuthStateChange` so it updates without a reload.
+- `app/login/page.tsx` — **Log In / Sign Up** segmented toggle (pill switcher) on the email step. Sign Up keeps the beta-waitlist RPC check + `shouldCreateUser: true`; Log In skips the waitlist check, sends with `shouldCreateUser: false`, and shows a "No account found — try Sign Up instead" fallback when the email isn't registered. Button label + helper copy are mode-aware.
+- `public/logo.png` — product logo/illustration; rendered as a rounded banner above the title on the login card.
+
+#### Changed
+- `components/AppHeader.tsx` — imports and renders `<UserMenu />` in a right-aligned (`ml-auto`) slot next to the Chat/Map tabs.
+- `app/login/page.tsx` — page wrapper now uses the **Nunito Sans** font, self-hosted and scoped to `/login` via `next/font/google` (`Nunito_Sans`); rest of the app is unaffected.
+
+### FilterPanel: responsive reflow + row reorder
+
+#### Changed
+- `components/FilterPanel.tsx` — replaced the rigid `grid grid-cols-2` layout with `flex flex-wrap`; every label+pills row is now `flex-wrap` with `min-w-0` so chips wrap under their label instead of overlapping when the panel is narrow. The two columns are `flex-1` with a `min-w-[240px]` floor, so they stack vertically once too narrow to sit side by side.
+- Rows regrouped so the narrow-width stacking order is **Type → Beds → Max $/bed → Buffer → Availability → Source** (col 1: Type/Beds/Max $/bed/Buffer; col 2: Availability/Source).
+- Unified all row label widths to a single `w-20` (`labelCls`) so the first option in every row starts at the same x-position (previously Max $/bed and Buffer used a wider `w-20` label vs `w-16` elsewhere, shifting their first pill right).
+
+### Map View Tab
+
+#### Added
+- `app/map/page.tsx` — new standalone `/map` route: full-screen MapView + floating `MapFilterBar` + filter-gated Save map HTML button; listings fetched directly from backend via `fetchAllListings()` on filter change; loading / empty / error overlay states
+- `app/api/listings/route.ts` — Next.js proxy for `GET /api/listings`; auth-gated in production (Supabase), bypassed in dev
+- `components/AppHeader.tsx` — top header bar with **Chat** / **Map** tab switcher; `usePathname()` highlights the active tab
+- `components/MapFilterBar.tsx` — floating inline filter card (`position: absolute`, top-left of map); all filter options always visible (no dropdown); rows: Beds, Max $/bed + Buffer, Type + Penthouse, Availability, Source; availability pills show colored dots — Now `#D2F55E`, Aug '26 `#C7DDB5`, Leased `#f5f5f5` with border; Clear all appears only when a filter is active
+- `hooks/useSaveAction.ts` — `useSaveAction()`: reusable hook encapsulating `idle → saving → idle/failed` lifecycle with 1.6 s auto-reset
+- `components/SaveButton.tsx` — dark pill button whose label reflects `SaveStatus`; accepts `label`, `savingLabel`, `disabled`, `title`, `className`
+- `lib/api.ts` — `fetchAllListings(filters)`: serializes `Filters` to query params, calls `/api/listings` proxy, returns `Listing[]`
+
+#### Changed
+- `components/MapView.tsx` — added `mapHeight?: string` and `className?: string` props; map page passes `mapHeight="100%"` and `className="relative w-full h-full"` for full-screen rendering; existing chat usage unchanged
+- `app/chat/page.tsx` — outer div restructured to `flex-col h-screen`; `<AppHeader />` inserted above main content area; main area wrapped in `flex-1 min-h-0 overflow-hidden`
+- `components/AssistantMessage.tsx` — `cardSaveStatus` / `tableSaveStatus` / `mapSaveStatus` states + handlers replaced with three independent `useSaveAction()` instances; save buttons replaced with `<SaveButton>`
+
+#### Save map HTML (Map Tab)
+Button is **disabled** when no filters are active (tooltip: "No filters selected yet — try picking one above") to prevent full-database exports. When enabled, exports only the currently filtered listings via the existing `MapViewHandle.saveMapHtml()` path.
 
 ### Phase 8 — Detail Drawer
 - Replace "View Listing →" button on each card with an `onSelect(listing)` callback

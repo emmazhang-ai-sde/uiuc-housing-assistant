@@ -1,8 +1,11 @@
 # Groq Tool Calling: Format Issue & Model Analysis
 
 **Created: 2026-06-28**
+**Updated: 2026-06-29** — added "Understanding Function Calling: A Second `tool_use_failed` Trigger"
 
 ← Back to [Agent Architecture](agent-architecture.md)
+
+> `tool_use_failed` (HTTP 400) has **two distinct root causes**. Cause 1 (below, the original content) is about the *format* of the tool call — the model emits the wrong syntax. Cause 2 (new section near the end) is about the *content* of the turn — the model mixes free text into a tool-calling generation. Same error code, opposite fixes.
 
 ---
 
@@ -102,6 +105,87 @@ Groq does not expose daily (TPD) limits in response headers — they only appear
 
 ---
 
+## Understanding Function Calling: A Second `tool_use_failed` Trigger
+
+Everything above (Cause 1) is about the **format** of the tool call — the model emits the wrong syntax. There is a second, distinct way to hit the exact same `400 tool_use_failed`, and it's about the **content** of the turn. Understanding it requires understanding what function calling actually is.
+
+### What function calling really is
+
+An LLM cannot execute code. It only emits text. "Function calling" is a convention layered on top of that:
+
+1. We describe our tools to the model as JSON schemas (name, description, parameters).
+2. When the model "wants" to call a tool, it does not run anything. It emits a specially formatted block of text that *represents* a function call.
+3. The runtime (Groq's API + LangChain) parses that text, runs the real Python function, and feeds the result back as a `tool` message.
+4. The model reads the result on the next turn and writes a final natural-language answer.
+
+So the model's output on any single turn is **one of two things**:
+- a **final text answer** (no tool call), or
+- a **pure tool call** (structured function-call text, and nothing else).
+
+Groq enforces this either/or strictly. When `tool_choice="auto"` and the model signals it wants a tool, Groq's server-side parser expects the generation to be *only* a function call. If the generation also contains free text, the parse fails → `tool_use_failed`.
+
+### The bug we hit (2026-06-29)
+
+Our agent system prompt told the model: *"when you show listings, begin your reply with the token `[LISTINGS]`."* The intent was a UI signal — the frontend would see `[LISTINGS]` and render a card grid.
+
+The problem: **"showing listings" is exactly the moment the agent calls `housing_search`.** So on the "go ahead" turn, the model tried to emit, in one generation:
+
+```
+[LISTINGS]\n                      ← free text our prompt demanded
+<tool call to housing_search>     ← the actual function call
+```
+
+Groq saw text mixed into a tool-calling generation and rejected the whole thing:
+
+```
+400 tool_use_failed
+failed_generation: '[LISTINGS]\n'
+```
+
+This is why it *looked* intermittent: turns that only asked clarifying questions were pure text and worked fine. The crash appeared **only on the first turn that called a tool** — every time, reliably, but disguised as randomness because the early turns succeeded.
+
+### Cause 1 vs Cause 2 — same error, opposite fixes
+
+| | Cause 1 (format) | Cause 2 (content) |
+|---|---|---|
+| What's wrong | Tool call emitted in Llama XML, not OpenAI JSON | Tool call polluted with extra free text |
+| Trigger | Model trained on the wrong format (e.g. `llama-3.1`) | Prompt forces an in-band token on a tool-calling turn |
+| `failed_generation` | `<function=...>{...}</function>` | `[LISTINGS]\n` |
+| Fix | Use a model with native JSON tool calls (Llama 4) | Never require in-band markers on tool-calling turns |
+| Unrelated to | — | which model writes the code (Sonnet/Opus); `MemorySaver` trimming |
+
+### Design principle
+
+**Never use an in-band text token to control the UI from a tool-calling agent.** A tool-calling turn must be pure. Derive UI state from the *structure* of the result messages, not from a magic string in the model's prose.
+
+The fix scans the result messages for a `ToolMessage` named `housing_search` — if the tool ran this turn, show the grid:
+
+```python
+# backend/main.py — /chat endpoint
+listings = []
+for msg in result["messages"]:
+    if isinstance(msg, ToolMessage) and msg.name == "housing_search":
+        listings = msg.artifact or []
+        break
+```
+
+No marker, no parsing of the model's text, no possibility of the Cause 2 crash. The agent's system prompt no longer mentions `[LISTINGS]` at all.
+
+### The `messages` array is the real interface
+
+This is the deeper lesson. The `messages` list is the entire contract between model, runtime, and tools:
+
+| Message type | Carries |
+|---|---|
+| `system` | instructions / system prompt |
+| `user` (`HumanMessage`) | the user's input |
+| `assistant` (`AIMessage`) | the model's reply **or** a `tool_calls` request |
+| `tool` (`ToolMessage`) | a tool's result, linked by `tool_call_id`, with the data in `.artifact` |
+
+A tool-calling turn produces an `AIMessage` with `tool_calls`; the runtime appends a `ToolMessage` with the result; the next model call sees both. **UI signals belong in that structure** — message types, tool names, artifacts — not smuggled inside the assistant's natural-language text. The moment you ask the model to emit a control token in its prose, you have coupled UI state to the one part of the system Groq refuses to let you pollute on a tool-calling turn.
+
+---
+
 ## Decision
 
 **Use `meta-llama/llama-4-scout-17b-16e-instruct` as the agent LLM.**
@@ -117,6 +201,11 @@ If scout hits limits, try `groq/compound-mini` next before falling back to 70b.
 
 ---
 
-## Affected File
+## Affected Files
 
-`rag/agent.py` — model selection block and `create_agent` call.
+**Cause 1 (format / model selection):**
+- `rag/agent.py` — model selection block and `create_agent` call.
+
+**Cause 2 (in-band token removal, 2026-06-29):**
+- `rag/agent.py` — removed the `[LISTINGS]` instruction from the system prompt; the prompt now states the UI renders the grid automatically when `housing_search` runs.
+- `backend/main.py` (`/chat`) — replaced the `"[LISTINGS]" in raw_answer` text check with a scan for a `housing_search` `ToolMessage`.
