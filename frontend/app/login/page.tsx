@@ -149,7 +149,7 @@ export default function LoginPage() {
         <div className="mb-8">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo.png"
+            src="/logos/project-picture.png"
             alt="UIUC Housing Assistant"
             className="w-full rounded-2xl mb-5 object-cover"
           />

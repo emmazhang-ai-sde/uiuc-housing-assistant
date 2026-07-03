@@ -36,6 +36,17 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 ---
 
+## 2026-07-02 — Pre-launch access hardening
+
+### Added
+- `app/robots.ts` — disallow-all for every crawler while `LAUNCH_MODE !== "live"`, so gated pages can't be indexed before the site officially launches; switches to allow-all once `LAUNCH_MODE=live`
+
+### Fixed
+- `proxy.ts` — `/login` was public regardless of `LAUNCH_MODE`, so it was directly reachable (and crawlable) during `coming_soon` even though `/`, `/chat`, `/map`, and `/about` were already gated. `/login` is now only public when `LAUNCH_MODE === "live"`; during `coming_soon` it falls through to the same `/coming-soon` redirect as every other route
+- `app/login/page.tsx` — `src="/logo.png"` pointed at a path removed by the `public/logo.png` → `public/logos/project-picture.png` rename, leaving a broken image on the login card; corrected to the new path
+
+---
+
 ## [Unreleased]
 
 ### About page

@@ -28,13 +28,16 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
-  const isPublic = path.startsWith("/login") ||
-                   path.startsWith("/auth/callback") ||
-                   path.startsWith("/coming-soon")
+  const launchMode = process.env.LAUNCH_MODE ?? "live"
+  // /login is only a public route once the product is actually live — during
+  // coming_soon it must fall through to the redirect below like any other
+  // path, otherwise it's reachable (and discoverable) before launch.
+  const isPublic = path.startsWith("/auth/callback") ||
+                   path.startsWith("/coming-soon") ||
+                   (path.startsWith("/login") && launchMode === "live")
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
-    const launchMode = process.env.LAUNCH_MODE ?? "live"
     url.pathname = launchMode === "coming_soon" ? "/coming-soon" : "/login"
     return NextResponse.redirect(url)
   }
