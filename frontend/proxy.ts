@@ -41,6 +41,18 @@ export async function proxy(request: NextRequest) {
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
+    const isApiRoute = path.startsWith("/api")
+    if (launchMode !== "live" && !isApiRoute) {
+      // Show the Coming Soon waitlist page IN PLACE — the address bar keeps
+      // whatever page was requested (/chat, /map, /login, ...) instead of
+      // bouncing to /coming-soon. Clicking a gated tab should land you on
+      // that tab's URL with a "coming soon" page, not a surprise redirect.
+      // API routes are excluded: each already does its own auth check and
+      // returns a proper 401, rewriting would serve them this page's HTML
+      // instead of JSON.
+      url.pathname = "/coming-soon"
+      return NextResponse.rewrite(url)
+    }
     url.pathname = launchMode === "coming_soon" ? "/coming-soon" : "/login"
     return NextResponse.redirect(url)
   }
@@ -49,5 +61,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.svg$|.*\\.webp$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.ico$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|.*\\.png$|.*\\.svg$|.*\\.webp$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.ico$).*)"],
 }

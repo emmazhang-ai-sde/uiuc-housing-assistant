@@ -56,6 +56,14 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 ---
 
+## 2026-07-03 — Gated routes rewrite to Coming Soon instead of redirecting
+
+### Changed
+- `proxy.ts` — pre-launch, an unauthenticated visit to a gated page route (`/`, `/chat`, `/map`, `/login`) now `NextResponse.rewrite()`s to `/coming-soon` instead of `NextResponse.redirect()`ing there: the address bar keeps the originally-requested path (e.g. clicking **Chat** lands you on `/chat`, still showing "coming soon"), rather than bouncing to a different URL. API routes (`/api/*`) are excluded from this and keep the old redirect behavior — each already does its own auth check and returns JSON, so serving them the coming-soon page's HTML would break them
+- `proxy.ts` matcher — added `robots.txt` to the excluded-paths list; without it, `/robots.txt` would itself get rewritten to the coming-soon page's HTML during `coming_soon`, breaking the crawler-blocking rules added in the 2026-07-02 entry above
+
+---
+
 ## [Unreleased]
 
 ### About page
