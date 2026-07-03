@@ -69,7 +69,9 @@ export default function PropertyDrawer({
   )
 }
 
-function DrawerContent({ listing, onClose }: { listing: Listing; onClose: () => void }) {
+// Exported so a docked (non-modal) panel — e.g. the Chat page's right-hand
+// detail column — can render the exact same content without the slide-in/backdrop.
+export function DrawerContent({ listing, onClose }: { listing: Listing; onClose: () => void }) {
   const priceBed   = priceStr(listing.price_per_bed_low, listing.price_per_bed_high)
   const priceTotal = priceStr(
     listing.price_total_low  ?? listing.price_per_bed_low,

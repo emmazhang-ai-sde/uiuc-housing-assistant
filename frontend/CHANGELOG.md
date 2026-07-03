@@ -38,6 +38,41 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 ## [Unreleased]
 
+### About page
+
+#### Added
+- `app/about/page.tsx` — new page, linked from the "UIUC Housing" wordmark in `AppHeader` (`Link` to `/about`). Hero section shows a live stat line (`GET /api/status` listing/property counts) and the illustrated `public/logos/project-picture.png` banner. "What you can do here" section has two scenario cards — "Know exactly what you want?" (links to Card/Map view, mentions Table view) and "Not sure yet?" (links to Chat) — each broken into intro line + bullet list + closing sentence, matching structure. "Why it's better" is a 6-item bullet grid (one search across companies, honest price-per-bed with bolded key phrases, plain-English search, live availability, map view, free/UIUC-students-only). "Built for the way UIUC students actually search" is a Before/Now `<table>` with column headers (not repeated per-row). No em dashes anywhere on the page (commas/sentence breaks used instead), per content style requirement.
+
+### Card view: filter-driven browsing + pagination
+
+#### Added
+- `components/FilterBar.tsx` — the Beds/Max-$/bed/Type/Availability/Source filter UI extracted out of `MapFilterBar.tsx` (which is now a thin `absolute`-positioned wrapper around it), so the Map view and the Card page's filter column share one implementation and stay visually identical
+- `components/ListingGrid.tsx` — shared `ListingCard` grid component (`entries`, `filters`, `maxPricePerBed`, forwarded `ref`, required `columns: 3 | 4`); used by both the Card page (`columns={4}`) and `AssistantMessage`'s cards view (`columns={3}`, since Chat's conversation column is narrower now that it sits next to `PropertyPanel`)
+- `lib/api.ts` — `fetchListingsPage(filters, page, pageSize)`: paginated counterpart to `fetchAllListings`, returns `{ listings, total }`
+
+#### Changed
+- `app/page.tsx` — rebuilt from a chat-thread + search-box page into a pure filter-driven browsing view: left column is `FilterBar` (static, not floating), right side is a `ListingGrid` of every matching listing sorted by beds. With no filter active, results are paginated 24/page via `fetchListingsPage` (Previous/Next buttons; clicking Next fetches that page from the backend rather than pre-loading everything). Once any filter is applied, the whole (much smaller) result set loads via `fetchAllListings` for scrolling instead, and pagination controls are hidden. All chat-thread state (`messages`, `submit`, `UserBubble`/`AssistantMessage`/`search`/`createClient`) removed since the input bar was removed
+- `components/Sidebar.tsx` usage removed from the Card page — the info/search-tips sidebar is Chat-only now
+- `components/ListingCard.tsx` — the `unit_type · beds · property_type` line changed from one string joined with `" · "` to three separate pill `<span>` tags with no divider between them (avoids a stray `·` when tags wrap to a second line). Added a `filters?: Filters | null` prop: the beds-label tag is hidden when `filters.beds` is pinned to exactly one value, and the property-type tag is hidden when `filters.property_type` is set, since the value is identical on every visible card in that case; `unit_type` always shows
+- `backend/main.py` — `GET /api/listings` gained optional `page`/`page_size` params (adds a `COUNT(*)` query + `LIMIT`/`OFFSET` when provided, returns `total`); results now always `ORDER BY (beds IS NULL) ASC, beds ASC, price_per_bed_low ASC` regardless of pagination, so the Map view's unpaginated `fetchAllListings()` calls gained consistent ordering as a side effect
+
+### Chat view: docked detail panel + simplified composer
+
+#### Added
+- `components/PropertyPanel.tsx` — docked, always-visible right column for the Chat page; reuses `PropertyDrawer`'s newly-exported `DrawerContent`. Shows a placeholder ("Select a listing to see its full details here") when nothing is selected, full property details in place when a card is clicked. No backdrop, no slide-in animation — clicking a card just populates the column directly
+
+#### Changed
+- `components/PropertyDrawer.tsx` — `DrawerContent` is now an exported named function (was a private inline component) so `PropertyPanel` can render the same content outside the modal
+- `app/chat/page.tsx` — layout changed from `ConversationSidebar` + chat column + `PropertyDrawer` modal overlay to a fixed 3-column split: `ConversationSidebar` | chat column | `PropertyPanel`. Filter toggle button and `FilterPanel` removed entirely; `sendMessage` now always passes `DEFAULT_FILTERS` (Chat relies on the NL query parser picking up filters from the message text instead of a manual filter UI)
+- `components/chat/MessageInput.tsx` — removed the `filtersOpen`/`onToggleFilters` props and the filter-toggle button (no longer used by any caller)
+- `components/chat/ChatWindow.tsx` — empty-state headline/subtitle/suggested-prompts rewritten to describe what Chat itself is for ("Let's talk it through" — general questions + specific ones, conversation remembers context) instead of the generic "Find Your Dream Homes... Search 879 floor plans..." project pitch it previously shared verbatim with the Card page's empty state. Suggested-prompt chips changed from a fixed 2-column grid to `flex flex-wrap` with `whitespace-nowrap` so each stays on one line instead of wrapping mid-sentence
+- `components/AssistantMessage.tsx` — cards view now renders via the shared `ListingGrid` (`columns={3}`) instead of its own inline grid + `ListingCard.map()`; "Sort"/"Distance" labels and the sort/view-toggle pill buttons in the white toolbar changed from `font-semibold`/`font-medium` to `font-normal`
+
+### Global font: Nunito Sans
+
+#### Changed
+- `app/layout.tsx` — switched from Geist Sans/Geist Mono to **Nunito Sans** (`next/font/google`), applied via `nunitoSans.className` on `<body>`. The previous Geist setup only exported CSS custom properties that nothing in the app actually referenced (no `font-family: var(--font-geist-sans)` anywhere), so the whole app had silently been rendering in the browser's default system font the entire time; this was the first change that made the intended font actually apply globally
+
 ### Auth UI: Login/Sign-Up split, user menu, branding
 
 #### Added
@@ -74,6 +109,11 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 #### Save map HTML (Map Tab)
 Button is **disabled** when no filters are active (tooltip: "No filters selected yet — try picking one above") to prevent full-database exports. When enabled, exports only the currently filtered listings via the existing `MapViewHandle.saveMapHtml()` path.
+
+### Login page: waiting-list notice + dual-domain email picker
+
+#### Changed
+- `app/login/page.tsx` — email step now opens with a "waiting-list only" notice above the Log In/Sign Up toggle. The waitlist email field is split into two mutually exclusive inputs stacked with an "or" divider: NetID input with a fixed `@illinois.edu` suffix, or username input with a fixed `@gmail.com` suffix — for waitlisters who signed up with a personal Gmail before getting an Illinois email. Filling one input disables the other (`disabled` + dimmed) until it's cleared; a "Use only one — the email you joined the waitlist with." note sits above both. State replaced `loginInput`/`domain` with separate `illinoisInput`/`gmailInput`, and `getLoginEmail()` now derives the active email from whichever is non-empty. Log In helper text now reads "Enter the email you signed up with. We'll send an 8-digit one-time passcode."
 
 ### Phase 8 — Detail Drawer
 - Replace "View Listing →" button on each card with an `onSelect(listing)` callback

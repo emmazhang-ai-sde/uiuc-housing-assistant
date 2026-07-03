@@ -5,11 +5,9 @@ import { useState, useRef, useEffect } from "react"
 interface MessageInputProps {
   onSend: (message: string) => void
   disabled: boolean
-  filtersOpen?: boolean
-  onToggleFilters?: () => void
 }
 
-export default function MessageInput({ onSend, disabled, filtersOpen, onToggleFilters }: MessageInputProps) {
+export default function MessageInput({ onSend, disabled }: MessageInputProps) {
   const [value, setValue] = useState("")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const canSend = value.trim().length > 0 && !disabled
@@ -46,27 +44,6 @@ export default function MessageInput({ onSend, disabled, filtersOpen, onToggleFi
             : "shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
         }`}
       >
-        {onToggleFilters && (
-          <button
-            type="button"
-            onClick={onToggleFilters}
-            title={filtersOpen ? "Hide filters" : "Show filters"}
-            className={`shrink-0 mb-0.5 w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-              filtersOpen
-                ? "bg-black text-white"
-                : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700"
-            }`}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-              <line x1="2" y1="4" x2="14" y2="4" />
-              <line x1="2" y1="8" x2="14" y2="8" />
-              <line x1="2" y1="12" x2="14" y2="12" />
-              <circle cx="5" cy="4" r="1.5" fill="currentColor" stroke="none" />
-              <circle cx="10" cy="8" r="1.5" fill="currentColor" stroke="none" />
-              <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none" />
-            </svg>
-          </button>
-        )}
         <textarea
           ref={textareaRef}
           rows={1}

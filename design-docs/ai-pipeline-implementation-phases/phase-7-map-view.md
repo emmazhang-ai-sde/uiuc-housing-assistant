@@ -267,6 +267,22 @@ Individual lease listings now show only the `unit_type` string with no beds suff
 
 ---
 
+### Follow-up: Card view tag count (2 vs 3) traced to the same `beds === 0` overload
+
+Discovered while redesigning the Card view's per-listing tag row (`unit_type · bedsLabel · property_type`, rendered as separate pill tags in `ListingCard.tsx`). Some University Group listings show 3 tags, others only 2 — driven entirely by whether `bedsLabel()` returns a non-empty string. It's empty (and dropped by `.filter(Boolean)`) whenever `beds === 0` and `unit_type` doesn't literally match `/studio/i`.
+
+| `unit_type` | `beds` | `bedsLabel()` | tags shown |
+|---|---|---|---|
+| `"Studio"` | 0 | `"Studio"` | 3 — `Studio · Studio · Apartment` (duplicated, not a bug) |
+| `"2 BR Suite"` | 0 | `""` | 2 — `2 BR Suite · Apartment` |
+| `"1013 S First"` | 0 | `""` | 2 — `1013 S First · Apartment` |
+
+This surfaced a real upstream bug: `parse_beds()` in `scrapers/universities_group.py` only matches the literal phrase `"N bedroom"` via regex, so abbreviations like `"2 BR Suite"` silently fall back to `beds = 0` — meaning that listing is wrongly excluded whenever a user filters for "2 beds." `"1013 S First"` is a separate, smaller issue: that property's `unit_type` field captured the wrong text (looks like an address leaked into the `<h4>` the scraper reads) instead of a real unit-type label.
+
+**Not yet fixed.** `parse_beds()` needs to also catch `"BR"`/`"Bed"` abbreviations (e.g. `"2 BR"`, `"2BR"`), and since `beds` is baked into the ingested SQLite/Chroma data (not computed live), fixing the regex requires a re-scrape or a backfill of existing snapshots to take effect.
+
+---
+
 ## Checklist
 
 - [x] Step 1 — Add `lat`/`lng` columns to SQLite (ALTER existing snapshot + update normalize.py CREATE TABLE)

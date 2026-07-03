@@ -1,4 +1,4 @@
-import { Listing } from "@/lib/api"
+import { Listing, Filters } from "@/lib/api"
 import { COMPANY_LOGOS } from "@/lib/companies"
 import { availabilityStatus, bedsLabel, splitAvailabilityLines } from "@/lib/availability"
 
@@ -50,17 +50,29 @@ export default function ListingCard({
   maxPricePerBed = null,
   walkMins = null,
   driveMins = null,
+  filters = null,
   onSelect,
 }: {
   listing: Listing
   maxPricePerBed?: number | null
   walkMins?: number | null
   driveMins?: number | null
+  filters?: Filters | null
   onSelect?: (listing: Listing) => void
 }) {
   const priceBed   = priceStr(listing.price_per_bed_low, listing.price_per_bed_high)
   const priceTotal = priceStr(listing.price_total_low ?? listing.price_per_bed_low, listing.price_total_high ?? listing.price_per_bed_high)
   const bedsLabelStr = bedsLabel(listing.beds, listing.unit_type)
+
+  // Hide a tag when the active filter already pins it to one value for every
+  // card on screen — showing it again would just be noise.
+  const showBedLabel     = !(filters?.beds && filters.beds.length === 1)
+  const showPropertyType = !filters?.property_type
+  const layoutParts = [
+    listing.unit_type,
+    showBedLabel ? bedsLabelStr : "",
+    showPropertyType ? listing.property_type : "",
+  ].filter(Boolean)
   const isSingleOccupancy = listing.beds <= 1
   const overBudget = maxPricePerBed !== null && listing.price_per_bed_high !== null && listing.price_per_bed_high > maxPricePerBed
   const isUnavailable = availabilityStatus(listing.availability) === "unavailable"
@@ -123,8 +135,12 @@ export default function ListingCard({
 
         <div className="flex flex-col gap-2 mt-auto">
           {/* Layout */}
-          <div className="text-xs text-neutral-400 font-medium">
-            {listing.unit_type}{bedsLabelStr ? ` · ${bedsLabelStr}` : ""}{listing.property_type ? ` · ${listing.property_type}` : ""}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {layoutParts.map((part, i) => (
+              <span key={i} className="text-[11px] font-medium text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+                {part}
+              </span>
+            ))}
           </div>
 
           {/* Rent — emphasized as the key data point, with the CTA alongside it */}

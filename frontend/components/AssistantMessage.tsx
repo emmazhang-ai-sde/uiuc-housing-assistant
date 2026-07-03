@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import dynamic from "next/dynamic"
-import ListingCard from "./ListingCard"
+import ListingGrid from "./ListingGrid"
 import SummaryTable, { tableRowsHtml, tableRowsTsv } from "./SummaryTable"
 import SaveButton from "./SaveButton"
 import type { MapViewHandle } from "./MapView"
@@ -306,7 +306,7 @@ export default function AssistantMessage({
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-3 flex flex-col gap-2 text-sm">
               {/* Row 1: Sort pills + view toggle */}
               <div className="flex items-center gap-3">
-              <span className="text-neutral-900 text-sm font-semibold shrink-0 w-20">Sort</span>
+              <span className="text-neutral-900 text-sm font-normal shrink-0 w-20">Sort</span>
               <div className="flex gap-1">
                 {([["unit", "Unit"], ["price", "Price/bed"], ["availability", "Availability"]] as const).map(([key, label]) => {
                   const active = sortBy === key && !sortLandmark
@@ -323,7 +323,7 @@ export default function AssistantMessage({
                           setSortLandmark(null); setWalkSeconds(null)
                         }
                       }}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      className={`px-3 py-1 rounded-full text-sm font-normal transition-colors ${
                         active
                           ? "bg-black text-white"
                           : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
@@ -342,7 +342,7 @@ export default function AssistantMessage({
               <div className="flex items-center gap-1 bg-neutral-100 rounded-full p-0.5">
                 <button
                   onClick={() => setView("cards")}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-full text-sm font-normal transition-colors ${
                     view === "cards"
                       ? "bg-white text-neutral-900 shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
                       : "text-neutral-500 hover:text-neutral-700"
@@ -352,7 +352,7 @@ export default function AssistantMessage({
                 </button>
                 <button
                   onClick={() => setView("table")}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-full text-sm font-normal transition-colors ${
                     view === "table"
                       ? "bg-white text-neutral-900 shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
                       : "text-neutral-500 hover:text-neutral-700"
@@ -362,7 +362,7 @@ export default function AssistantMessage({
                 </button>
                 <button
                   onClick={() => setView("map")}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-full text-sm font-normal transition-colors ${
                     view === "map"
                       ? "bg-white text-neutral-900 shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
                       : "text-neutral-500 hover:text-neutral-700"
@@ -375,7 +375,7 @@ export default function AssistantMessage({
 
               {/* Row 2: Distance + action buttons */}
               <div className="flex items-center gap-3">
-                <span className="text-neutral-900 text-sm font-semibold shrink-0 w-20">Distance</span>
+                <span className="text-neutral-900 text-sm font-normal shrink-0 w-20">Distance</span>
                 <select
                   value={sortLandmark?.name ?? ""}
                   onChange={e => {
@@ -410,7 +410,7 @@ export default function AssistantMessage({
                   <>
                     <button
                       onClick={copyTable}
-                      className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-200"
+                      className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-normal text-neutral-700 transition-colors hover:bg-neutral-200"
                     >
                       {tableCopyStatus === "copied" ? "Copied" : tableCopyStatus === "failed" ? "Copy failed" : "Copy table"}
                     </button>
@@ -425,11 +425,14 @@ export default function AssistantMessage({
 
             {/* Cards view */}
             {view === "cards" && (
-              <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {sortedListings.map(({ listing, walkMins, driveMins }, i) => (
-                  <ListingCard key={i} listing={listing} maxPricePerBed={maxPricePerBed} walkMins={walkMins} driveMins={driveMins} onSelect={onSelect} />
-                ))}
-              </div>
+              <ListingGrid
+                ref={cardsRef}
+                entries={sortedListings}
+                maxPricePerBed={maxPricePerBed}
+                filters={filters}
+                columns={3}
+                onSelect={onSelect}
+              />
             )}
 
             {/* Table view */}

@@ -47,11 +47,16 @@ export default function UserMenu() {
     <div className="relative shrink-0">
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
-        style={{ backgroundColor: "#7B90A0" }}
+        className="flex items-center gap-2 pl-1 pr-1 py-1 rounded-full hover:bg-neutral-100 transition-colors max-w-[220px]"
         aria-label="User menu"
       >
-        {email.charAt(0).toUpperCase()}
+        <span className="text-xs font-medium text-neutral-600 truncate">{email}</span>
+        <span
+          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
+          style={{ backgroundColor: "#7B90A0" }}
+        >
+          {email.charAt(0).toUpperCase()}
+        </span>
       </button>
 
       {open && (

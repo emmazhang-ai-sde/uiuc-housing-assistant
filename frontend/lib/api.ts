@@ -86,6 +86,33 @@ export async function fetchAllListings(filters: Filters): Promise<Listing[]> {
   return data.listings as Listing[]
 }
 
+export interface ListingsPage {
+  listings: Listing[]
+  total: number
+}
+
+// Paginated variant of fetchAllListings — used by the Card view's browse-all grid so we
+// don't have to pull every matching listing into the DOM at once. Results are sorted by
+// beds (ascending) on the backend.
+export async function fetchListingsPage(filters: Filters, page: number, pageSize: number): Promise<ListingsPage> {
+  const params = new URLSearchParams()
+  if (filters.beds?.length)              filters.beds.forEach(b => params.append("beds", String(b)))
+  if (filters.max_price_per_bed != null) params.set("max_price_per_bed", String(filters.max_price_per_bed))
+  if (filters.buffer_type)               params.set("buffer_type", filters.buffer_type)
+  if (filters.buffer_value != null)      params.set("buffer_value", String(filters.buffer_value))
+  if (filters.availability_window)       params.set("availability_window", filters.availability_window)
+  if (filters.company)                   params.set("company", filters.company)
+  if (filters.property_type)             params.set("property_type", filters.property_type)
+  if (filters.penthouse != null)         params.set("penthouse", String(filters.penthouse))
+  params.set("page", String(page))
+  params.set("page_size", String(pageSize))
+
+  const res = await fetch(`/api/listings?${params}`)
+  if (!res.ok) throw new Error(`API error: ${res.status}`)
+  const data = await res.json()
+  return { listings: data.listings as Listing[], total: (data.total as number) ?? data.listings.length }
+}
+
 export async function search(query: string, filters: Filters, token?: string): Promise<SearchResponse> {
   const headers: Record<string, string> = { "Content-Type": "application/json" }
   if (token) headers["Authorization"] = `Bearer ${token}`

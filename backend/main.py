@@ -87,6 +87,8 @@ def get_listings(
     company:            str       | None = Query(None),
     property_type:      str       | None = Query(None),
     penthouse:          bool      | None = Query(None),
+    page:               int       | None = Query(None, ge=1),
+    page_size:          int       | None = Query(None, ge=1, le=100),
     _=Depends(verify_token),
 ):
     latest_txt = os.path.join(SNAPSHOTS_DIR, "latest.txt")
@@ -159,7 +161,21 @@ def get_listings(
 
     con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row
-    rows = con.execute(sql, params).fetchall()
+
+    total = None
+    if page_size is not None:
+        count_sql = "SELECT COUNT(*) FROM listings"
+        if clauses:
+            count_sql += " WHERE " + " AND ".join(clauses)
+        total = con.execute(count_sql, params).fetchone()[0]
+
+    sql += " ORDER BY (beds IS NULL) ASC, beds ASC, price_per_bed_low ASC"
+    query_params = list(params)
+    if page_size is not None:
+        sql += " LIMIT ? OFFSET ?"
+        query_params += [page_size, ((page or 1) - 1) * page_size]
+
+    rows = con.execute(sql, query_params).fetchall()
     con.close()
 
     def _to_listing(row: sqlite3.Row) -> dict:
@@ -194,7 +210,10 @@ def get_listings(
             "property_type":        row["property_type"]        or "",
         }
 
-    return {"listings": [_to_listing(r) for r in rows]}
+    result: dict = {"listings": [_to_listing(r) for r in rows]}
+    if total is not None:
+        result["total"] = total
+    return result
 
 
 @app.post("/api/search")

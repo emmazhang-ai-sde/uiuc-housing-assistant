@@ -7,6 +7,7 @@ import UserMenu from "@/components/UserMenu"
 const TABS = [
   { label: "Chat", href: "/chat" },
   { label: "Map",  href: "/map"  },
+  { label: "Card", href: "/"     },
 ]
 
 export default function AppHeader() {
@@ -14,10 +15,15 @@ export default function AppHeader() {
 
   return (
     <header className="flex items-center gap-3 px-4 h-11 bg-white border-b border-neutral-100 shrink-0">
-      <span className="text-sm font-semibold text-neutral-800 select-none">UIUC Housing</span>
+      <Link
+        href="/about"
+        className="text-sm font-semibold text-neutral-800 hover:text-neutral-600 transition-colors"
+      >
+        UIUC Housing
+      </Link>
       <div className="flex gap-1">
         {TABS.map(({ label, href }) => {
-          const active = path.startsWith(href)
+          const active = href === "/" ? path === "/" : path.startsWith(href)
           return (
             <Link
               key={href}

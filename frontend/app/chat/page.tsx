@@ -6,14 +6,11 @@ import AppHeader from "@/components/AppHeader"
 import ConversationSidebar from "@/components/chat/ConversationSidebar"
 import ChatWindow from "@/components/chat/ChatWindow"
 import MessageInput from "@/components/chat/MessageInput"
-import FilterPanel from "@/components/FilterPanel"
-import PropertyDrawer from "@/components/PropertyDrawer"
+import PropertyPanel from "@/components/PropertyPanel"
 import { DEFAULT_FILTERS } from "@/lib/api"
-import type { Filters, Listing } from "@/lib/api"
+import type { Listing } from "@/lib/api"
 
 export default function ChatPage() {
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
-  const [showFilters, setShowFilters] = useState(false)
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
 
   const {
@@ -27,11 +24,11 @@ export default function ChatPage() {
   } = useChat()
 
   function handleSend(message: string) {
-    sendMessage(message, filters)
+    sendMessage(message, DEFAULT_FILTERS)
   }
 
   function handleSuggest(query: string) {
-    sendMessage(query, filters)
+    sendMessage(query, DEFAULT_FILTERS)
   }
 
   return (
@@ -53,22 +50,14 @@ export default function ChatPage() {
             onSuggest={handleSuggest}
             onSelect={setSelectedListing}
           />
-          {showFilters && (
-            <FilterPanel
-              filters={filters}
-              onChange={setFilters}
-            />
-          )}
           <MessageInput
             onSend={handleSend}
             disabled={isLoading}
-            filtersOpen={showFilters}
-            onToggleFilters={() => setShowFilters(v => !v)}
           />
         </div>
-      </div>
 
-      <PropertyDrawer listing={selectedListing} onClose={() => setSelectedListing(null)} />
+        <PropertyPanel listing={selectedListing} onClose={() => setSelectedListing(null)} />
+      </div>
     </div>
   )
 }

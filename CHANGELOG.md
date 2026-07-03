@@ -4,6 +4,25 @@ All notable changes to the UIUC Housing Assistant are recorded here.
 
 ---
 
+## [Unreleased] — About page, Card view filter-driven browsing, Chat view docked detail panel, global Nunito Sans font
+
+### Added
+- `frontend/app/about/page.tsx` — new marketing/info page linked from the "UIUC Housing" logo in `AppHeader`: hero with a live listing-count stat line and the illustrated `public/logos/project-picture.png` banner; a two-scenario "what you can do here" section (Card/Map/Table view vs. Chat, each broken into bullet points); a "why it's better" grid (one search across companies, honest price-per-bed, plain-English search, live availability, map view, UIUC-students-only); a Before/Now table of pain points solved
+- `backend/main.py` — `GET /api/listings` gained optional `page`/`page_size` query params: when provided, runs a `COUNT(*)` for `total` and applies `LIMIT`/`OFFSET`; results are now always ordered `(beds IS NULL) ASC, beds ASC, price_per_bed_low ASC` (existing unpaginated callers, e.g. the Map view, are unaffected other than gaining consistent ordering)
+- `frontend/lib/api.ts` — `fetchListingsPage(filters, page, pageSize)`: paginated counterpart to `fetchAllListings`, returns `{ listings, total }`
+- `frontend/components/FilterBar.tsx` — filter panel UI (Beds/Max-$/bed/Type/Availability/Source) extracted out of `MapFilterBar`; `MapFilterBar` is now a thin `absolute`-positioned wrapper around it, so the Map view and the Card view's filter column render from one shared implementation
+- `frontend/components/ListingGrid.tsx` — shared `ListingCard` grid (`entries`, `filters`, `maxPricePerBed`, forwarded `ref`, required `columns: 3 | 4`) used by both the Card page (4 columns) and `AssistantMessage`'s cards view (3 columns, narrower now that Chat has a docked detail column)
+- `frontend/components/PropertyPanel.tsx` — docked, always-visible counterpart to `PropertyDrawer` for the Chat page: reuses `PropertyDrawer`'s exported `DrawerContent`, shows a placeholder ("Select a listing to see its full details here") when nothing is selected, and the full property details in place when a card is clicked — no backdrop/modal, no click-to-open/click-to-close
+
+### Changed
+- Card page (`/`) rebuilt as a pure filter-driven browsing view: the old chat-thread/search-box UI is gone; the left column is `FilterBar`, the right side is a `ListingGrid` of all matching listings sorted by beds. With no filter active, results are paginated (24/page, Previous/Next) so all ~883 listings are never loaded at once; once any filter is applied, the (much smaller) result set loads in full for scrolling instead
+- `frontend/components/ListingCard.tsx` — the `unit_type · beds · property_type` line is now three separate pill tags (no more inline `·` text); the beds-label and property-type tags are hidden individually when the active `filters` already pin that value for every card on screen (e.g. filtering to a single bed count hides the redundant "1 bed" tag), so only `unit_type` is guaranteed to always show
+- Chat page (`/chat`) — filter toggle button and `FilterPanel` removed entirely (Chat now relies on the NL query parser rather than manual filters); layout changed to a fixed 3-column split (`ConversationSidebar` | conversation | `PropertyPanel`) instead of a `PropertyDrawer` modal overlay; `ChatWindow`'s empty state rewritten with copy specific to what Chat is for (talking through open-ended questions, remembers context) instead of the generic project pitch it shared with the Card page
+- `frontend/app/layout.tsx` — global font switched from Geist Sans/Mono to Nunito Sans (`next/font/google`, applied via `nunitoSans.className` on `<body>`). The previous Geist setup only defined CSS variables that nothing referenced, so the whole app had silently been rendering in the browser's default system font
+- `frontend/components/AppHeader.tsx` — "UIUC Housing" wordmark is now a `Link` to `/about`; tab list includes **Card** alongside **Chat**/**Map**
+
+---
+
 ## [Unreleased] — Auth UI split, login branding, FilterPanel reflow, price-floor extraction fix
 
 ### Added
@@ -13,6 +32,7 @@ All notable changes to the UIUC Housing Assistant are recorded here.
 ### Changed
 - `frontend/components/FilterPanel.tsx` — responsive rewrite: `grid grid-cols-2` → `flex flex-wrap` with `min-w-0` on every row so pills wrap under their label instead of overlapping at narrow widths; columns stack below `min-w-[240px]`. Narrow-width stacking order is now Type → Beds → Max $/bed → Buffer → Availability → Source; all row labels unified to one width so the first option lines up across rows
 - `frontend/components/AppHeader.tsx` — renders `<UserMenu />` right-aligned next to the Chat/Map tabs
+- `frontend/app/login/page.tsx` — email step now leads with a "waiting-list only" notice. The waitlist email field is split into two mutually exclusive inputs stacked with an "or" divider: NetID → `@illinois.edu`, or username → `@gmail.com` (for beta testers who joined the waitlist with a personal Gmail before getting an Illinois email). Typing in one input disables the other until it's cleared, with a "Use only one" note above them. Log In helper copy now mentions the 8-digit one-time passcode
 
 ### Fixed
 - `rag/rag_chain.py` — `extract_filters` mis-parsed price **floors**: "studios above $1,500" (and "over / more than $X") was dropped (→ "No limit") or inverted into a ceiling by the `>$1,500 → max_price_total` heuristic. Reworked the `EXTRACT_PROMPT` price section to decide floor-vs-ceiling from the wording first (floor words → `min_price_per_bed`; "above/over is always a floor, never a max field") + added worked examples. Verified: "above $1,500" → `min_price_per_bed: 1500` on all runs; ranges/ceilings/availability unchanged. Detail in `design-docs/agent/chat-pipeline-and-reliability-fixes.md` §4.6

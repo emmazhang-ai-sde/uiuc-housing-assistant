@@ -1,184 +1,166 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import Sidebar from "@/components/Sidebar"
-import UserBubble from "@/components/UserBubble"
-import AssistantMessage from "@/components/AssistantMessage"
-import FilterPanel from "@/components/FilterPanel"
-import { search, Listing, Filters, DEFAULT_FILTERS } from "@/lib/api"
-import { createClient } from "@/lib/supabase/client"
+import { useState, useEffect } from "react"
+import AppHeader from "@/components/AppHeader"
+import FilterBar from "@/components/FilterBar"
+import ListingGrid from "@/components/ListingGrid"
+import { fetchListingsPage, fetchAllListings, Listing, Filters, DEFAULT_FILTERS } from "@/lib/api"
 import PropertyDrawer from "@/components/PropertyDrawer"
 
-type Message =
-  | { role: "user"; text: string; filters: Filters }
-  | { role: "assistant"; answer: string; listings: Listing[]; maxPricePerBed: number | null; query: string; filters: Filters; filtersApplied: Record<string, unknown> }
-
-const SUGGESTED = [
-  "2BR under $900/bed — what's available?",
-  "Cheapest 1 bedroom near campus",
-  "4BR options and total monthly cost?",
-  "Units available for August 2026",
-]
+const CATALOG_PAGE_SIZE = 24
 
 export default function Home() {
-  const [messages, setMessages]   = useState<Message[]>([])
-  const [input, setInput]         = useState("")
-  const [loading, setLoading]     = useState(false)
-  const [filters, setFilters]     = useState<Filters>(DEFAULT_FILTERS)  // Phase 6
-  const [composerActive, setComposerActive] = useState(false)
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const inputReady = input.trim().length > 0
-  const composerHighlighted = composerActive || inputReady
+
+  // Browse-all catalog. Sorted by beds on the backend. With no filters selected there
+  // can be hundreds of matches, so we paginate to avoid dumping everything into the DOM
+  // at once. Once the user narrows things down with a filter, the result set is small
+  // enough to just load in full and scroll.
+  const hasAnyFilter =
+    !!filters.beds?.length ||
+    filters.max_price_per_bed != null ||
+    !!filters.property_type ||
+    filters.availability_window != null ||
+    !!filters.company
+
+  const [catalogListings, setCatalogListings] = useState<Listing[]>([])
+  const [catalogTotal, setCatalogTotal]       = useState(0)
+  const [catalogPage, setCatalogPage]         = useState(1)
+  const [catalogLoading, setCatalogLoading]   = useState(true)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages, loading])
+    let cancelled = false
+    setCatalogLoading(true)
 
-  async function submit(query: string) {
-    if (!query.trim() || loading) return
-    const q = query.trim()
-    const filtersSnapshot = { ...filters, beds: filters.beds ? [...filters.beds] : null }
-    const maxPricePerBed = filters.max_price_per_bed  // capture at submit time for badge
-    setInput("")
-    setComposerActive(false)
-    setMessages(prev => [...prev, { role: "user", text: q, filters: filtersSnapshot }])
-    setLoading(true)
-    try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      const res = await search(q, filtersSnapshot, session?.access_token)
-      setMessages(prev => [
-        ...prev,
-        { role: "assistant", answer: res.answer, listings: res.listings, maxPricePerBed, query: q, filters: filtersSnapshot, filtersApplied: res.filters_applied },
-      ])
-    } catch {
-      setMessages(prev => [
-        ...prev,
-        { role: "assistant", answer: "Something went wrong — is the backend running on port 8000?", listings: [], maxPricePerBed: null, query: q, filters: filtersSnapshot, filtersApplied: {} },
-      ])
-    } finally {
-      setLoading(false)
-    }
+    const request = hasAnyFilter
+      ? fetchAllListings(filters).then(listings => ({ listings, total: listings.length }))
+      : fetchListingsPage(filters, 1, CATALOG_PAGE_SIZE)
+
+    request
+      .then(({ listings, total }) => {
+        if (cancelled) return
+        setCatalogListings(listings)
+        setCatalogTotal(total)
+        setCatalogPage(1)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setCatalogListings([])
+        setCatalogTotal(0)
+      })
+      .finally(() => { if (!cancelled) setCatalogLoading(false) })
+    return () => { cancelled = true }
+  }, [filters, hasAnyFilter])
+
+  function goToCatalogPage(page: number) {
+    setCatalogLoading(true)
+    fetchListingsPage(filters, page, CATALOG_PAGE_SIZE)
+      .then(({ listings, total }) => {
+        setCatalogListings(listings)
+        setCatalogTotal(total)
+        setCatalogPage(page)
+      })
+      .catch(() => {})
+      .finally(() => setCatalogLoading(false))
   }
 
   return (
-    <div className="flex h-screen bg-neutral-100 overflow-hidden print:h-auto print:overflow-visible">
-      <Sidebar onClear={() => setMessages([])} />
+    <div className="flex flex-col h-screen bg-neutral-100 overflow-hidden print:h-auto print:overflow-visible">
+      <AppHeader />
+      <div className="flex flex-1 min-h-0">
+        {/* Filter block — same design as the Map view's filter panel */}
+        <div className="shrink-0 overflow-y-auto p-4 print:hidden">
+          <FilterBar filters={filters} onChange={setFilters} />
+        </div>
 
-      <div className="flex flex-col flex-1 min-w-0">
-
-        {/* Chat thread */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 print:overflow-visible">
-          {messages.length === 0 ? (
-            <EmptyState onSuggest={submit} />
-          ) : (
-            <div className="max-w-7xl mx-auto">
-              {messages.map((m, i) =>
-                m.role === "user"
-                  ? <UserBubble key={i} text={m.text} filters={m.filters} />
-                  : <AssistantMessage
-                      key={i}
-                      answer={m.answer}
-                      listings={m.listings}
-                      maxPricePerBed={m.maxPricePerBed}
-                      query={m.query}
-                      filters={m.filters}
-                      filtersApplied={m.filtersApplied}
-                      onSelect={setSelectedListing}
-                    />
-              )}
-              {loading && <ThinkingBubble />}
-              <div ref={bottomRef} />
-            </div>
-          )}
-        </div>
-
-        {/* Filter panel — Phase 6 */}
-        <div className="print:hidden">
-          <FilterPanel
-            filters={filters}
-            onChange={setFilters}
-            onInteract={() => setComposerActive(true)}
-          />
-        </div>
-
-        {/* Input bar */}
-        <div className="bg-neutral-100 px-6 py-4 print:hidden">
-          <form
-            onSubmit={e => { e.preventDefault(); submit(input) }}
-            className={`flex gap-2 max-w-5xl mx-auto bg-white rounded-full p-1.5 transition-shadow ${
-              composerHighlighted
-                ? "shadow-[0_10px_34px_-10px_rgba(0,0,0,0.2)] ring-2 ring-black"
-                : "shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
-            }`}
-          >
-            <input
-              value={input}
-              onFocus={() => setComposerActive(true)}
-              onChange={e => {
-                setComposerActive(true)
-                setInput(e.target.value)
-              }}
-              placeholder='e.g. "2BR under $900/month near Grainger"'
-              disabled={loading}
-              className="flex-1 rounded-full px-5 py-2.5 text-sm text-neutral-800 placeholder-neutral-400 bg-transparent focus:outline-none disabled:opacity-50"
+          <div className="max-w-7xl mx-auto">
+            <BrowseCatalog
+              listings={catalogListings}
+              total={catalogTotal}
+              page={catalogPage}
+              pageSize={CATALOG_PAGE_SIZE}
+              loading={catalogLoading}
+              paginated={!hasAnyFilter}
+              filters={filters}
+              onPageChange={goToCatalogPage}
+              onSelect={setSelectedListing}
             />
-            <button
-              type="submit"
-              disabled={!inputReady || loading}
-              className={`px-5 py-2.5 rounded-full border text-sm font-semibold transition-colors ${
-                composerHighlighted
-                  ? "bg-black text-white border-black"
-                  : "bg-neutral-100 text-neutral-900 border-neutral-100 hover:bg-black hover:text-white hover:border-black"
-              } ${inputReady && !loading ? "" : "cursor-not-allowed"}`}
-            >
-              Send
-            </button>
-          </form>
+          </div>
         </div>
-
       </div>
       <PropertyDrawer listing={selectedListing} onClose={() => setSelectedListing(null)} />
     </div>
   )
 }
 
-function EmptyState({ onSuggest }: { onSuggest: (q: string) => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full gap-8 text-center">
-      <div>
-        <h1 className="text-5xl font-bold text-neutral-900 leading-[1.3]">
-          Find Your Dream Homes Near UIUC, <br />Within Budget
-        </h1>
-        <p className="mx-auto text-center text-neutral-500 mt-5 text-sm max-w-md">
-          Search 879 floor plans across 410 properties from Green Street Realty + Universities Group (more rental companies are coming!) by price, beds, location, availability and so on.
-        </p>
-      </div>
-      <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
-        {SUGGESTED.map(q => (
-          <button
-            key={q}
-            onClick={() => onSuggest(q)}
-            className="text-left px-4 py-3.5 rounded-2xl bg-white text-sm text-neutral-600 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,0.12)] transition-shadow leading-snug"
-          >
-            &ldquo;{q}&rdquo;
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
+function BrowseCatalog({
+  listings,
+  total,
+  page,
+  pageSize,
+  loading,
+  paginated,
+  filters,
+  onPageChange,
+  onSelect,
+}: {
+  listings: Listing[]
+  total: number
+  page: number
+  pageSize: number
+  loading: boolean
+  paginated: boolean
+  filters: Filters
+  onPageChange: (page: number) => void
+  onSelect: (listing: Listing) => void
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
-function ThinkingBubble() {
   return (
-    <div className="flex items-start gap-3 my-4">
-      <div className="w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center shrink-0 text-sm mt-1">
-        🏠
+    <div>
+      <div className="flex items-center justify-between mb-3 pt-4">
+        <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+          {total.toLocaleString()} listings, sorted by beds
+        </span>
       </div>
-      <div className="bg-white rounded-3xl rounded-tl-lg px-5 py-4 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] text-neutral-400 text-sm italic">
-        Searching listings…
-      </div>
+
+      {loading && listings.length === 0 ? (
+        <div className="text-center text-sm text-neutral-400 py-16">Loading listings…</div>
+      ) : (
+        <ListingGrid
+          entries={listings.map(listing => ({ listing }))}
+          filters={filters}
+          columns={4}
+          onSelect={onSelect}
+          className={`transition-opacity ${loading ? "opacity-50" : ""}`}
+        />
+      )}
+
+      {/* Pagination — only shown when browsing the unfiltered catalog; a filtered
+          result set is small enough to just load in full and scroll through. */}
+      {paginated && (
+        <div className="flex items-center justify-center gap-4 mt-6 pb-2">
+          <button
+            onClick={() => onPageChange(page - 1)}
+            disabled={page <= 1 || loading}
+            className="px-4 py-2 rounded-full text-xs font-semibold bg-white text-neutral-700 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            ← Previous
+          </button>
+          <span className="text-xs text-neutral-400 whitespace-nowrap">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= totalPages || loading}
+            className="px-4 py-2 rounded-full text-xs font-semibold bg-white text-neutral-700 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   )
 }

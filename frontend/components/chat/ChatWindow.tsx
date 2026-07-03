@@ -9,10 +9,10 @@ import type { ChatMessage } from "@/hooks/useChat"
 import type { Listing } from "@/lib/api"
 
 const SUGGESTED = [
-  "2BR under $900/bed — what's available?",
-  "Cheapest 1 bedroom near campus",
-  "4BR options and total monthly cost?",
-  "Units available for August 2026",
+  "When should I start apartment hunting?",
+  "Is it too late to find a place for August?",
+  "What's the average price near campus?",
+  "2BR under $900/bed, what's available?",
 ]
 
 interface ChatWindowProps {
@@ -35,18 +35,19 @@ export default function ChatWindow({ messages, isLoading, onSuggest, onSelect }:
         <div className="flex flex-col items-center justify-center h-full gap-8 text-center">
           <div>
             <h1 className="text-5xl font-bold text-neutral-900 leading-[1.3]">
-              Find Your Dream Homes Near UIUC,<br />Within Budget
+              Let&rsquo;s talk it through.
             </h1>
             <p className="mx-auto text-center text-neutral-500 mt-5 text-sm max-w-md">
-              Search 879 floor plans across 410 properties from Green Street Realty + Universities Group (more rental companies are coming!) by price, beds, location, availability and so on.
+              This is where you figure out what you actually want. Ask general questions or specific ones.
+              The conversation remembers context, so you can narrow things down turn by turn.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
+          <div className="flex flex-wrap items-center justify-center gap-3 max-w-2xl">
             {SUGGESTED.map(q => (
               <button
                 key={q}
                 onClick={() => onSuggest(q)}
-                className="text-left px-4 py-3.5 rounded-2xl bg-white text-sm text-neutral-600 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,0.12)] transition-shadow leading-snug"
+                className="whitespace-nowrap px-4 py-3.5 rounded-2xl bg-white text-sm text-neutral-600 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,0.12)] transition-shadow"
               >
                 &ldquo;{q}&rdquo;
               </button>
