@@ -47,6 +47,15 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 ---
 
+## 2026-07-03 — /about carved out as the one public pre-launch page
+
+### Changed
+- `proxy.ts` — `/about` is now unconditionally public (no longer subject to the `LAUNCH_MODE`/auth gate that `/`, `/chat`, `/map`, and `/login` fall under), so the marketing page can be shared and browsed without an account or waiting for launch
+- `app/robots.ts` — during `coming_soon`, rules changed from disallow-all to `allow: "/about", disallow: "/"`, so `/about` stays crawlable while every gated route stays out of search results
+- `components/UserMenu.tsx` — the signed-out **Log In** link is now hidden whenever `NEXT_PUBLIC_LAUNCH_MODE !== "live"`, since `/login` isn't a real destination pre-launch (see 2026-07-02 entry above) and shouldn't be advertised from the public `/about` page's header. Requires a new `NEXT_PUBLIC_LAUNCH_MODE` Vercel env var mirroring the existing server-only `LAUNCH_MODE` (client components can't read unprefixed env vars)
+
+---
+
 ## [Unreleased]
 
 ### About page

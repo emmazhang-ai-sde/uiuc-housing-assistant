@@ -33,6 +33,12 @@ export default function UserMenu() {
   }
 
   if (email === null) {
+    // Pre-launch, /login isn't a public route (see proxy.ts) — don't advertise
+    // a link to it. Once NEXT_PUBLIC_LAUNCH_MODE flips to "live", it's real
+    // again and safe to show.
+    const launchMode = process.env.NEXT_PUBLIC_LAUNCH_MODE ?? "live"
+    if (launchMode !== "live") return null
+
     return (
       <Link
         href="/login"
