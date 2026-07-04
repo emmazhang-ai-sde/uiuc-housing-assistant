@@ -16,7 +16,7 @@ Tool design rationale is in [Layer 2: Backend](layer-2-backend.md).
 
 ---
 
-## 5a — Implement the Tool Function
+## 5.1 — Implement the Tool Function
 
 ```python
 import requests
@@ -61,7 +61,7 @@ maps_tool = Tool(
 
 ---
 
-## 5b — Add to AgentExecutor
+## 5.2 — Add to AgentExecutor
 
 ```python
 # In Step 4, tools = [housing_search_tool]
@@ -75,7 +75,7 @@ agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=
 
 ---
 
-## 5c — Environment Variable
+## 5.3 — Environment Variable
 
 ```bash
 GOOGLE_MAPS_API_KEY=your-key
@@ -91,3 +91,7 @@ Add to Railway backend env vars and local `.env`.
 |------|------------|
 | Streaming | Step 6 |
 | Displaying nearby places on the map view | Future / icebox |
+
+---
+
+← [Step 3: Conversation Memory & Tool Calling](../agent/groq-tool-calling.md) · [Step 6: Streaming Response Rendering](step-6-streaming.md) →

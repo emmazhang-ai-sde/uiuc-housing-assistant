@@ -1,11 +1,66 @@
-# Groq Tool Calling: Format Issue & Model Analysis
+# Step 3: Conversation Memory & Tool Calling
+
+*(filed under the working title "Groq Tool Calling: Format Issue & Model Analysis")*
 
 **Created: 2026-06-28**
 **Updated: 2026-06-29** — added "Understanding Function Calling: A Second `tool_use_failed` Trigger"
+**Updated: 2026-07-03** — absorbed the old `step-3-conversation-memory.md` and `step-4-agent-executor.md`, which described the original plan and had gone stale (wrong API, "Not started" status) next to what actually shipped. This doc is now the single source of truth for both memory mechanisms.
 
 ← Back to [Agent Architecture](agent-architecture.md)
 
-> `tool_use_failed` (HTTP 400) has **two distinct root causes**. Cause 1 (below, the original content) is about the *format* of the tool call — the model emits the wrong syntax. Cause 2 (new section near the end) is about the *content* of the turn — the model mixes free text into a tool-calling generation. Same error code, opposite fixes.
+**Status: ✅ Complete**
+
+---
+
+## Overview: Two Separate Memory Mechanisms
+
+The agent's "memory" is actually two independent pieces solving two different problems — don't conflate them:
+
+| | Problem it solves | How | Owned by |
+|---|---|---|---|
+| **History → `extract_filters`** | The NL filter-extraction call is a standalone LLM call outside the agent graph — it needs multi-turn context to resolve things like "那附近" or "what about 2BR?" | Frontend sends the full `history` array on every request; backend prepends it as plain text before the prompt | Stateless — rebuilt from the request every time |
+| **`MemorySaver` checkpointer** | The agent itself needs to remember the whole conversation to decide when/how to call `housing_search` | LangGraph's `MemorySaver`, keyed by `thread_id` (= `conversation_id`) | Stateful — lives server-side in the checkpointer |
+
+Both run in the same `/chat` request. They don't share state with each other — `extract_filters` never sees the checkpointer's messages, and the agent never sees `extract_filters`'s history text.
+
+---
+
+## Conversation Memory: History → `extract_filters`
+
+**Why not `ConversationBufferMemory`:** `ConversationBufferMemory` auto-injects history into *every* LLM call. But `rag_chain.py` has two LLM calls with strict output formats — `extract_filters(query)` must output JSON, `summarize(...)` must output exactly one sentence. Auto-injecting history into both would break `extract_filters`'s JSON output. Only `extract_filters` needs history, and only as a short text block prepended to its own prompt — not a managed memory object.
+
+Without history, every query is treated as if the conversation just started:
+
+| Turn | User says | `extract_filters` sees (no history) | Should extract |
+|------|-----------|-------------------------------------|----------------|
+| 1 | "Show me 1BR near Grainger" | `{"beds": 1, "location_hint": "grainger"}` | ✅ correct |
+| 2 | "What about 2BR?" | `{"beds": 2}` | ❌ loses location |
+| 3 | "那附近便宜点的呢" | `{}` | ❌ nothing at all |
+
+`summarize()` does **not** get history — its job is one sentence about the current results; history there is noise that could break its output format.
+
+Current implementation, in `rag/rag_chain.py`:
+
+```python
+def extract_filters(query: str, history: list[dict] | None = None) -> dict:
+    # [Step 3] Prepend last 3 exchanges so the LLM can resolve multi-turn references
+    # (e.g. "那附近" → location from a previous message, "what about 2BR?" → keep prior filters)
+    history_text = ""
+    if history:
+        lines = []
+        for msg in history[-6:]:   # last 3 exchanges (6 messages)
+            role = "User" if msg["role"] == "user" else "Assistant"
+            lines.append(f"{role}: {msg['content']}")
+        history_text = "Recent conversation:\n" + "\n".join(lines) + "\n\n"
+
+    raw = _extract_chain.invoke({"query": query, "history": history_text})
+    try:
+        return parse_json_output(raw)
+    except Exception:
+        return {}
+```
+
+The frontend (`useChat.ts`) captures `history` from `messagesByConv[activeId]` before the optimistic UI update and sends it on every `/api/chat` call; `backend/main.py`'s `/chat` endpoint passes it straight through to `extract_filters(req.message, req.history)`. This is stateless by design — no session state on the backend, no memory-leak risk, trivially scalable.
 
 ---
 
@@ -202,6 +257,11 @@ If scout hits limits, try `groq/compound-mini` next before falling back to 70b.
 ---
 
 ## Affected Files
+
+**History → `extract_filters`:**
+- `rag/rag_chain.py` — `extract_filters()` accepts `history` and prepends it to the prompt.
+- `frontend/hooks/useChat.ts` — captures `history` from `messagesByConv` before the optimistic update, sends it on every `/api/chat` call.
+- `backend/main.py` (`/chat`) — passes `req.history` through to `extract_filters`.
 
 **Cause 1 (format / model selection):**
 - `rag/agent.py` — model selection block and `create_agent` call.

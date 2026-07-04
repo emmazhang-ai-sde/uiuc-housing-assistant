@@ -34,7 +34,7 @@ Target:
 
 **Stateless pattern:** The backend holds no session state between requests. The frontend sends the full conversation history on every call; the backend rebuilds memory from it each time. Simpler to scale, no in-memory session leak risk.
 
-Implementation code is in [Step 3](step-3-conversation-memory.md).
+Implementation code is in [Step 3](groq-tool-calling.md) — superseded in practice by history injection into `extract_filters` + a LangGraph `MemorySaver` checkpointer, not `ConversationBufferMemory`. See that doc for the actual design.
 
 ---
 
@@ -48,7 +48,7 @@ The tool description is what the agent reads to decide when to call it — write
 
 No data migration needed: the existing `vectorstore` and retriever are reused as-is.
 
-Implementation code is in [Step 4](step-4-agent-executor.md).
+Implementation code is in [Step 3](groq-tool-calling.md) — superseded in practice: `create_agent` (not `create_openai_tools_agent`), no `MessagesPlaceholder`. See that doc for the actual design.
 
 ### Tool 2: `nearby_places` — Google Maps Places API
 
@@ -64,7 +64,7 @@ Uses `create_openai_tools_agent` with a system prompt that establishes the assis
 
 `MessagesPlaceholder(variable_name="chat_history")` injects the memory into the prompt on each call.
 
-Implementation code is in [Step 4](step-4-agent-executor.md).
+Implementation code is in [Step 3](groq-tool-calling.md) — superseded in practice: `create_agent` (not `create_openai_tools_agent`), no `MessagesPlaceholder`. See that doc for the actual design.
 
 ---
 

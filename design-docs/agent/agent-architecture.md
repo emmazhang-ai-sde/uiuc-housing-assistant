@@ -107,7 +107,7 @@ New chat interface added to the existing Next.js frontend. Covers:
 |------|-------|-----------------|--------|-----|
 | 1 | Layer 3: Frontend | Static chat UI with hardcoded messages | ✅ Complete | [step-1-static-chat-ui.md](step-1-static-chat-ui.md) |
 | 2 | Layer 1: Database | Supabase table setup, Next.js API routes, wire sidebar + history into `useChat` | ✅ Complete | [step-2-database-api-routes.md](step-2-database-api-routes.md) |
-| 3 | Layer 2: Backend | LangGraph agent + `housing_search` tool + `/chat` endpoint | ✅ Complete | [step-3-conversation-memory.md](step-3-conversation-memory.md) |
+| 3 | Layer 2: Backend | Conversation memory (history → `extract_filters`) + LangGraph agent + `housing_search` tool + `/chat` endpoint | ✅ Complete | [groq-tool-calling.md](groq-tool-calling.md) |
 | 4 | Layer 3: Frontend | Unified chat UI — EmptyState, FilterPanel, card/table/map views in `/chat` | ✅ Complete | [unified-chat-ui.md](unified-chat-ui.md) |
 | 5 | Layer 2: Backend | FilterPanel → `ui_filters` contextvars → `housing_search` where clause | ✅ Complete | [unified-chat-ui.md](unified-chat-ui.md) |
 | 6 | Layer 3: Frontend | Streaming token-by-token response rendering | 🔜 Not started | [step-6-streaming.md](step-6-streaming.md) |
