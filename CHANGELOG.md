@@ -4,6 +4,20 @@ All notable changes to the UIUC Housing Assistant are recorded here.
 
 ---
 
+## [Unreleased] — Chat persistence fixed (conversations & messages now save and reload)
+
+### Fixed
+- Chat history now actually persists to Supabase and reloads on refresh. It had silently saved nothing across five stacked bugs: a dev bypass that ran before the auth check, API routes that swallowed Supabase errors (returned `200` + `null` instead of a `500`), missing table `GRANT`s for the `authenticated` role (RLS filters rows but is not itself a table grant), `proxy.ts` skipping the session refresh in dev (so concurrent routes raced on the rotating refresh token and minted ghost conversation ids), and message history never loading on mount. Full postmortem in `design-docs/agent-implementation-steps/chat-persistence-debugging.md`
+
+### Added
+- `messages.metadata` (jsonb) now stores each turn's filters, listings, and search results; a reopened conversation rehydrates its card grid instead of just the text
+- Supabase Step 2.1 SQL gained table `GRANT`s for `authenticated`, a `SECURITY DEFINER` `touch_conversation` trigger (so its bookkeeping `UPDATE` never fails on a missing caller grant), and a grants verification query — see `design-docs/agent-implementation-steps/step-2-database-api-routes.md`
+
+### Changed
+- Docs: agent implementation Steps 3-4 consolidated into `design-docs/agent/groq-tool-calling.md` (retitled "Step 3: Conversation Memory & Tool Calling"); the stale `step-3-conversation-memory.md` / `step-4-agent-executor.md` were deleted and all cross-links repointed
+
+---
+
 ## [Unreleased] — About page, Card view filter-driven browsing, Chat view docked detail panel, global Nunito Sans font
 
 ### Added

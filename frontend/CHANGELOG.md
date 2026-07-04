@@ -4,6 +4,20 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 ---
 
+## [Unreleased] — Chat persistence: conversations & messages now save and reload
+
+Chat had silently saved nothing to Supabase, across five stacked bugs found over 2026-07-03/04. Full root-cause writeup: `design-docs/agent-implementation-steps/chat-persistence-debugging.md`.
+
+### Fixed
+- `proxy.ts` — the Supabase session refresh (`supabase.auth.getUser()`) now runs on **every** request including local dev, instead of being skipped in dev. Skipping it let the 1-hour access token go stale, so concurrent API routes each refreshed ad hoc and raced on Supabase's *rotating* refresh token: some resolved a valid user, some got `null`. A `null` user fell into the route dev mocks (below) and minted a fake conversation id that was never written, so the following message inserts failed the `messages` RLS check against a parent row that never existed. In dev, only the `LAUNCH_MODE` gating is skipped now, not the refresh. Token refresh sends no email, so this does not touch the magic-link quota. (Reverses part of the 2026-06-29 "dev mode fixes" entry, which had added these bypasses.)
+- `app/api/conversations/route.ts`, `app/api/conversations/[id]/messages/route.ts` — removed the `NODE_ENV === "development"` mock branches that returned stub data / random ids without hitting Supabase (the source of the ghost conversations). Both routes now check `getUser()` first and return a real `401` when there is no session, so a failure is loud instead of a fake id that corrupts later inserts. Both also now read the `error` from every Supabase call and surface it as a `500` (with `console.error`) instead of silently returning `200` with `null` data, which had hidden the underlying failures (missing table grants, then RLS violations) for two debugging rounds.
+- `hooks/useChat.ts` — history was never loaded on mount. The on-mount effect set `activeId` to the most recent conversation but never fetched its messages (that logic lived only in `selectConversation`, which fires on click), so a refresh rendered the empty state even though the rows were in the DB. Extracted a shared `fetchMessages(id)` helper and now call it from both the on-mount effect (for the auto-selected conversation) and `selectConversation`.
+
+### Added
+- `hooks/useChat.ts` — each turn now persists its `metadata` (jsonb): the user message stores `{ filters }`, the assistant message stores `{ listings, filtersApplied, filters, maxPricePerBed }`. `fetchMessages` rehydrates those fields back onto the loaded messages, so a reopened conversation shows its filters and card grid, not just the text. `app/api/conversations/[id]/messages/route.ts` GET now selects `metadata`. Persist calls also log loudly (`console.error` with status + response body) on failure instead of being fire-and-forget.
+
+---
+
 ## 2026-06-28 — Export PNG: filename convention & image layout
 
 ### Changed
