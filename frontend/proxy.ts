@@ -2,13 +2,23 @@ import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 
 export async function proxy(request: NextRequest) {
-  // Skip auth in local development — Supabase free tier only allows 2 emails/hour
-  if (process.env.NODE_ENV === "development") {
-    return NextResponse.next({ request })
-  }
-
   let supabaseResponse = NextResponse.next({ request })
 
+  // [Step 2] Session refresh — MUST run on every request, dev included.
+  // getUser() triggers a silent token refresh when the 1-hour access token is
+  // near expiry, and setAll re-applies the rotated cookies to both the request
+  // (so this request's downstream API route sees the fresh token) and the
+  // response (so the browser stores it).
+  //
+  // Previously this was skipped entirely in development. That was wrong: with no
+  // refresh, the access token expired after an hour and each API route tried to
+  // refresh ad-hoc, so concurrent routes raced on Supabase's *rotating* refresh
+  // token — some got a valid user, some got null. A null user made the routes
+  // fall back to their dev mock, which returns a fake conversation id without
+  // writing a row, so every message insert then failed the messages RLS check
+  // (conversation_id references a row that never existed). Refreshing here keeps
+  // the token fresh so getUser() in the routes is consistent. (Token refresh does
+  // not send email — only magic-link sign-in hits the 2-emails/hour quota.)
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -27,6 +37,13 @@ export async function proxy(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+
+  // In local dev, refresh the session (above) but skip the launch-mode gating
+  // below so /chat and friends stay reachable without the pre-launch flow.
+  if (process.env.NODE_ENV === "development") {
+    return supabaseResponse
+  }
+
   const path = request.nextUrl.pathname
   const launchMode = process.env.LAUNCH_MODE ?? "live"
   // /about is the public marketing page — always reachable, logged in or not,
