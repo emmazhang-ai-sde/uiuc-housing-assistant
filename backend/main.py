@@ -15,8 +15,13 @@ from config import SNAPSHOTS_DIR
 app = FastAPI()
 
 _security   = HTTPBearer(auto_error=False)
-_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
 _DEV_MODE   = os.getenv("DEV_MODE", "false").lower() == "true"
+
+# Supabase signs access tokens with asymmetric ES256 keys (JWT Signing Keys), not the
+# legacy HS256 shared secret. Verify against the project's public JWKS endpoint.
+# PyJWKClient caches fetched keys, so this doesn't hit the network per request.
+_SUPABASE_URL = os.getenv("SUPABASE_URL", "https://uknyhpwzvdevxfxkpxmy.supabase.co")
+_jwks_client  = jwt.PyJWKClient(f"{_SUPABASE_URL}/auth/v1/.well-known/jwks.json")
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(_security)):
     if _DEV_MODE:
@@ -24,10 +29,11 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(_security))
     if not credentials:
         raise HTTPException(status_code=401, detail="Missing token")
     try:
+        signing_key = _jwks_client.get_signing_key_from_jwt(credentials.credentials)
         jwt.decode(
             credentials.credentials,
-            _JWT_SECRET,
-            algorithms=["HS256"],
+            signing_key.key,
+            algorithms=["ES256"],
             audience="authenticated",
         )
     except jwt.PyJWTError as e:
