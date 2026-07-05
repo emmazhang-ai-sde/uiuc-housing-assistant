@@ -4,6 +4,22 @@ All notable changes to the UIUC Housing Assistant are recorded here.
 
 ---
 
+## 2026-07-05 — Scraper reliability overhaul: honest gaps instead of stale backfill, per-run raw archiving, geocode fix
+
+### Added
+- `scrapers/_archive.py` (new, shared by both scrapers) — every scrape run writes the canonical `data/<company>_raw.json` (always overwritten, read by `pipeline.normalize`) plus a timestamped copy in `data/raw_archive/<company>_raw_YYYY-MM-DD_HHMMSS.json` (never overwritten, so same-day re-runs no longer clobber each other). A run with any missing properties is archived as `..._partial.json` and auto-removed once a later, complete run supersedes it — a multi-pass scrape session converges to exactly one archived file
+- `scrapers/green_street.py` — incremental-fill mode (default): a `detail_ok` flag on each listing tracks whether its detail page (description/amenities/lease_dates/utility_fees/brochure_url) was already fetched successfully; a re-run only fetches detail pages still missing that flag, since price/availability/beds/baths/sqft always come fresh from the list page regardless. `--fresh` forces a full re-fetch of every detail page
+- `scrapers/universities_group.py` — `--retry-missing` flag: skips properties already present in the canonical file from a prior run, and only (re)fetches the ones still missing, without re-fetching all ~250 properties or re-running scrape_building_index unnecessarily
+- `pipeline/geocode.py` — new `MANUAL_COORDS` entry for `"502 S. Fifth –"` (Universities Group listing at `.../502-e-healey-january-2024`): the em-dash marketing suffix ("Fall Semester Only!") stripped the city name from the address, so Nominatim matched a Chicago-area street (~41.878, -87.711) instead of Champaign; corrected coordinates verified via Google Maps and re-ingested
+
+### Changed
+- `scrapers/universities_group.py` — failure handling redesigned: a property whose detail-page fetch fails is now left out of the run's output entirely (an honest gap), never backfilled with a previous run's stale data. This replaced an earlier fallback design that masked failures (made a run's `failed` count read as 0 even when properties were missing/stale), which caused the same logical scrape session to produce multiple separate "complete" archives instead of converging to one. The old `--fresh` flag was removed — with no more backfill behavior to disable, it had become a no-op
+- `scrapers/green_street.py` — detail-page fetch switched from waiting on `networkidle` to `domcontentloaded` + an explicit selector wait, with one retry on navigation failure; `networkidle` was spuriously timing out on pages with persistent background connections (analytics/polling), causing avoidable detail-page failures
+- Design docs reorganized into a Phase 5 family under `design-docs/ai-pipeline-implementation-phases/`: Phase 5 (index), 5.1 (snapshot versioning, renamed from the old single doc), 5.2 (data refresh runbook, new — full pipeline order + shared archive behavior), 5.2.1 / 5.2.2 (per-scraper commands and modes for Green Street / Universities Group), 5.3 (geocoding manual lookup, moved from `design-docs/geocoding-manual-lookup.md`)
+- `design-docs/ai-pipeline-implementation-phases/phase-8.3-data-coverage-audit.md` — added a "Snapshot Log" table that gets a new row appended after each notable `pipeline.normalize` run, separate from the original one-time coverage audit (frozen as of `listings_2026-06-17.db`) above it
+
+---
+
 ## 2026-07-04 — Card page toolbar overlay fix, login page copy/branding pass
 
 ### Fixed

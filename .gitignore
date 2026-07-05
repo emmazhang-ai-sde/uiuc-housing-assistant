@@ -31,6 +31,9 @@ ENV/
 # Raw scraped data (regenerable)
 green_street_raw.json
 
+# Date-stamped raw scrape archive (local safety net; history lives in snapshots/)
+data/raw_archive/
+
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb

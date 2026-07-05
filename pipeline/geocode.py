@@ -68,6 +68,13 @@ MANUAL_COORDS: dict[str, tuple[float, float]] = {
     # Keys use the em-dash to avoid matching "60 E Green St, Champaign" (already correct).
     "60 E Green –": (40.11042, -88.23897),
     "60 E. Green":     (40.11042, -88.23897),
+    # "502 S. Fifth – Fall Semester Only!" (url: 502-e-healey-january-2024) — same
+    # failure mode as the "60 E Green –" cases above: stripping the em-dash marketing
+    # suffix leaves no city, so Nominatim matched a "Fifth" street in Chicago
+    # (41.8776, -87.7107) instead of Champaign. Verified via Google Maps 2026-07-05.
+    # Em-dash key so this doesn't match the correctly-geocoded sibling listing
+    # "502 S. Fifth, Champaign" (different URL, already resolves correctly).
+    "502 S. Fifth –": (40.11261, -88.23181),
 }
 
 
