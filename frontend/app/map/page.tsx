@@ -5,15 +5,16 @@ import dynamic from "next/dynamic"
 import AppHeader from "@/components/AppHeader"
 import MapFilterBar from "@/components/MapFilterBar"
 import SaveButton from "@/components/SaveButton"
-import { fetchAllListings, DEFAULT_FILTERS } from "@/lib/api"
-import type { Filters, Listing } from "@/lib/api"
+import { fetchAllListings } from "@/lib/api"
+import type { Listing } from "@/lib/api"
 import type { MapViewHandle } from "@/components/MapView"
 import { useSaveAction } from "@/hooks/useSaveAction"
+import { useFilters } from "@/contexts/FiltersContext"
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false })
 
 export default function MapPage() {
-  const [filters, setFilters]       = useState<Filters>(DEFAULT_FILTERS)
+  const { filters, setFilters }     = useFilters()
   const [listings, setListings]     = useState<Listing[]>([])
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState(false)
@@ -45,19 +46,22 @@ export default function MapPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <AppHeader />
+    <div className="relative h-screen overflow-hidden">
+      {/* Full-bleed map fills the entire background */}
+      <MapView
+        ref={mapViewRef}
+        listings={listings}
+        filters={filters}
+        mapHeight="100%"
+        className="absolute inset-0 w-full h-full"
+      />
 
-      <div className="relative flex-1 overflow-hidden">
-        <MapView
-          ref={mapViewRef}
-          listings={listings}
-          filters={filters}
-          mapHeight="100%"
-          className="relative w-full h-full"
-        />
+      {/* Floating header pill, centered on top of the map */}
+      <div className="absolute top-0 inset-x-0 z-30 pointer-events-none [&_header>div]:pointer-events-auto">
+        <AppHeader />
+      </div>
 
-        <MapFilterBar filters={filters} onChange={setFilters} />
+      <MapFilterBar filters={filters} onChange={setFilters} />
 
         {/* Save button — top right */}
         <div className="absolute top-4 right-4 z-10">
@@ -97,7 +101,6 @@ export default function MapPage() {
             </div>
           </div>
         )}
-      </div>
     </div>
   )
 }

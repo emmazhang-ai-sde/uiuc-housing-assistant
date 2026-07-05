@@ -4,6 +4,48 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 ---
 
+## 2026-07-05 — Shared filter state across Map/Card, Account page polish
+
+### Added
+- `contexts/FiltersContext.tsx` (new) — `FiltersProvider`/`useFilters()` context mounted once in the persistent root layout (`app/layout.tsx`). `app/map/page.tsx` and `app/card/page.tsx` both replaced their independent `useState<Filters>(DEFAULT_FILTERS)` with this shared hook, so picking a filter on one view is now reflected live on the other instead of resetting when navigating between them.
+- `app/account/page.tsx` — waitlist badge: reuses the `is_email_on_waitlist` Supabase RPC (already called at signup in `app/login/page.tsx`) to check the signed-in user's email, then renders a black "🌟 Waitlist Member" pill when it comes back true, so only genuine waitlist users see it.
+- `public/logos/user-avatar.jpeg` (renamed from `HEIF Image.jpeg`) — replaces the single-letter circle avatar on `/account` with an actual avatar image.
+
+### Changed
+- `app/card/page.tsx` — filter column padding `pt-24` → `pt-4`, so the Filter block's top-left corner lands at the same (16px, 16px) offset from the viewport as Map's `absolute top-4 left-4` panel.
+- `app/account/page.tsx` — dropped the standalone "Account" heading; the email now sits in that slot (bold, 20px) with the waitlist badge centered directly beneath it. The divider above the Log out button now spans the full card width (previously constrained to the 420px button column), matching the divider above "Your saved property / unit".
+
+---
+
+## 2026-07-04 — Card page toolbar overlay fix, login page redesign pass
+
+### Fixed
+- `app/card/page.tsx` — header switched from in-flow (`<AppHeader />` as a flex child spanning full width) to the floating-overlay pattern used by `/chat` and `/map`: outer container gained `relative`, `AppHeader` moved into an `absolute top-0 inset-x-0 z-30 pointer-events-none [&_header>div]:pointer-events-auto` wrapper. Both the filter column and the grid column gained `pt-24` (was `p-4`/`py-6`) so content clears the pill instead of scrolling underneath a full-width strip
+
+### Changed
+- `app/login/page.tsx`:
+  - Waitlist email input simplified from two mutually-exclusive suffix fields (`netid@illinois.edu` / `username@gmail.com`, `illinoisInput`/`gmailInput` state + `getLoginEmail()` helper) to a single free-text `type="email"` field (`emailInput` state); users now type their full address
+  - "Waiting-list only" notice restyled: bold Illini-orange (`rgb(255, 95, 5)`, matching `app/coming-soon/page.tsx`) headline with a 🎉🎉 celebratory note, followed by two centered steps each prefixed with a circled Unicode number (①②) and a bolded "Sign up"/"Log in"
+  - Sign Up/Log In segmented toggle reordered (Sign Up first, Log In second); active tab fills with the same Illini orange; each toggle label is now prefixed with the matching circled number, echoing the steps above it
+  - Per-mode guidance copy ("Enter the email you signed up with…" / "Enter any waitlisted email…") moved from below the submit button to directly above the email field, and split onto two lines with `<br />` instead of wrapping as one sentence
+  - All text on the page set to `text-black` (previously a mix of `neutral-400/500/600/700` grays); font sizes bumped one step across the page, with the wordmark bumped two steps; card width tuned `max-w-sm` → `max-w-[480px]`
+  - Explored a full "Apple minimalist" re-skin (near-black ink/opacity hierarchy, Illini-orange CTA pills, a shared circular step-badge component) end to end, then rolled back to the version above per explicit user preference — not in the tree, but the direction is documented here in case it's revisited
+
+---
+
+## 2026-07-04 — Floating header on Chat page, Account view as its own route, Card view moved to /card
+
+### Changed
+- `app/chat/page.tsx` — layout switched from an in-flow header (`flex-col`) to the floating-header-overlay pattern already used by `/map`: outer container is `relative h-screen overflow-hidden`, `AppHeader` is wrapped in an `absolute top-0 inset-x-0 z-30` pill, and the sidebar/chat/detail-panel row is a plain `flex h-full` that now spans the full viewport height. Previously the header took flow space, leaving a `neutral-100` gap above `ConversationSidebar` and an abrupt top edge on `PropertyPanel`; both columns' backgrounds now run flush to the top like they do on Map/Card
+- `components/chat/ChatWindow.tsx` — both the empty-state and message-list containers gained `pt-24` (was `py-6`) so the hero heading and first messages clear the now-floating header pill instead of sitting behind it
+- `components/UserMenu.tsx` — dropped the popup dropdown (avatar/email + "Log out" in a small floating card). Signed-in state is now a plain `Link` to `/account`, matching how Chat/Map/Card are all just routes
+- `app/account/page.tsx` (new) — account view built like `/chat`/`/map`: floating header overlay over a full-height `neutral-100` content area with a centered card (avatar, email, Log out). Redirects to `/login` if the session check comes back signed-out
+- Card view moved from `app/page.tsx` to `app/card/page.tsx` (`git mv`), content unchanged. `app/page.tsx` is now a two-line server redirect to `/card`, so old bookmarks/links to `/` keep working
+- `components/AppHeader.tsx` — Card tab now points at `/card` instead of `/`; the active-tab check no longer needs its `href === "/"` special case
+- `app/login/page.tsx`, `app/about/page.tsx` — the three hardcoded `"/"` references (post-login redirect, "Card view" link, "Get started" CTA) updated to `/card`
+
+---
+
 ## [Unreleased] — Chat persistence: conversations & messages now save and reload
 
 Chat had silently saved nothing to Supabase, across five stacked bugs found over 2026-07-03/04. Full root-cause writeup: `design-docs/agent-implementation-steps/chat-persistence-debugging.md`.

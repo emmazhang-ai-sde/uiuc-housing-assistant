@@ -10,14 +10,14 @@ const nunitoSans = Nunito_Sans({ subsets: ["latin"] })
 type Mode = "login" | "signup"
 
 export default function LoginPage() {
-  const [mode, setMode]       = useState<Mode>("login")
-  const [loginInput, setLoginInput] = useState("")
+  const [mode, setMode]           = useState<Mode>("login")
+  const [emailInput, setEmailInput] = useState("")
   const [code, setCode]       = useState("")
   const [step, setStep]       = useState<"email" | "code">("email")
   const [error, setError]     = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const email = getLoginEmail(loginInput)
+  const email = emailInput.trim()
 
   function switchMode(next: Mode) {
     if (next === mode) return
@@ -25,12 +25,6 @@ export default function LoginPage() {
     setStep("email")
     setCode("")
     setError("")
-  }
-
-  function getLoginEmail(value: string) {
-    const raw = value.trim().toLowerCase()
-    if (!raw) return ""
-    return raw.includes("@") ? raw : `${raw}@illinois.edu`
   }
 
   function getReadableErrorMessage(error: unknown, fallback: string) {
@@ -51,9 +45,8 @@ export default function LoginPage() {
   }
 
   async function sendCode() {
-    const normalizedInput = loginInput.trim().toLowerCase()
-    if (!normalizedInput) {
-      setError("Enter your email or Illinois NetID.")
+    if (!email) {
+      setError("Enter your email address.")
       return
     }
     const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -137,7 +130,7 @@ export default function LoginPage() {
         return
       }
 
-      router.replace("/")
+      router.replace("/card")
     } finally {
       setLoading(false)
     }
@@ -145,7 +138,7 @@ export default function LoginPage() {
 
   return (
     <div className={`min-h-screen flex items-center justify-center bg-neutral-100 ${nunitoSans.className}`}>
-      <div className="bg-white rounded-3xl shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-10 w-full max-w-sm">
+      <div className="bg-white rounded-3xl shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-10 w-full max-w-[480px]">
         <div className="mb-8">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -154,53 +147,66 @@ export default function LoginPage() {
             className="w-full rounded-2xl mb-5 object-cover"
           />
           <div className="text-center">
-            <div className="font-bold text-neutral-900 text-[15px] leading-none">
+            <div className="font-bold text-black text-[23px] leading-none">
               UIUC Housing Assistant
             </div>
-            <div className="text-[10px] text-neutral-400 mt-1 uppercase tracking-widest font-medium">
+            <div className="text-[14px] text-black mt-1 uppercase tracking-widest font-medium">
               Champaign-Urbana, IL
             </div>
           </div>
         </div>
 
         {step === "email" && (
-          <div className="flex gap-1 mb-6 bg-neutral-100 rounded-full p-1">
-            <button
-              type="button"
-              onClick={() => switchMode("login")}
-              className={`flex-1 py-2 rounded-full text-xs font-semibold transition-colors ${
-                mode === "login"
-                  ? "bg-white text-neutral-900 shadow-sm"
-                  : "text-neutral-500 hover:text-neutral-700"
-              }`}
-            >
-              Log In
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode("signup")}
-              className={`flex-1 py-2 rounded-full text-xs font-semibold transition-colors ${
-                mode === "signup"
-                  ? "bg-white text-neutral-900 shadow-sm"
-                  : "text-neutral-500 hover:text-neutral-700"
-              }`}
-            >
-              Sign Up
-            </button>
-          </div>
+          <>
+            <div className="text-sm mb-6 leading-relaxed">
+              <p className="font-bold text-center" style={{ color: "rgb(255, 95, 5)" }}>
+                Access is currently waiting-list only. 🎉🎉
+              </p>
+              <ul className="mt-2 space-y-1 text-black text-center">
+                <li>&#9312; <span className="font-bold">Sign up</span> with the email you used to join the waitlist.</li>
+                <li>&#9313; <span className="font-bold">Log in</span>!</li>
+              </ul>
+            </div>
+            <div className="flex gap-1 mb-6 bg-neutral-100 rounded-full p-1">
+              <button
+                type="button"
+                onClick={() => switchMode("signup")}
+                className={`flex-1 py-2 rounded-full text-sm font-semibold transition-colors ${
+                  mode === "signup"
+                    ? "text-white shadow-sm"
+                    : "text-black hover:text-black"
+                }`}
+                style={mode === "signup" ? { backgroundColor: "rgb(255, 95, 5)" } : {}}
+              >
+                &#9312; Sign Up
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode("login")}
+                className={`flex-1 py-2 rounded-full text-sm font-semibold transition-colors ${
+                  mode === "login"
+                    ? "text-white shadow-sm"
+                    : "text-black hover:text-black"
+                }`}
+                style={mode === "login" ? { backgroundColor: "rgb(255, 95, 5)" } : {}}
+              >
+                &#9313; Log In
+              </button>
+            </div>
+          </>
         )}
 
         {step === "code" ? (
           <form onSubmit={handleCodeSubmit} className="space-y-4">
-            <div className="text-sm text-neutral-600 leading-relaxed space-y-2">
-              <p className="font-semibold text-neutral-900">Enter your sign-in code</p>
+            <div className="text-base text-black leading-relaxed space-y-2">
+              <p className="font-semibold text-black">Enter your sign-in code</p>
               <p>
                 We sent an 8-digit code to{" "}
-                <span className="font-mono text-[#7B90A0]">{email}</span>.
+                <span className="font-mono text-black">{email}</span>.
               </p>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-widest text-neutral-400 block mb-2">
+              <label className="text-sm font-bold uppercase tracking-widest text-black block mb-2">
                 Sign-in code
               </label>
               <input
@@ -211,23 +217,23 @@ export default function LoginPage() {
                 required
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-center font-mono text-lg tracking-[0.35em] text-neutral-800 placeholder-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#7B90A0]/40 transition"
+                className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-center font-mono text-xl tracking-[0.35em] text-black placeholder-black focus:outline-none focus:ring-2 focus:ring-[#7B90A0]/40 transition"
               />
             </div>
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-700 transition-colors disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-neutral-900 text-white text-base font-semibold hover:bg-neutral-700 transition-colors disabled:opacity-50"
             >
               {loading ? "Verifying…" : "Verify code"}
             </button>
-            <div className="flex items-center justify-between text-xs text-neutral-400">
+            <div className="flex items-center justify-between text-sm text-black">
               <button
                 type="button"
                 onClick={sendCode}
                 disabled={loading}
-                className="hover:text-neutral-700 disabled:opacity-50"
+                className="hover:text-black disabled:opacity-50"
               >
                 Resend code
               </button>
@@ -235,11 +241,12 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => {
                   setStep("email")
+                  setEmailInput("")
                   setCode("")
                   setError("")
                 }}
                 disabled={loading}
-                className="hover:text-neutral-700 disabled:opacity-50"
+                className="hover:text-black disabled:opacity-50"
               >
                 Use a different email
               </button>
@@ -252,35 +259,43 @@ export default function LoginPage() {
           </form>
         ) : (
           <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <p className="text-sm text-black text-center">
+              {mode === "login" ? (
+                <>
+                  Enter the email you signed up with.
+                  <br />
+                  We'll send an 8-digit one-time passcode.
+                </>
+              ) : (
+                <>
+                  Enter your waitlisted email.
+                  <br />
+                  We'll email an 8-digit code.
+                </>
+              )}
+            </p>
             <div>
-              <label className="text-xs font-bold uppercase tracking-widest text-neutral-400 block mb-2">
-                Email
-              </label>
-              <input
-                type="text"
-                value={loginInput}
-                onChange={e => setLoginInput(e.target.value.trim().toLowerCase())}
-                placeholder="netid or email@example.com"
-                required
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-sm text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#7B90A0]/40 transition"
-              />
+              <div className="flex items-center w-full px-4 py-3 rounded-xl border border-neutral-200 focus-within:ring-2 focus-within:ring-[#7B90A0]/40 transition">
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={e => setEmailInput(e.target.value.trim().toLowerCase())}
+                  placeholder="you@example.com"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="flex-1 min-w-0 bg-transparent text-base text-black placeholder-black focus:outline-none"
+                />
+              </div>
             </div>
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-700 transition-colors disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-neutral-900 text-white text-base font-semibold hover:bg-neutral-700 transition-colors disabled:opacity-50"
             >
               {loading ? "Sending…" : mode === "login" ? "Send login code" : "Send sign-up code"}
             </button>
-            <p className="text-xs text-neutral-400 text-center">
-              {mode === "login"
-                ? "Enter the email you signed up with."
-                : "Enter any waitlisted email. We'll email an 8-digit code."}
-            </p>
           </form>
         )}
       </div>

@@ -27,7 +27,7 @@ const SCENARIOS = [
         </ul>
         <p className="mt-2.5">
           Browse and compare listings directly with{" "}
-          <Link href="/" className="font-semibold text-neutral-900 underline underline-offset-2">Card view</Link>,{" "}
+          <Link href="/card" className="font-semibold text-neutral-900 underline underline-offset-2">Card view</Link>,{" "}
           <Link href="/map" className="font-semibold text-neutral-900 underline underline-offset-2">Map view</Link>, or{" "}
           <span className="font-semibold text-neutral-900">Table view</span>.
         </p>
@@ -113,23 +113,23 @@ const ADVANTAGES = [
 
 const PAIN_POINTS = [
   {
-    problem: "Every property manager runs its own site, with its own layout and filters.",
+    problem: "12 tabs open, one per landlord site, and still no way to compare them side by side.",
     solution: "One search covers all of them, in one place.",
   },
   {
-    problem: "Listings advertise totals that don't reflect what you'll actually pay per bed.",
+    problem: "The price you see is for the whole unit, not what actually hits your card each month.",
     solution: "Every result is normalized to price per bed, so comparisons are honest.",
   },
   {
-    problem: "You don't find out a unit is already leased until you've emailed and waited.",
+    problem: "You email, wait two days for a reply, and the unit's already leased by the time they answer.",
     solution: "Live availability windows are built into every search and filter.",
   },
   {
-    problem: "An address alone doesn't tell you if a place is actually walkable to class.",
+    problem: "Google Maps says 0.4 miles, but nobody warns you it's a 20-minute walk in January.",
     solution: "The map view shows every listing relative to campus buildings.",
   },
   {
-    problem: "Getting basic answers usually means calling a leasing office.",
+    problem: "Every follow-up question means another call to an office that's already closed for the day.",
     solution: "Ask in plain English and get an instant, specific answer.",
   },
 ]
@@ -249,10 +249,10 @@ export default function AboutPage() {
               <tbody>
                 {PAIN_POINTS.map(({ problem, solution }) => (
                   <tr key={problem} className="border-b border-neutral-100 last:border-b-0">
-                    <td className="text-sm text-neutral-400 leading-relaxed px-5 py-4 align-top">
+                    <td className="text-sm font-medium text-neutral-900 leading-relaxed px-5 py-4 align-top">
                       {problem}
                     </td>
-                    <td className="text-sm text-neutral-800 leading-relaxed px-5 py-4 align-top">
+                    <td className="text-sm font-medium leading-relaxed px-5 py-4 align-top" style={{ color: "#2d8a4e" }}>
                       {solution}
                     </td>
                   </tr>
@@ -268,7 +268,7 @@ export default function AboutPage() {
         <h2 className="text-3xl font-bold text-neutral-900 tracking-tight">Ready to find your place?</h2>
         <div className="flex items-center justify-center gap-3 mt-8">
           <Link
-            href="/"
+            href="/card"
             className="px-6 py-2.5 rounded-full bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 transition-colors"
           >
             Get started

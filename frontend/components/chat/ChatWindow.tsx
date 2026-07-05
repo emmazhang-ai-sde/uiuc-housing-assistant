@@ -31,7 +31,7 @@ export default function ChatWindow({ messages, isLoading, onSuggest, onSelect }:
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex-1 overflow-y-auto px-6 py-6">
+      <div className="flex-1 overflow-y-auto px-6 pt-24 pb-6">
         <div className="flex flex-col items-center justify-center h-full gap-8 text-center">
           <div>
             <h1 className="text-5xl font-bold text-neutral-900 leading-[1.3]">
@@ -59,7 +59,7 @@ export default function ChatWindow({ messages, isLoading, onSuggest, onSelect }:
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6">
+    <div className="flex-1 overflow-y-auto px-6 pt-24 pb-6">
       <div className="max-w-7xl mx-auto">
         {messages.map(msg => {
           if (msg.role === "user") {

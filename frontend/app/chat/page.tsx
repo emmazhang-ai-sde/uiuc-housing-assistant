@@ -32,10 +32,8 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-neutral-100 overflow-hidden">
-      <AppHeader />
-
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+    <div className="relative h-screen bg-neutral-100 overflow-hidden">
+      <div className="flex h-full overflow-hidden">
         <ConversationSidebar
           conversations={conversations}
           activeId={activeId}
@@ -57,6 +55,11 @@ export default function ChatPage() {
         </div>
 
         <PropertyPanel listing={selectedListing} onClose={() => setSelectedListing(null)} />
+      </div>
+
+      {/* Floating header pill, overlaid on top like the Map/Card views */}
+      <div className="absolute top-0 inset-x-0 z-30 pointer-events-none [&_header>div]:pointer-events-auto">
+        <AppHeader />
       </div>
     </div>
   )

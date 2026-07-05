@@ -4,6 +4,25 @@ All notable changes to the UIUC Housing Assistant are recorded here.
 
 ---
 
+## 2026-07-04 — Card page toolbar overlay fix, login page copy/branding pass
+
+### Fixed
+- Card view (`/card`) toolbar no longer sits in normal document flow as a full-width strip; it now uses the same floating-pill-overlay pattern as Chat/Map, and the filter column plus the listing grid gained top padding so content starts clear of the pill instead of running underneath it
+
+### Changed
+- Login page (`/login`) — waitlist email step reworked: the two mutually-exclusive NetID/Gmail suffix inputs replaced with a single free-form email field; "waiting-list only" notice restyled as a bold Illini-orange headline with two centered, numbered steps (circled ①②, bold "Sign up"/"Log in"); Sign Up/Log In toggle reordered (Sign Up first) with matching circled numbers, active tab filled in the same Illini orange; per-step guidance copy moved above the email field
+
+---
+
+## 2026-07-04 — Chat page floating header, Account view, dedicated /card route
+
+### Changed
+- Chat page (`/chat`) now uses the same floating-header-overlay layout as the Map view, so the conversation sidebar and the docked property detail panel run flush to the top of the viewport instead of leaving a gap under the header
+- Signed-in account access reworked: the header avatar/email no longer opens a dropdown — clicking it goes to a real `/account` page built the same way as Chat/Map/Card, showing the account email and a Log out action
+- Card view relocated from `/` to `/card` for consistency with `/chat`, `/map`, `/account`; `/` now just redirects to `/card`
+
+---
+
 ## [Unreleased] — Chat persistence fixed (conversations & messages now save and reload)
 
 ### Fixed
