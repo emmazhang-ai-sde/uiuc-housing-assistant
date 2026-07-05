@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import AppHeader from "@/components/AppHeader"
 import { createClient } from "@/lib/supabase/client"
+import { logEvent } from "@/lib/logEvent"
 
 export default function AccountPage() {
   const [email, setEmail] = useState<string | null | undefined>(undefined)
@@ -33,6 +34,9 @@ export default function AccountPage() {
 
   async function handleSignOut() {
     setLoading(true)
+    // Logged before signOut(), not after — once the session cookie is
+    // cleared, /api/events has no auth to attribute the event to.
+    logEvent("logout")
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/login")

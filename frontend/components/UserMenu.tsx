@@ -12,6 +12,10 @@ export default function UserMenu() {
     supabase.auth.getUser().then(({ data }) => {
       setEmail(data.user?.email ?? null)
     })
+    // Not a place to log 'login' — this listener's SIGNED_IN also fires on an
+    // ordinary page refresh that resumes an existing session, not just on a
+    // real new sign-in. The actual login event is logged once, deterministically,
+    // right after verifyOtp succeeds in LoginCard.tsx.
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setEmail(session?.user?.email ?? null)
     })

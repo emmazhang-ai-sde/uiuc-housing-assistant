@@ -9,6 +9,7 @@ import MessageInput from "@/components/chat/MessageInput"
 import PropertyPanel from "@/components/PropertyPanel"
 import { DEFAULT_FILTERS } from "@/lib/api"
 import type { Listing } from "@/lib/api"
+import { logEvent } from "@/lib/logEvent"
 
 export default function ChatPage() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
@@ -31,6 +32,11 @@ export default function ChatPage() {
     sendMessage(query, DEFAULT_FILTERS)
   }
 
+  function handleSelectListing(listing: Listing) {
+    setSelectedListing(listing)
+    logEvent("listing_view", { url: listing.url, company: listing.company, source: "chat" })
+  }
+
   return (
     <div className="relative h-screen bg-neutral-100 overflow-hidden">
       <div className="flex h-full overflow-hidden">
@@ -46,7 +52,7 @@ export default function ChatPage() {
             messages={messages}
             isLoading={isLoading}
             onSuggest={handleSuggest}
-            onSelect={setSelectedListing}
+            onSelect={handleSelectListing}
           />
           <MessageInput
             onSend={handleSend}

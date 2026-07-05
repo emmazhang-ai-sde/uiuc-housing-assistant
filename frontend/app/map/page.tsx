@@ -10,6 +10,7 @@ import type { Listing } from "@/lib/api"
 import type { MapViewHandle } from "@/components/MapView"
 import { useSaveAction } from "@/hooks/useSaveAction"
 import { useFilters } from "@/contexts/FiltersContext"
+import { logEvent } from "@/lib/logEvent"
 
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false })
 
@@ -27,7 +28,12 @@ export default function MapPage() {
     setError(false)
 
     fetchAllListings(filters)
-      .then(data => { if (!cancelled) { setListings(data); setLoading(false) } })
+      .then(data => {
+        if (cancelled) return
+        setListings(data)
+        setLoading(false)
+        logEvent("map_search", { filters, result_count: data.length })
+      })
       .catch(() => { if (!cancelled) { setError(true); setLoading(false) } })
 
     return () => { cancelled = true }

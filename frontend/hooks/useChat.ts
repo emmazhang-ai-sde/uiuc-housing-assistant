@@ -7,6 +7,7 @@
 import { useState, useCallback, useEffect } from "react"
 import type { Listing, Filters } from "@/lib/api"
 import { useAuthModal } from "@/contexts/AuthModalContext"
+import { logEvent } from "@/lib/logEvent"
 
 export interface ChatMessage {
   id: string
@@ -81,6 +82,7 @@ export function useChat() {
 
   const selectConversation = useCallback(async (id: string) => {
     setActiveId(id)
+    logEvent("conversation_open", { conversation_id: id })
     if (messagesByConv[id]) return  // already loaded
     const msgs = await fetchMessages(id)
     setMessagesByConv(prev => ({ ...prev, [id]: msgs }))
@@ -100,6 +102,7 @@ export function useChat() {
     setConversations(prev => [conv, ...prev])
     setActiveId(data.id)
     setMessagesByConv(prev => ({ ...prev, [data.id]: [] }))
+    logEvent("conversation_open", { conversation_id: data.id, new: true })
   }, [openAuthModal])
 
   const sendMessage = useCallback(async (content: string, filters?: Filters) => {
@@ -154,6 +157,7 @@ export function useChat() {
       // branch above was skipped): pop the login card and stop here.
       if (persistUser.status === 401) { openAuthModal(); return }
       if (!persistUser.ok) console.error("Failed to persist user message:", persistUser.status, await persistUser.json().catch(() => null))
+      else logEvent("message_sent", { conversation_id: convId })
 
       // Backend call — includes filters so the agent's housing_search tool uses them
       const res = await fetch("/api/chat", {

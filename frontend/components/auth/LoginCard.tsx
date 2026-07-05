@@ -8,6 +8,7 @@
 import { useState } from "react"
 import { Nunito_Sans } from "next/font/google"
 import { createClient } from "@/lib/supabase/client"
+import { logEvent } from "@/lib/logEvent"
 
 const nunitoSans = Nunito_Sans({ subsets: ["latin"] })
 
@@ -118,6 +119,10 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
         return
       }
 
+      // Logged here, not via onAuthStateChange — that also fires on an
+      // ordinary page refresh that resumes an existing session, which isn't
+      // a real login. This is the one place a login is a deliberate action.
+      logEvent("login")
       onSuccess()
     } finally {
       setLoading(false)

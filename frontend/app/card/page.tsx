@@ -7,6 +7,7 @@ import ListingGrid from "@/components/ListingGrid"
 import { fetchListingsPage, fetchAllListings, Listing, Filters } from "@/lib/api"
 import PropertyDrawer from "@/components/PropertyDrawer"
 import { useFilters } from "@/contexts/FiltersContext"
+import { logEvent } from "@/lib/logEvent"
 
 const CATALOG_PAGE_SIZE = 24
 
@@ -29,6 +30,13 @@ export default function Home() {
   const [catalogTotal, setCatalogTotal]       = useState(0)
   const [catalogPage, setCatalogPage]         = useState(1)
   const [catalogLoading, setCatalogLoading]   = useState(true)
+
+  useEffect(() => { logEvent("card_view") }, [])
+
+  function handleSelect(listing: Listing) {
+    setSelectedListing(listing)
+    logEvent("listing_view", { url: listing.url, company: listing.company, source: "card" })
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -85,7 +93,7 @@ export default function Home() {
               paginated={!hasAnyFilter}
               filters={filters}
               onPageChange={goToCatalogPage}
-              onSelect={setSelectedListing}
+              onSelect={handleSelect}
             />
           </div>
         </div>
