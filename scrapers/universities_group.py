@@ -144,7 +144,14 @@ def scrape_building_index(page: Page) -> dict[str, dict]:
 def parse_beds(unit_type: str) -> int:
     if "studio" in unit_type.lower():
         return 0
-    match = re.search(r"(\d+)\s+bedroom", unit_type, re.IGNORECASE)
+    # "bedroom"/"bedrooms" spelled out, or "BR"/"Bed" abbreviations (both appear
+    # in real unit_type text, e.g. "2 BR Flat" vs "6 Bed Townhouse"). \b after the
+    # abbreviations prevents "bed"/"br" from matching mid-word in an unrelated
+    # future listing (e.g. "5 Brand New Studio"); "bedroom" itself doesn't need
+    # the boundary since it's matched as its own alternative, not via the "bed"
+    # prefix. Verified against all 137 distinct Universities Group unit_type
+    # strings in snapshots/listings_2026-07-05.db before this change.
+    match = re.search(r"(\d+)\s*(?:bedroom|bed\b|br\b)", unit_type, re.IGNORECASE)
     return int(match.group(1)) if match else 0
 
 

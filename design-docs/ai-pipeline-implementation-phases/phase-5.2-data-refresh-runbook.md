@@ -34,7 +34,15 @@ python -m pipeline.geocode
 
 # 4. Ingest: incrementally update chroma_db/ (only re-embeds changed listings).
 python -m pipeline.ingest
+
+# 5. Commit BOTH the vector store and the new snapshot DB before pushing.
+#    Railway's filesystem resets on every deploy, so anything the backend reads
+#    at runtime must be committed, not just present locally.
+git add chroma_db/ snapshots/listings_<today>.db snapshots/latest.txt
+git commit -m "data: refresh listings <today>"
 ```
+
+**Why step 5 is not optional:** `GET /api/listings` (Card/Map page data) and `GET /api/status` (About page stat line) both read `snapshots/listings_<today>.db` directly (`SNAPSHOTS_DIR` in `config.py`) — Chroma is not enough for those two endpoints. `.gitignore`'s blanket `*.db` rule has an explicit `!snapshots/listings_*.db` exception for this reason; without committing the file, both endpoints silently degrade (`{"listings": []}` / null counts) instead of erroring, so the gap is easy to miss until someone notices Card/Map look empty in production.
 
 **Re-running after a partial scrape failure (timeouts):** a scraper logging a few `⚠ Failed to load ...` lines is not a crash — the affected properties are simply left out of that run's output (never fabricated from old data), and the run keeps going. Re-run only the scraper(s) that had gaps, then repeat steps 2–4 as-is. The company that scraped cleanly does not need re-running. **For Universities Group, don't run steps 2–4 until a run reports zero missing properties** — a property temporarily missing from its raw file looks identical to a delisted one and would get removed from the live search index by ingest.
 
