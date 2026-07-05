@@ -7,20 +7,19 @@ import { createClient } from "@/lib/supabase/client"
 
 const nunitoSans = Nunito_Sans({ subsets: ["latin"] })
 
-const WAITLIST_CAPACITY = 100
-
 export default function ComingSoonPage() {
-  const [emailInput, setEmailInput] = useState("")
+  const [netid, setNetid]       = useState("")
   const [done, setDone]         = useState(false)
   const [position, setPosition] = useState<number | null>(null)
   const [error, setError]       = useState("")
   const [loading, setLoading]   = useState(false)
   const [totalCount, setTotalCount] = useState<number | null>(null)
+  const [lang, setLang] = useState<"EN" | "CN">("EN")
   const [referral, setReferral] = useState<string>("")
   const [otherText, setOtherText] = useState<string>("")
-  const [emailFocused, setEmailFocused] = useState(false)
+  const [netidFocused, setNetidFocused] = useState(false)
   const [referralError, setReferralError] = useState(false)
-  const [emailError, setEmailError] = useState(false)
+  const [netidError, setNetidError] = useState(false)
 
   const referralSourcesCN = ["小红书 (RedNote)", "微信 (WeChat)"]
   const referralSourcesEN = ["Reddit", "LinkedIn", "X"]
@@ -28,7 +27,7 @@ export default function ComingSoonPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.has("preview")) {
-      setEmailInput("netid@illinois.edu")
+      setNetid("netid")
       setPosition(42)
       setTotalCount(42)
       setDone(true)
@@ -43,9 +42,10 @@ export default function ComingSoonPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const email = emailInput.trim().toLowerCase()
-    if (!email) { setEmailError(true); return }
+    const trimmed = netid.trim().toLowerCase().replace(/@illinois\.edu$/i, "")
+    if (!trimmed) { setNetidError(true); return }
     if (!referral) { setReferralError(true); return }
+    const email = `${trimmed}@illinois.edu`
     setLoading(true)
     setError("")
     const supabase = createClient()
@@ -85,8 +85,8 @@ export default function ComingSoonPage() {
       <div className="w-full max-w-md flex flex-col items-center gap-10 text-center">
 
         {/* Badge */}
-        <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest text-white" style={{ backgroundColor: "rgb(255, 95, 5)" }}>
-          Launching July 5 · Waitlist Only
+        <span className="px-3 py-1 rounded-full border border-neutral-200 text-xs font-semibold uppercase tracking-widest text-neutral-900">
+          Private Beta · Coming Soon
         </span>
 
         {/* Headline */}
@@ -112,16 +112,9 @@ export default function ComingSoonPage() {
               <img key={src} src={src} alt={alt} className="h-8 w-auto object-contain" />
             ))}
           </div>
-          {totalCount !== null && (
-            <div className="mt-10 border-t border-black pt-8">
-              <p className="text-lg font-bold underline underline-offset-2" style={{ color: "rgb(255, 95, 5)" }}>
-🔥 {Math.max(0, WAITLIST_CAPACITY - totalCount)} spot{Math.max(0, WAITLIST_CAPACITY - totalCount) !== 1 ? "s" : ""} left for the beta.
-              </p>
-            </div>
-          )}
           {totalCount !== null && totalCount > 0 && (
-            <p className="text-base font-bold underline underline-offset-2" style={{ color: "#2d8a4e" }}>
-🍀 {totalCount} UIUC student{totalCount !== 1 ? "s" : ""} already on the waitlist!
+            <p className="text-base font-semibold underline underline-offset-2" style={{ color: "rgb(255, 95, 5)" }}>
+🔥 {totalCount} UIUC student{totalCount !== 1 ? "s" : ""} already on the waitlist!
             </p>
           )}
         </div>
@@ -140,7 +133,7 @@ export default function ComingSoonPage() {
               <p className="text-base text-neutral-900">
                 We&apos;ll email{" "}
                 <span className="font-mono font-bold" style={{ color: "rgb(255, 95, 5)" }}>
-                  {emailInput.trim().toLowerCase()}
+                  {netid.trim().toLowerCase()}@illinois.edu
                 </span>{" "}
                 when beta opens.
               </p>
@@ -214,27 +207,28 @@ export default function ComingSoonPage() {
               </div>
               <div className="flex flex-col gap-2">
                 <p className="text-base font-semibold text-left mt-1 mb-1 flex items-center gap-2 flex-wrap">
-                  <span style={{ backgroundColor: emailError ? "#fef08a" : "transparent", borderRadius: "2px", padding: emailError ? "0 4px" : "0", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ color: "rgb(255, 95, 5)" }}>Enter your email to join</span>
-                    {emailError && <span className="text-base font-semibold italic text-neutral-900">Please fill out this field. 💗</span>}
+                  <span style={{ backgroundColor: netidError ? "#fef08a" : "transparent", borderRadius: "2px", padding: netidError ? "0 4px" : "0", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ color: "rgb(255, 95, 5)" }}>Enter your NetID to join</span>
+                    {netidError && <span className="text-base font-semibold italic text-neutral-900">Please fill out this field. 💗</span>}
                   </span>
                 </p>
                 <div
                   className="flex items-center rounded-xl border overflow-hidden transition-all"
                   style={{
-                    borderColor: emailFocused ? "rgb(255, 95, 5)" : "rgb(229, 229, 229)",
+                    borderColor: netidFocused ? "rgb(255, 95, 5)" : "rgb(229, 229, 229)",
                     backgroundColor: "white",
                   }}
                 >
                   <input
-                    type="email"
-                    value={emailInput}
-                    onChange={e => { setEmailInput(e.target.value); setEmailError(false) }}
-                    onFocus={() => setEmailFocused(true)}
-                    onBlur={() => setEmailFocused(false)}
-                    placeholder="you@example.com"
+                    type="text"
+                    value={netid}
+                    onChange={e => { setNetid(e.target.value); setNetidError(false) }}
+                    onFocus={() => setNetidFocused(true)}
+                    onBlur={() => setNetidFocused(false)}
+                    placeholder="write your netid here"
                     className="flex-1 px-4 py-3 text-base placeholder-neutral-400 focus:outline-none bg-transparent" style={{ color: "rgb(255, 95, 5)" }}
                   />
+                  <span className="pr-4 text-base font-semibold select-none" style={{ color: "rgb(255, 95, 5)" }}>@illinois.edu</span>
                 </div>
                 <button
                   type="submit"
@@ -245,7 +239,7 @@ export default function ComingSoonPage() {
                 </button>
               </div>
               {error && <p className="text-sm text-red-500 text-left">{error}</p>}
-              <p className="text-sm text-neutral-900">Free · No spam</p>
+              <p className="text-sm text-neutral-900">@illinois.edu only · Free · No spam</p>
             </form>
           )}
         </div>
@@ -259,20 +253,83 @@ export default function ComingSoonPage() {
           </p>
         </div>
 
-        {/* Reddit contact */}
-        <div className="w-full border-t border-black pt-8 text-center">
-          <p className="text-base text-neutral-900">
-            Have any questions about the website?<br />Feel free to{" "}
-            <a
-              href="https://www.reddit.com/r/uiuc_housing/comments/1ue4x31/comment/oth4qi9/?context=3"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold underline underline-offset-2"
+        {/* Can’t wait section */}
+        <div className="w-full border-t border-black pt-8 space-y-4 text-center">
+          {/* Toggle */}
+          <div className="flex justify-center gap-0">
+            <button
+              onClick={() => setLang("EN")}
+              className={`px-4 py-1.5 text-sm font-semibold border border-neutral-900 rounded-l-lg transition-colors cursor-pointer ${lang === "EN" ? "bg-neutral-900 text-white" : "bg-white text-neutral-900 hover:bg-neutral-100"}`}
             >
-              DM me on Reddit
-            </a>
-            .
+              EN
+            </button>
+            <button
+              onClick={() => setLang("CN")}
+              className={`px-4 py-1.5 text-sm font-semibold border border-neutral-900 rounded-r-lg transition-colors cursor-pointer ${lang === "CN" ? "bg-neutral-900 text-white" : "bg-white text-neutral-900 hover:bg-neutral-100"}`}
+            >
+              CN
+            </button>
+          </div>
+
+          <p className="text-base font-semibold text-neutral-900">
+            {lang === "EN" ? "Need housing before we launch? I’ll search manually for you." : "上线之前需要找房？我先帮你手动查。"}
           </p>
+
+          {lang === "EN" ? (
+            <p className="text-base text-neutral-900">
+              On Reddit?{" "}
+              <a
+                href="https://www.reddit.com/r/uiuc_housing/comments/1ue4x31/comment/oth4qi9/?context=3"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline underline-offset-2"
+              >
+                DM me
+              </a>
+              {" "}your requirements — I&apos;ll search manually and send you screenshots.
+            </p>
+          ) : (
+            <>
+              <p className="text-base text-neutral-900 text-left">On Xiaohongshu (小红书)?</p>
+              <ol className="text-base text-neutral-900 leading-relaxed text-left space-y-1 list-decimal list-inside">
+                <li>搜索并关注{" "}
+                  <a
+                    href="https://www.xiaohongshu.com/user/profile/68d566db0000000021025f29"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    @momo在coding
+                  </a>
+                </li>
+                <li>点击「群聊」，加入 <span className="font-semibold">UIUC-housing-ai website</span></li>
+                <li>艾特我，告诉我你的找房需求——我会手动搜索，把截图发给你</li>
+              </ol>
+              <p className="text-sm text-neutral-900">
+                小红书 →{" "}
+                <a
+                  href="https://www.xiaohongshu.com/user/profile/68d566db0000000021025f29"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono font-semibold underline underline-offset-2"
+                >
+                  @momo在coding
+                </a>
+                {" "}→ 群聊 → <strong>UIUC-housing-ai website</strong>
+              </p>
+              <a
+                href="https://www.xiaohongshu.com/user/profile/68d566db0000000021025f29"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src="/logos/rednote-qr.jpeg"
+                  alt="RedNote QR code"
+                  className="mx-auto w-72 h-auto object-contain rounded-xl"
+                />
+              </a>
+            </>
+          )}
         </div>
 
       </div>

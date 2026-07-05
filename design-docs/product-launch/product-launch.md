@@ -26,27 +26,39 @@ This is a non-commercial portfolio project that scrapes publicly accessible hous
 | Phase | Who can access | When |
 |-------|---------------|------|
 | **Coming Soon** | No one — visitors see waitlist page only | Now → beta invite sent |
-| **Private Beta** | ~30 invited @illinois.edu students | After waitlist review |
-| **Public Launch** | All students, plus other email providers (Gmail first, Outlook etc. later) | After beta feedback |
+| **Private Beta** | ~30 invited students | After waitlist review |
+| **Public Launch** | All students | After beta feedback |
 
-**Why the waitlist is @illinois.edu-only for now:** launch posts collecting signups were tagged and posted on Xiaohongshu and in the r/UIUC community on Reddit, both UIUC-specific audiences. Requiring an Illinois email matched that targeting and reinforced belonging to a UIUC-only early community. This restriction is Private Beta-only, not permanent; see the Public Launch row above and `design-docs/product-launch/audience-and-identity-strategy.md`.
+**Waitlist is no longer @illinois.edu-only (changed 2026-07-05):** the Coming Soon page originally only accepted a NetID and appended `@illinois.edu` in the UI. That restriction has been dropped — the form now takes any full email address. This was a client-side-only restriction: the `waitlist` table has no domain check (§1.5.3), and `is_email_on_waitlist` / `restrict_signup_to_waitlist` (`design-docs/user-authentication.md` §5.5–5.6) only check table membership, not the email's domain — so no database or auth-hook changes were needed to support this. The original rationale (launch posts targeted UIUC-specific audiences on Xiaohongshu/Reddit) is in `design-docs/product-launch/audience-and-identity-strategy.md`, but is now historical — that doc and `design-docs/user-authentication.md` still describe the old @illinois.edu-only assumption and should be treated as stale on that point.
 
 ### 1.5.2 Coming Soon page — **Live**
 
 File: `frontend/app/coming-soon/page.tsx`
+
+**Versioning:** the page went through two versions on 2026-07-05. V1 (badge "Private Beta · Coming Soon", no remaining-spots line, no waitlist-count divider) is archived at `design-docs/product-launch/archive/coming-soon-page-v1.tsx` for reference only — it is not wired into the app and is not routed by Next.js. V2 is the version currently live in `page.tsx`, described below.
 
 URL: `uiuc-housing-ai.com` (root `/`, when `LAUNCH_MODE=coming_soon` in Vercel)
 
 Content (as built):
 - Headline: **"AI-Powered Housing Search for UIUC Students"**
 - Subheadline: "Search hundreds of real listings near campus using plain English — no filters, no scrolling, just ask."
-- Badge: "Private Beta — Coming Soon"
-- NetID input: user types only the NetID prefix; `@illinois.edu` is appended in the UI and on submit
+- Badge: "Launching July 5 · Waitlist Only" — orange pill (`rgb(255, 95, 5)`, the page's accent color) with white text, no border
+- Email input: `type="email"` free-text field (`emailInput` state) — accepts any address, not just `@illinois.edu` (see the note above §1.5.1)
 - "Notify me" button → inserts full email into Supabase `waitlist` table via anon key
 - Duplicate email: Postgres error code `23505` → treated same as success (shows success card, no red error)
-- Success state: "You're on the list! We'll email {netid}@illinois.edu when beta opens."
+- Success state: "You're on the list! We'll email {email} when beta opens."
 
 Design: `bg-neutral-100`, white card with soft shadow, `#7B90A0` accent (Morandi).
+
+**Remaining spots indicator:** the page assumes a fixed beta capacity of `WAITLIST_CAPACITY = 100` seats (a constant in `page.tsx`, not stored in Supabase). Remaining spots = `100 - totalCount`, where `totalCount` is the current row count of the `waitlist` table (fetched on page load, and again after a successful signup). The count is clamped to a minimum of 0 so the copy never goes negative once the waitlist fills past 100. This is a display-only signal — it does not block signups once the 100 seats are used up; the actual invite cutoff is a manual decision made when the beta list is reviewed (see 1.5.1).
+
+Two social-proof lines sit above the form, in this order:
+1. "🔥 N spots left for the beta." — orange (`rgb(255, 95, 5)`), `text-lg`, the larger/top line. Has its own `border-t border-black` divider above it, in a separate `<div>` from the "Why a waitlist?" section's divider further down the page. Spacing below the line (`pt-8`) matches that section's divider; spacing above (`mt-10` on top of the parent's `space-y-4` gap) is one extra line taller than that section's `gap-10`, by request.
+2. "🍀 N UIUC students already on the waitlist!" — grass green (`#2d8a4e`, matches the "You're on the list" success color), `text-base`.
+
+**Reddit contact (replaces old "Can't wait" section):** the bottom-of-page section that used to offer an EN/CN language toggle with a manual-search pitch ("Need housing before we launch? I'll search manually for you.") and a separate Xiaohongshu group-chat flow was removed. The `lang` state and both language branches are gone. In their place, a single English line keeps the original Reddit thread link: "Have any questions about the website? Feel free to DM me on Reddit." The Xiaohongshu contact flow (QR code, `@momo在coding` links) was dropped, not just hidden. See `design-docs/product-launch/archive/coming-soon-page-v1.tsx` for the pre-removal version.
+
+Both share the same weight/underline treatment (`font-semibold underline underline-offset-2`); only size and color differ, and only render once `totalCount` has loaded.
 
 ### 1.5.3 Waitlist storage — Supabase `waitlist` table
 

@@ -4,6 +4,21 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 ---
 
+## 2026-07-05 — Coming-soon page waitlist/messaging pass
+
+### Changed
+- `app/coming-soon/page.tsx`:
+  - Badge: "Private Beta · Coming Soon" → "Launching July 5 · Waitlist Only"; dropped `border border-neutral-200 text-neutral-900` in favor of a solid orange pill (`backgroundColor: rgb(255, 95, 5)`, `text-white`, no border)
+  - Added a `WAITLIST_CAPACITY = 100` constant and a new "🔥 N spots left for the beta." line (`text-lg font-bold underline underline-offset-2`, orange), computed as `Math.max(0, WAITLIST_CAPACITY - totalCount)`. Placed above the existing "🍀 N UIUC students already on the waitlist!" line (which gained the 🍀 emoji and switched from `rgb(255, 95, 5)` to grass green `#2d8a4e`, matching the "You're on the list" success color); both lines bumped from `font-semibold` to `font-bold`
+  - The spots-left line sits in its own `border-t border-black` divider `<div>` (`mt-10 pt-8`), separate from the "Why a waitlist?" divider further down the page — spacing below the line matches that section's `pt-8`, spacing above is one line taller than that section's `gap-10`, by request
+  - Removed the "Can't wait" section entirely: the `lang` state, the EN/CN toggle buttons, the "Need housing before we launch? I'll search manually for you." pitch, and the whole Xiaohongshu group-chat flow (QR code image, `@momo在coding` links). Replaced with a single English paragraph that keeps the original Reddit thread link — "Have any questions about the website?<br />Feel free to **DM me on Reddit**." — with a manual line break before "Feel free to"
+  - Waitlist signup input changed from a NetID-only field (auto-appending `@illinois.edu`, `netid`/`netidFocused`/`netidError` state) to a free-text `type="email"` field (`emailInput`/`emailFocused`/`emailError` state), so any email domain can join; the fixed `@illinois.edu` suffix span and the "@illinois.edu only" copy were removed, success-state copy now echoes back whatever the user typed
+
+### Added
+- `design-docs/product-launch/archive/coming-soon-page-v1.tsx` — pre-change snapshot of the page for reference, not part of the Next.js route tree
+
+---
+
 ## 2026-07-05 — Shared filter state across Map/Card, Account page polish
 
 ### Added

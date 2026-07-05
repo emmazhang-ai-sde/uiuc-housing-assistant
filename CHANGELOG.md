@@ -4,6 +4,19 @@ All notable changes to the UIUC Housing Assistant are recorded here.
 
 ---
 
+## 2026-07-05 — Coming-soon page: launch badge, waitlist-capacity messaging, dropped @illinois.edu-only signup
+
+### Changed
+- `frontend/app/coming-soon/page.tsx` — badge copy changed from "Private Beta · Coming Soon" to "Launching July 5 · Waitlist Only", restyled as a solid orange pill (`rgb(255, 95, 5)`) with white text instead of a bordered neutral pill
+- Added a remaining-spots line ("🔥 N spots left for the beta.") next to the existing waitlist-count line ("🍀 N UIUC students already on the waitlist!"), based on a new `WAITLIST_CAPACITY = 100` constant (`remaining = max(0, 100 - totalCount)`); this is a display-only signal and does not block signups once the count passes 100
+- Removed the "Can't wait" section (EN/CN language toggle, manual-search pitch, Xiaohongshu group-chat flow with QR code) and replaced it with a single English line that keeps the original Reddit thread link: "Have any questions about the website? Feel free to DM me on Reddit."
+- Waitlist signup dropped its @illinois.edu-only restriction: the NetID input (which auto-appended `@illinois.edu`) was replaced with a free-text `type="email"` field, so any email address can join. No database or auth-hook changes were needed — the `waitlist` table and its RPCs (`is_email_on_waitlist`, `restrict_signup_to_waitlist`) never enforced a domain check; the restriction lived only in this page's UI
+
+### Added
+- `design-docs/product-launch/archive/coming-soon-page-v1.tsx` — snapshot of the coming-soon page as it existed before today's changes, kept for reference (not routed by Next.js)
+
+---
+
 ## 2026-07-05 — Scraper reliability overhaul: honest gaps instead of stale backfill, per-run raw archiving, geocode fix
 
 ### Added
