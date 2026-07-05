@@ -31,6 +31,12 @@ ENV/
 # SQLite databases (regenerable via scraper + normalizer)
 *.db
 
+# Exception: the live snapshot DB is Railway's only source for GET /api/listings
+# and GET /api/status (SNAPSHOTS_DIR in config.py) — it must be committed like
+# chroma_db/, or Card/Map silently render zero results and /api/status returns
+# null counts in production. See phase-5.2-data-refresh-runbook.md.
+!snapshots/listings_*.db
+
 # Raw scraped data (regenerable)
 green_street_raw.json
 
