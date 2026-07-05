@@ -130,11 +130,11 @@ export default function UserBubble({ text, filters }: { text: string; filters: F
     <div className="flex justify-end items-start gap-3 mt-10 mb-4">
       <div className="flex max-w-[80%] flex-col items-end gap-3">
         {hasActiveFilters(filters) && <ReadOnlyFilterSnapshot filters={filters} />}
-        <div className="bg-neutral-900 rounded-3xl rounded-tr-lg px-5 py-3.5 text-[15px] text-white font-medium leading-relaxed">
+        <div className="bg-[#Fef7da] rounded-3xl rounded-tr-lg px-5 py-3.5 text-[15px] text-black font-medium leading-relaxed">
           {text}
         </div>
       </div>
-      <div className="w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center shrink-0 text-sm">
+      <div className="w-8 h-8 bg-[#Fef7da] rounded-full flex items-center justify-center shrink-0 text-sm">
         🌽
       </div>
     </div>

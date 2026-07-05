@@ -42,8 +42,12 @@ export async function POST(
     .single()
 
   if (error) {
+    // Full error, not just .message (which can be empty and serialize to "{}").
     console.error(`POST /api/conversations/${id}/messages failed:`, error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(
+      { error: error.message || "insert failed", code: error.code, details: error.details, hint: error.hint },
+      { status: 500 }
+    )
   }
   return NextResponse.json(data)
 }

@@ -167,7 +167,7 @@ export default function AssistantMessage({
   }, [sortedListings])
 
   const answerBubble = answer ? (
-    <div className="w-fit max-w-3xl bg-neutral-900 rounded-3xl rounded-tl-lg px-5 py-3.5 text-[15px] font-medium leading-relaxed text-white">
+    <div className="w-fit max-w-3xl bg-[#Fef7da] rounded-3xl rounded-tl-lg px-5 py-3.5 text-[15px] font-medium leading-relaxed text-black">
       <ReactMarkdown
         components={{
           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -292,7 +292,7 @@ export default function AssistantMessage({
 
   return (
     <div className="flex items-start gap-3 my-4 pr-11">
-      <div className="w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center shrink-0 text-sm mt-1">
+      <div className="w-8 h-8 bg-[#Fef7da] rounded-full flex items-center justify-center shrink-0 text-sm mt-1">
         🏠
       </div>
       <div className="flex-1 min-w-0 space-y-4">
@@ -513,15 +513,15 @@ function SearchSummary({
   ]
 
   return (
-    <div className="w-fit max-w-3xl rounded-3xl rounded-tl-lg bg-neutral-900 px-5 py-3.5 text-sm leading-relaxed text-white">
-      <div className="font-bold text-white underline">
+    <div className="w-fit max-w-3xl rounded-3xl rounded-tl-lg bg-[#Fef7da] px-5 py-3.5 text-sm leading-relaxed text-black">
+      <div className="font-bold text-black underline">
         {count} unit{count !== 1 ? "s" : ""} found
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
         {rows.map(r => (
           <Fragment key={r.label}>
-            <dt className="font-bold text-white whitespace-nowrap">{r.label}</dt>
-            <dd className="text-white">{r.value}</dd>
+            <dt className="font-bold text-black whitespace-nowrap">{r.label}</dt>
+            <dd className="text-black">{r.value}</dd>
           </Fragment>
         ))}
       </dl>

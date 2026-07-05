@@ -5,10 +5,10 @@ export default function MessageBubble({ role, content }: Pick<ChatMessage, "role
   if (role === "user") {
     return (
       <div className="flex justify-end items-end gap-3 mb-4">
-        <div className="max-w-[72%] bg-neutral-900 text-white rounded-3xl rounded-tr-lg px-5 py-3.5 text-[15px] font-medium leading-relaxed">
+        <div className="max-w-[72%] bg-[#Fef7da] text-black rounded-3xl rounded-tr-lg px-5 py-3.5 text-[15px] font-medium leading-relaxed">
           {content}
         </div>
-        <div className="w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center shrink-0 text-sm">
+        <div className="w-8 h-8 bg-[#Fef7da] rounded-full flex items-center justify-center shrink-0 text-sm">
           🌽
         </div>
       </div>
@@ -17,10 +17,10 @@ export default function MessageBubble({ role, content }: Pick<ChatMessage, "role
 
   return (
     <div className="flex items-start gap-3 mb-4">
-      <div className="w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center shrink-0 text-sm mt-1">
+      <div className="w-8 h-8 bg-[#Fef7da] rounded-full flex items-center justify-center shrink-0 text-sm mt-1">
         🏠
       </div>
-      <div className="max-w-[80%] bg-white rounded-3xl rounded-tl-lg px-5 py-4 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] text-[15px] text-neutral-800 leading-relaxed">
+      <div className="max-w-[80%] bg-[#Fef7da] rounded-3xl rounded-tl-lg px-5 py-4 text-[15px] text-black leading-relaxed">
         <Markdown
           components={{
             p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,

@@ -6,6 +6,7 @@
 // wired in Step 3/4.
 import { useState, useCallback, useEffect } from "react"
 import type { Listing, Filters } from "@/lib/api"
+import { useAuthModal } from "@/contexts/AuthModalContext"
 
 export interface ChatMessage {
   id: string
@@ -47,6 +48,7 @@ async function fetchMessages(id: string): Promise<ChatMessage[]> {
 
 
 export function useChat() {
+  const { openAuthModal } = useAuthModal()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [messagesByConv, setMessagesByConv] = useState<Record<string, ChatMessage[]>>({})
@@ -85,7 +87,11 @@ export function useChat() {
   }, [messagesByConv])
 
   const newConversation = useCallback(async () => {
-    const data = await fetch("/api/conversations", { method: "POST" }).then(r => r.json())
+    const res = await fetch("/api/conversations", { method: "POST" })
+    // 401 = no/expired session. Pop the login card in place instead of failing
+    // silently, so the user can re-authenticate without leaving the page.
+    if (res.status === 401) { openAuthModal(); return }
+    const data = await res.json().catch(() => null)
     if (!data?.id) {
       console.error("Failed to create conversation:", data)
       return
@@ -94,7 +100,7 @@ export function useChat() {
     setConversations(prev => [conv, ...prev])
     setActiveId(data.id)
     setMessagesByConv(prev => ({ ...prev, [data.id]: [] }))
-  }, [])
+  }, [openAuthModal])
 
   const sendMessage = useCallback(async (content: string, filters?: Filters) => {
     if (!content.trim()) return
@@ -103,7 +109,11 @@ export function useChat() {
     // Auto-create a conversation if none is active (first message, or fresh load)
     let convId = activeId
     if (!convId) {
-      const created = await fetch("/api/conversations", { method: "POST" }).then(r => r.json())
+      const res = await fetch("/api/conversations", { method: "POST" })
+      // 401 = no/expired session. Pop the login card in place so the user can
+      // sign in and retry, instead of the message silently vanishing.
+      if (res.status === 401) { openAuthModal(); return }
+      const created = await res.json().catch(() => null)
       if (!created?.id) {
         console.error("Failed to create conversation:", created)
         return
@@ -140,6 +150,9 @@ export function useChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: "user", content, metadata: filters ? { filters } : null }),
       })
+      // Session expired mid-conversation (activeId already set, so the create
+      // branch above was skipped): pop the login card and stop here.
+      if (persistUser.status === 401) { openAuthModal(); return }
       if (!persistUser.ok) console.error("Failed to persist user message:", persistUser.status, await persistUser.json().catch(() => null))
 
       // Backend call — includes filters so the agent's housing_search tool uses them
@@ -189,7 +202,7 @@ export function useChat() {
     } finally {
       setLoadingByConv(prev => ({ ...prev, [convId!]: false }))
     }
-  }, [activeId, messagesByConv, loadingByConv])
+  }, [activeId, messagesByConv, loadingByConv, openAuthModal])
 
   return { messages, isLoading, conversations, activeId, selectConversation, newConversation, sendMessage }
 }

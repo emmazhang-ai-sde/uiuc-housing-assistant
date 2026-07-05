@@ -37,8 +37,19 @@ export async function POST() {
     .single()
 
   if (error) {
+    // Surface the full PostgREST error, not just .message — some failures
+    // (e.g. a grant/RLS rejection wrapped oddly) come back with an empty
+    // message, which JSON.stringify drops entirely, leaving the client a
+    // useless "{}". code/details/hint stay populated and identify the cause.
     console.error("POST /api/conversations failed:", error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(
+      { error: error.message || "insert failed", code: error.code, details: error.details, hint: error.hint },
+      { status: 500 }
+    )
+  }
+  if (!data?.id) {
+    console.error("POST /api/conversations: insert returned no row", { data })
+    return NextResponse.json({ error: "insert returned no row", data }, { status: 500 })
   }
   return NextResponse.json(data)
 }

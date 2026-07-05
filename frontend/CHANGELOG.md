@@ -4,6 +4,38 @@ Granular UI changes live here. Major milestones are summarized in the root [CHAN
 
 ---
 
+## 2026-07-05 — Chat message bubbles and avatars recolored to light yellow
+
+### Changed
+- User and assistant chat bubbles changed from `bg-neutral-900` + `text-white` to `bg-[#Fef7da]` (light yellow) + `text-black`, and the round message avatars (🌽 user, 🏠 assistant) recolored from `bg-neutral-200` / `bg-stone-100` to the same `bg-[#Fef7da]`. Applied across both render paths so fresh and reloaded messages match: `components/UserBubble.tsx`, `components/AssistantMessage.tsx` (the answer bubble and the "N units found" filter-summary bubble), `components/chat/MessageBubble.tsx` (historical user + assistant, the assistant one also dropping its old white card and shadow), and `components/chat/TypingIndicator.tsx` (avatar only)
+
+---
+
+## 2026-07-05 — Session-expired login card pops in place instead of redirecting
+
+### Added
+- `components/auth/LoginCard.tsx` — the login form/card extracted out of `app/login/page.tsx` so it can render both as the full `/login` page and inside a modal; the only per-mount difference is passed in as an `onSuccess` callback (page redirects to `/card`; modal closes itself)
+- `contexts/AuthModalContext.tsx` — `AuthModalProvider`, mounted once in `app/layout.tsx` inside `FiltersProvider`, exposing `openAuthModal()`; renders `LoginCard` centered over a `bg-black/40` backdrop with a close button, so any hook/component under it can pop the login card on a 401
+
+### Changed
+- `hooks/useChat.ts` — on a 401 from conversation-create (`newConversation`, and the auto-create inside `sendMessage`) or from the user-message persist call, calls `openAuthModal()` instead of silently `console.error`-ing, so a missing/expired session surfaces the login card in place rather than the message vanishing quietly
+- `app/login/page.tsx` — reduced to a thin full-screen wrapper around `<LoginCard onSuccess={() => router.replace("/card")} />`
+- `app/api/conversations/route.ts` + `app/api/conversations/[id]/messages/route.ts` — on a Supabase insert error, return the full PostgREST error (`code` / `details` / `hint`), not just `.message`, which can be empty and serialize to a useless `{}` on the client; the conversations POST also guards against a no-row insert
+
+---
+
+## 2026-07-05 — Login page: merged Sign Up / Log In into one waitlist-gated flow
+
+### Changed
+- `app/login/page.tsx` — removed the `Mode` state (`"login" | "signup"`), the Sign Up/Log In segmented toggle, and `switchMode()`. There is now a single email-entry step for both new and returning users: `is_email_on_waitlist` runs unconditionally (previously only in Sign Up mode) and `signInWithOtp` always passes `shouldCreateUser: true` (previously `mode === "signup"`). This matches the flow already specified in `design-docs/user-authentication.md` §5.4, which the shipped code had drifted from after the Sign Up/Log In toggle was added later
+- Email-step copy simplified to a single line, "Waiting list email login only. 🎉🎉" (previously a two-item numbered list explaining Sign Up vs Log In separately, plus the mode toggle buttons above it); the pre-code-entry helper text and the submit button label ("Send code") are no longer conditional on mode
+- That headline was then bumped one size step (`text-sm` → `text-base`) and a secondary line added beneath it — "Not in waiting list? You are not in waiting list right now?" with a bold, underlined **Join the waitlist** link to `/coming-soon`
+
+### Added
+- `design-docs/product-launch/archive/login-page-v0.tsx` — pre-change snapshot of the two-mode page, kept for reference, not part of the Next.js route tree
+
+---
+
 ## 2026-07-05 — Coming-soon page waitlist/messaging pass
 
 ### Changed
