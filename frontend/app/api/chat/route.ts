@@ -4,18 +4,24 @@ import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(req: NextRequest) {
+  let token: string | undefined
   if (process.env.NODE_ENV !== "development") {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 })
+    const { data: { session } } = await supabase.auth.getSession()
+    token = session?.access_token
   }
 
   const body = await req.json()
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  if (token) headers["Authorization"] = `Bearer ${token}`
+
   let res: Response
   try {
     res = await fetch(`${process.env.BACKEND_URL}/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(body),
     })
   } catch {
