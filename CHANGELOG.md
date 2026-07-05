@@ -4,6 +4,15 @@ All notable changes to the UIUC Housing Assistant are recorded here.
 
 ---
 
+## 2026-07-05 — Fixed "under $X" being extracted as a price floor instead of a ceiling
+
+### Fixed
+- `rag/rag_chain.py` — a query like "studio under $1000" was rendering as "Budget: ≥ $1,000/bed" instead of "≤ $1,000/bed". Root cause: `extract_filters()`'s prompt lists the word "under" in both its FLOOR examples ("nothing under $X") and its CEILING examples ("under $X"), which `llama-3.1-8b-instant` resolves unreliably, so a bare "under $X" kept landing in `min_price_per_bed` instead of `max_price_per_bed`. Added a deterministic regex guard, `_correct_price_direction()`, that detects a ceiling comparator (under/below/less than/up to/at most/no more than/within/budget of/max) in front of a dollar amount and repairs an inverted extraction, while leaving genuine floor phrasing ("nothing under $X", "above $X") untouched
+- The same inversion also survived across turns: because `extract_filters()` re-runs on every message with recent history prepended, a content-free follow-up like "yes please" made the model re-derive the same inverted min from an earlier "under $1000" turn. `_correct_price_direction()` now also scans history for the user's most recently stated price and repairs a carried-over inversion — but only flips an *already-present* min to a max in that case, so it never fabricates a budget the user has since dropped (e.g. a later "show me everything")
+- Full debugging log in `design-docs/price-direction-extraction-fix.md`
+
+---
+
 ## 2026-07-05 — Coming-soon page: launch badge, waitlist-capacity messaging, dropped @illinois.edu-only signup
 
 ### Changed

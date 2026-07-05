@@ -137,6 +137,89 @@ _extract_chain = (
 )
 
 
+# A comparator that means "at most this amount" when it sits directly in front of
+# a dollar figure. "under"/"below"/"less than" also occur in FLOOR phrases
+# ("nothing under $X"), which are blanked out before this runs (see below).
+_CEILING_BEFORE_AMOUNT = re.compile(
+    r"\b(?:under|below|less than|cheaper than|up to|at most|no more than|within|"
+    r"budget(?: of)?|max(?:imum)?(?: of)?)\s*\$?\s*(\d[\d,]*)",
+    re.IGNORECASE,
+)
+# FLOOR phrases that embed "under"/"below" but mean a minimum the user will accept.
+_FLOOR_NEGATED = re.compile(
+    r"\b(?:nothing|not|no|avoid[^$.]*?|steer clear of[^$.]*?)\s+(?:under|below)\b",
+    re.IGNORECASE,
+)
+# FLOOR comparators, used only to recognise that a message states a price (not to place it).
+_FLOOR_COMPARATOR = re.compile(
+    r"\b(?:above|over|more than|greater than|at least|no less than|starting at)\s*\$?\s*\d",
+    re.IGNORECASE,
+)
+
+
+def _mentions_price(text: str) -> bool:
+    """True if the message states a rent amount ($X, or a comparator next to a number)."""
+    return bool(
+        re.search(r"\$\s*\d", text)
+        or _CEILING_BEFORE_AMOUNT.search(text)
+        or _FLOOR_COMPARATOR.search(text)
+    )
+
+
+def _correct_price_direction(query: str, filters: dict, history: list[dict] | None = None) -> dict:
+    """Deterministic safety net for llama-3.1-8b, which sometimes files a CEILING
+    amount ("studio under $1000") into min_price_per_bed because "under" also shows
+    up in FLOOR phrases. The bad direction also survives multi-turn: a follow-up like
+    "yes please" makes the model re-derive the same inverted min from history. So we
+    locate the user's most recent price statement (this turn, else the latest earlier
+    turn that named an amount) and repair an inverted extraction — without ever
+    fabricating a ceiling the user has since cleared."""
+    if not isinstance(filters, dict):
+        return filters
+
+    # The message that expresses the currently-active price intent.
+    from_history = False
+    if _mentions_price(query):
+        price_text = query
+    else:
+        price_text = None
+        for msg in reversed(history or []):
+            if msg.get("role") == "user" and _mentions_price(msg.get("content", "")):
+                price_text = msg["content"]
+                from_history = True
+                break
+    if not price_text:
+        return filters
+
+    # Blank out floor phrases ("nothing under $X") so their "under" is not read as a ceiling.
+    m = _CEILING_BEFORE_AMOUNT.search(_FLOOR_NEGATED.sub(" ", price_text.lower()))
+    if not m:
+        return filters  # the active price statement is a floor or a range — leave it be
+    amount = int(m.group(1).replace(",", ""))
+    if amount < 100:
+        return filters  # too small to be a rent — likely a bed count ("up to 4 bedrooms")
+
+    # If the model already produced a ceiling, trust it (also covers ranges, which set max).
+    if filters.get("max_price_per_bed") is not None or filters.get("max_price_total") is not None:
+        return filters
+
+    field = "max_price_per_bed" if amount <= 1500 else "max_price_total"  # prompt's per-bed vs total split
+    if from_history:
+        # Only repair an inversion the model carried over from an earlier turn; never
+        # invent a fresh ceiling here (the user may have dropped their budget since).
+        if filters.get("min_price_per_bed") is not None:
+            filters[field] = amount
+            filters["min_price_per_bed"] = None
+        return filters
+
+    # The current message stated a ceiling but the model set no max — place it and drop
+    # a min field that mistakenly swallowed the same intent.
+    filters[field] = amount
+    if filters.get("min_price_per_bed") is not None:
+        filters["min_price_per_bed"] = None
+    return filters
+
+
 def extract_filters(query: str, history: list[dict] | None = None) -> dict:
     # [Step 3] Prepend last 3 exchanges so the LLM can resolve multi-turn references
     # (e.g. "那附近" → location from a previous message, "what about 2BR?" → keep prior filters)
@@ -150,7 +233,7 @@ def extract_filters(query: str, history: list[dict] | None = None) -> dict:
 
     raw = _extract_chain.invoke({"query": query, "history": history_text})
     try:
-        return parse_json_output(raw)
+        return _correct_price_direction(query, parse_json_output(raw), history)
     except Exception:
         return {}
 
