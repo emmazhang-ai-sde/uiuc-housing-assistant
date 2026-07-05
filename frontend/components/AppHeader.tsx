@@ -8,6 +8,7 @@ const TABS = [
   { label: "Chat", href: "/chat" },
   { label: "Map",  href: "/map"  },
   { label: "Card", href: "/card" },
+  { label: "Rate & Report", href: "/feedback" },
 ]
 
 export default function AppHeader() {
