@@ -63,7 +63,7 @@ This is the login/logout flow we are actually shipping for beta. Access is restr
 
 ### 5.1 Decisions (resolved 2026-06-29)
 
-- **D1 — Gate strength:** ship **both** the RPC gate (§5.3) and the "Before User Created" Auth Hook (§5.6). The hook is the server-side source of truth; the RPC is just for a nicer client error.
+- **D1 — Gate strength:** ship **both** the RPC gate (§5.3) and the "Before User Created" Auth Hook (§5.6). The hook is the server-side source of truth; the RPC is just for a nicer client error. **Superseded (2026-07-03):** see `design-docs/product-launch/audience-and-identity-strategy.md` — the long-term account model is open signup for any email, with UIUC affiliation as a verified badge rather than a registration gate. Not yet implemented; D1 is still what's shipped today.
 - **D2 — Primary login method:** **Magic Code first.** The normal `/login` flow sends an 8-digit email code, so it drops `emailRedirectTo` from `signInWithOtp` and verifies the code with `verifyOtp`. Keep `/auth/callback` (§7.6) active as a Magic Link fallback in case we need to re-enable link-based login later.
 - **D3 — Email-domain check:** keep the `@illinois.edu` pre-filter as a cheap client-side check even though the waitlist is the real gate (the waitlist only ever holds `@illinois.edu` emails, so it's redundant but harmless and gives a faster error).
 - **D4 — Session lifetime:** no forced logout on the current Supabase plan. The project is not on Supabase Pro, so **Time-box user sessions** cannot be modified. Current setting: **"Enforce a single session per user" is active**, and **Time-box user sessions = `0`**, which means users are not forced to re-authenticate on a fixed schedule. See §5.2.1.

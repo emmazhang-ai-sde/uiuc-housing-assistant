@@ -52,3 +52,7 @@ The mock `sendMessage` waits 1.2s then appends a canned reply — enough to veri
 | Real FastAPI backend call | Step 3/4 |
 | Streaming token rendering | Step 6 |
 | Sidebar fetches from `GET /api/conversations` | Step 2 |
+
+---
+
+[Step 2: Database + API Routes](step-2-database-api-routes.md) →

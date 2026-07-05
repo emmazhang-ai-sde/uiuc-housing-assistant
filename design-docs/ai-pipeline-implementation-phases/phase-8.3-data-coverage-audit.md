@@ -16,6 +16,31 @@ Two data sources have now been fully scraped and ingested into the combined snap
 
 ---
 
+## Snapshot Log
+```
+(.venv) shuyangzhang@Shuyangs-MacBook-Pro uiuc-housing-assistant-langchain-rag % python -m pipeline.normalize 
+Loaded  500 records from data/green_street_raw.json
+Loaded  381 records from data/universities_group_raw.json
+Total: 881 records
+
+   (preserved 410 geocoded addresses from 2026-06-29 snapshot)
+   ↳ Restored 878 geocoded rows — geocode.py will skip these
+📸 New snapshot: snapshots/listings_2026-07-05.db  (previous: 2026-06-29)
+   Total     : 881  |  Available : 421  |  Leased : 460
+   Has price : 731  |  No price  : 150
+   Green Street Realty: 500
+   Universities Group: 381
+
+Run next:  python -m pipeline.ingest
+```
+Running record of `python -m pipeline.normalize` output over time. Unlike the one-time audit above (frozen as of `listings_2026-06-17.db`), this table is just appended to after each notable run — not re-analyzed.
+
+| Date | Snapshot | GSR | UG | Total | Available | Leased | Has price | No price |
+|------|----------|-----|----|----|-----------|--------|-----------|----------|
+| 2026-07-05 | `listings_2026-07-05.db` (previous: 2026-06-29) | 500 | 381 | 881 | 421 | 460 | 731 | 150 |
+
+---
+
 ## Field Coverage Matrix
 
 Legend: ✅ well-covered (≥80%) · ⚠️ partial (20–79%) · ❌ absent or sparse (<20%)

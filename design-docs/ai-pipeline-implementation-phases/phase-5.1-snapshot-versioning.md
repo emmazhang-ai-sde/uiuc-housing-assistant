@@ -1,4 +1,14 @@
-# Phase 5 — Snapshot Versioning & Incremental Chroma Updates
+# Phase 5.1 — Snapshot Versioning & Incremental Chroma Updates
+
+**Created: 2026-07-04**
+
+
+> Originally written as "Phase 5" when the pipeline scraped a single company (Green Street
+> only) via `normalize_green_street.py`. The snapshot-versioning and raw-archive mechanics
+> described here are still current, but some script/module names below are historical (the
+> normalize step is now `pipeline.normalize`, covering all companies). For the current
+> end-to-end commands, see [Phase 5.2 — Data Refresh Runbook](phase-5.2-data-refresh-runbook.md).
+> Index: [Phase 5 — Scraper and Normalize Strategy](phase-5-scraper-and-normalize-strategy.md).
 
 ## Problem
 
@@ -30,6 +40,45 @@ Why file-per-date and not a single DB with a `scraped_at` column?
 If normalize is run twice on the same calendar day, the second run overwrites today's
 snapshot only if the data changed (compared against the previous latest, not today's file).
 
+### Raw JSON — date-versioned archive at scrape time
+
+The snapshot archiving above only happens inside `pipeline/normalize.py`, and only when the
+normalized data differs from the previous snapshot. That left a gap: running a scraper on its
+own overwrote `data/<name>_raw.json` in place, with no backup. A scrape whose data later turned
+out to be broken (site layout change, partial run, anti-bot interference) destroyed the last
+good raw file before normalize ever saw it.
+
+Each scraper now writes two files on every run:
+
+1. `data/<name>_raw.json` — the canonical "latest raw" file. Unchanged behavior; this is what
+   `pipeline/normalize.py` reads via its `data/*_raw.json` glob, so the pipeline is untouched.
+2. `data/raw_archive/<name>_raw_YYYY-MM-DD_HHMMSS.json` — a timestamped copy written
+   unconditionally on every scrape, independent of the pipeline and independent of whether the
+   data changed.
+
+**Mental model (easy to forget):** the two files behave in opposite ways, on purpose.
+`data/<name>_raw.json` is a fixed name that gets **overwritten every run** — it always holds
+only the newest scrape, per company, and it is the only thing normalize reads. The
+`raw_archive/` copies are **never overwritten** — one new timestamped file is added per company
+per run, so running the same scraper twice on one day leaves two archive files but still just
+one (latest) `data/<name>_raw.json`. In short: the archive accumulates history; the canonical
+file is a pointer to "latest," and normalize follows that pointer.
+
+This makes the raw scrape itself the first line of historical defense, before normalization or
+diffing. The archive lives in its own `data/raw_archive/` subdirectory so it never collides with
+normalize's non-recursive `data/*_raw.json` glob (a dated file would otherwise be double-counted).
+
+The archive filename carries a full timestamp down to the second, not just the date. A raw
+scrape is a factual record of what the site returned at a moment in time, so every run is
+preserved as its own file — even two runs on the same calendar day never overwrite each other.
+This is deliberately different from the snapshot layer: snapshots are deduplicated by content
+(no new `.db` if nothing changed), because their job is to track *meaningful* deltas in listings.
+The raw archive's job is the opposite: keep every scrape verbatim, so a bad or partial run can
+always be compared against or rolled back to a known-good earlier one.
+
+The archive is a local safety net (regenerable), so `data/raw_archive/` is gitignored; the
+committed historical record still lives in `snapshots/`.
+
 ### Chroma — single directory, incremental updates
 
 Chroma stays as one directory (`chroma_db/`). Each ingest run computes a stable document ID
@@ -59,9 +108,17 @@ different bedroom count = different document. Same address + unit_type with a ch
 ## Directory Layout
 
 ```
+data/
+  green_street_raw.json                        ← canonical latest raw (read by normalize)
+  universities_group_raw.json
+  raw_archive/                                 ← timestamped copy written on every scrape
+    green_street_raw_2026-07-01_091500.json
+    green_street_raw_2026-07-01_170322.json    ← same day, second run — kept, not overwritten
+    universities_group_raw_2026-07-01_093011.json
+    ...
 snapshots/
   latest.txt                  ← contains "2026-06-13" (the latest date string)
-  raw_2026-06-13.json         ← archived raw scrape output
+  raw_2026-06-13.json         ← archived raw scrape output (written by normalize, on change)
   listings_2026-06-13.db      ← normalized SQLite snapshot (v1, first ever)
   raw_2026-07-01.json         ← next scrape (example)
   listings_2026-07-01.db

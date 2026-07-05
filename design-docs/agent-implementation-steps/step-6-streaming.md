@@ -16,7 +16,7 @@ Streaming concept and frontend spec are in [Layer 2: Backend](layer-2-backend.md
 
 ---
 
-## 6a — Backend: SSE Streaming Endpoint
+## 6.1 — Backend: SSE Streaming Endpoint
 
 Add a `/chat/stream` endpoint to `backend/main.py` using FastAPI's `StreamingResponse` and LangChain's `astream_events`:
 
@@ -50,7 +50,7 @@ async def chat_stream(req: ChatRequest):
 
 ---
 
-## 6b — Frontend: Streaming in `useChat.ts`
+## 6.2 — Frontend: Streaming in `useChat.ts`
 
 Replace the `fetch("/api/chat")` + `await res.json()` block in `sendMessage` with a streaming reader:
 
@@ -104,7 +104,7 @@ await fetch(`/api/conversations/${activeId}/messages`, {
 
 ---
 
-## 6c — Next.js Proxy Route Update
+## 6.3 — Next.js Proxy Route Update
 
 Update `frontend/app/api/chat/route.ts` to forward the streaming response:
 
@@ -122,3 +122,7 @@ export async function POST(req: NextRequest) {
   })
 }
 ```
+
+---
+
+← [Step 5: nearby_places Tool](step-5-nearby-places.md)

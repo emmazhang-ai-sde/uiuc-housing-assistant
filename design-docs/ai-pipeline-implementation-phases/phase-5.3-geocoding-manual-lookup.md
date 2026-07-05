@@ -1,6 +1,8 @@
-# Geocoding Manual Lookup
+# Phase 5.3 — Geocoding Manual Lookup
 
 **Created: 2026-06-28**
+
+> Part of [Phase 5 — Scraper and Normalize Strategy](phase-5-scraper-and-normalize-strategy.md). Covers `pipeline/geocode.py`, the step run after [Phase 5.2](phase-5.2-data-refresh-runbook.md)'s normalize step and before ingest.
 
 ## Overview
 
@@ -61,6 +63,8 @@ Sent:    "60 E Green, IL"
 Nominatim receives `"60 E Green, IL"` with no city constraint and matches a different E Green Street in central Illinois (~40.648, -88.844), placing the pin near Bloomington/Normal.
 
 **Fix:** `MANUAL_COORDS` entries using keys that include the em-dash character (`"60 E Green –"`, `"60 E. Green"`), so they match only the marketing-suffix variants and not the correctly-geocoded `"60 E Green St, Champaign"`.
+
+**Recurrence (2026-07-05):** `502 S. Fifth – Fall Semester Only!` (a Universities Group listing at `.../502-e-healey-january-2024`) hit the same pattern — the em-dash strip left `"502 S. Fifth, IL"` with no city, and Nominatim matched a Fifth street in Chicago (~41.878, -87.711) instead of Champaign. Fixed with a `"502 S. Fifth –"` entry, coordinates verified via Google Maps.
 
 ---
 
@@ -153,6 +157,7 @@ Future scrapes are automatically protected: `geocode()` checks `MANUAL_COORDS` b
 | `"56 1/2 E Green"` | `(40.11041, -88.23939)` | 56 1/2 E Green St | Failure Mode 2: `1/2` breaks Nominatim, returns Bulgaria |
 | `"60 E Green –"` | `(40.11042, -88.23897)` | 60 E Green – Roommate Matching Special! | Failure Mode 3: em-dash strips city name |
 | `"60 E. Green"` | `(40.11042, -88.23897)` | 60 E. Green – May/June Special! | Failure Mode 3: em-dash strips city name |
+| `"502 S. Fifth –"` | `(40.11261, -88.23181)` | 502 S. Fifth – Fall Semester Only! (url: 502-e-healey-january-2024) | Failure Mode 3: em-dash strips city name; Nominatim matched Chicago (~41.878, -87.711). Verified via Google Maps 2026-07-05 |
 
 ---
 
