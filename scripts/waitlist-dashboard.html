@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Waitlist Signup Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --panel: #FFFFFF;
+    --border: #E4DED6;
+    --text: #4A4640;
+    --text-dim: #8A8378;
+    --base: #A7B6B0;
+    --peak: #C97D60;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 24px 64px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Nunito Sans", "Segoe UI", sans-serif;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 24px; }
+  .stats {
+    display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    min-width: 160px;
+  }
+  .stat-card .label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat-card .value { font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .panel h2 { font-size: 15px; margin: 0 0 12px; }
+  .panel .insight { font-size: 13px; color: var(--text-dim); margin-top: 10px; }
+  .panel .insight b { color: var(--peak); }
+  canvas { max-height: 320px; }
+  #status { color: var(--text-dim); font-size: 13px; margin-bottom: 16px; }
+  button {
+    background: var(--base);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.85; }
+  .error { color: #A65D57; }
+</style>
+</head>
+<body>
+
+<h1>Waitlist Signup Dashboard</h1>
+<div class="subtitle">Reads live from the <code>waitlist</code> table in Supabase. Local file only &mdash; do not commit or share (shows real student emails/counts). Times shown in America/Chicago.</div>
+
+<div id="status">Loading&hellip;</div>
+
+<div id="content" style="display:none">
+  <div class="stats">
+    <div class="stat-card"><div class="label">Total signups</div><div class="value" id="stat-total">-</div></div>
+    <div class="stat-card"><div class="label">Peak day</div><div class="value" id="stat-peak-day">-</div></div>
+    <div class="stat-card"><div class="label">Peak hour</div><div class="value" id="stat-peak-hour">-</div></div>
+    <div class="stat-card"><div class="label">Peak weekday</div><div class="value" id="stat-peak-weekday">-</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Signups per day</h2>
+    <canvas id="chart-date"></canvas>
+    <div class="insight" id="insight-date"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Signups by hour of day (all days combined, America/Chicago)</h2>
+    <canvas id="chart-hour"></canvas>
+    <div class="insight" id="insight-hour"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Signups by day of week</h2>
+    <canvas id="chart-weekday"></canvas>
+    <div class="insight" id="insight-weekday"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Signups by referral source</h2>
+    <canvas id="chart-referral"></canvas>
+    <div class="insight" id="insight-referral"></div>
+    <div class="insight">
+      The referral picker was added to the form on <b>2026-06-25</b> and made required on <b>2026-06-28</b>.
+      Anyone before that (and a few who skipped it while it was still optional) fall into <b>Not recorded</b> &mdash;
+      that's missing tracking, not a real "source."
+    </div>
+  </div>
+
+  <button onclick="load()">Refresh</button>
+</div>
+
+<script>
+const SUPABASE_URL = "https://uknyhpwzvdevxfxkpxmy.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrbnlocHd6dmRldnhmeGtweG15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MjQ4NzEsImV4cCI6MjA5NzQwMDg3MX0.H7KEmNyorxbc_JGVSdVNAWwBqtax225uBvsoPdrmKdk";
+const TIMEZONE = "America/Chicago";
+
+const dateFmt = new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+const hourFmt = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "2-digit", hour12: false, hourCycle: "h23" });
+const weekdayFmt = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, weekday: "short" });
+const WEEKDAY_ORDER = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+let charts = {};
+
+async function fetchWaitlist() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist?select=created_at,referral&order=created_at.asc`, {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+  });
+  if (!res.ok) throw new Error(`Supabase fetch failed (${res.status}): ${await res.text()}`);
+  return res.json();
+}
+
+function addDaysUTC(dateStr, n) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + n);
+  return dt.toISOString().slice(0, 10);
+}
+
+function fillDateRange(byDate) {
+  const keys = [...byDate.keys()].sort();
+  const labels = [];
+  const counts = [];
+  if (!keys.length) return { labels, counts };
+  let cur = keys[0];
+  const end = keys[keys.length - 1];
+  while (cur <= end) {
+    labels.push(cur);
+    counts.push(byDate.get(cur) || 0);
+    cur = addDaysUTC(cur, 1);
+  }
+  return { labels, counts };
+}
+
+function formatHourLabel(h) {
+  const period = h < 12 ? "AM" : "PM";
+  let h12 = h % 12;
+  if (h12 === 0) h12 = 12;
+  return `${h12}${period}`;
+}
+
+function peakOf(labels, counts) {
+  let bestIdx = 0;
+  for (let i = 1; i < counts.length; i++) if (counts[i] > counts[bestIdx]) bestIdx = i;
+  return { label: labels[bestIdx], count: counts[bestIdx] };
+}
+
+function renderChart(canvasId, labels, counts, colorLabels, customColors) {
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  const maxVal = Math.max(...counts, 0);
+  const colors = customColors || counts.map(c => (c === maxVal && maxVal > 0 ? "#C97D60" : "#A7B6B0"));
+  if (charts[canvasId]) charts[canvasId].destroy();
+  charts[canvasId] = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: colorLabels || labels,
+      datasets: [{ data: counts, backgroundColor: colors, borderRadius: 4, maxBarThickness: 36 }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { maxRotation: 60, minRotation: labels.length > 10 ? 45 : 0 }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#E4DED6" } },
+      },
+    },
+  });
+}
+
+async function load() {
+  const statusEl = document.getElementById("status");
+  const contentEl = document.getElementById("content");
+  statusEl.textContent = "Loading…";
+  statusEl.className = "";
+  contentEl.style.display = "none";
+
+  try {
+    const rows = await fetchWaitlist();
+
+    const byDate = new Map();
+    const byHour = new Array(24).fill(0);
+    const byWeekday = Object.fromEntries(WEEKDAY_ORDER.map(w => [w, 0]));
+    const byReferral = new Map();
+    const NOT_RECORDED = "Not recorded";
+
+    rows.forEach(r => {
+      const d = new Date(r.created_at);
+      const dateKey = dateFmt.format(d);
+      byDate.set(dateKey, (byDate.get(dateKey) || 0) + 1);
+      const h = parseInt(hourFmt.format(d), 10) % 24;
+      byHour[h]++;
+      byWeekday[weekdayFmt.format(d)]++;
+      const ref = (r.referral || "").trim() || NOT_RECORDED;
+      byReferral.set(ref, (byReferral.get(ref) || 0) + 1);
+    });
+
+    // --- per-day ---
+    const { labels: dateLabels, counts: dateCounts } = fillDateRange(byDate);
+    renderChart("chart-date", dateLabels, dateCounts);
+    const peakDate = peakOf(dateLabels, dateCounts);
+    document.getElementById("stat-peak-day").textContent = dateCounts.length ? `${peakDate.label} (${peakDate.count})` : "-";
+    document.getElementById("insight-date").innerHTML = dateCounts.length
+      ? `Busiest day: <b>${peakDate.label}</b> with <b>${peakDate.count}</b> signup(s).`
+      : "No data yet.";
+
+    // --- by hour ---
+    const hourLabels = Array.from({ length: 24 }, (_, h) => h);
+    const hourDisplayLabels = hourLabels.map(formatHourLabel);
+    renderChart("chart-hour", hourLabels, byHour, hourDisplayLabels);
+    const peakHourIdx = byHour.indexOf(Math.max(...byHour));
+    document.getElementById("stat-peak-hour").textContent = `${formatHourLabel(peakHourIdx)} (${byHour[peakHourIdx]})`;
+    document.getElementById("insight-hour").innerHTML =
+      `Most signups happen around <b>${formatHourLabel(peakHourIdx)}</b> Central Time (<b>${byHour[peakHourIdx]}</b> total in that hour across all days).`;
+
+    // --- by weekday ---
+    const wdCounts = WEEKDAY_ORDER.map(w => byWeekday[w]);
+    renderChart("chart-weekday", WEEKDAY_ORDER, wdCounts);
+    const peakWd = peakOf(WEEKDAY_ORDER, wdCounts);
+    document.getElementById("stat-peak-weekday").textContent = `${peakWd.label} (${peakWd.count})`;
+    document.getElementById("insight-weekday").innerHTML = `Busiest day of week: <b>${peakWd.label}</b> with <b>${peakWd.count}</b> signup(s).`;
+
+    // --- by referral source ---
+    const referralEntries = [...byReferral.entries()].sort((a, b) => b[1] - a[1]);
+    const referralLabels = referralEntries.map(e => e[0]);
+    const referralCounts = referralEntries.map(e => e[1]);
+    const notRecordedCount = byReferral.get(NOT_RECORDED) || 0;
+    const topReferral = referralEntries.find(e => e[0] !== NOT_RECORDED);
+    const referralColors = referralLabels.map(label => {
+      if (label === NOT_RECORDED) return "#D8D2C7";
+      if (topReferral && label === topReferral[0]) return "#C97D60";
+      return "#A7B6B0";
+    });
+    renderChart("chart-referral", referralLabels, referralCounts, null, referralColors);
+    document.getElementById("insight-referral").innerHTML = topReferral
+      ? `Top known source: <b>${topReferral[0]}</b> (${topReferral[1]}). ` +
+        `<b>${notRecordedCount}</b> of ${rows.length} signups (${Math.round((notRecordedCount / rows.length) * 100)}%) have no referral recorded.`
+      : "No referral data yet.";
+
+    document.getElementById("stat-total").textContent = rows.length;
+
+    statusEl.textContent = `Loaded ${rows.length} signups — last refreshed ${new Date().toLocaleString("en-US", { timeZone: TIMEZONE })} (CT)`;
+    contentEl.style.display = "block";
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+    statusEl.className = "error";
+  }
+}
+
+load();
+</script>
+</body>
+</html>

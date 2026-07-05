@@ -27,7 +27,9 @@ This is a non-commercial portfolio project that scrapes publicly accessible hous
 |-------|---------------|------|
 | **Coming Soon** | No one — visitors see waitlist page only | Now → beta invite sent |
 | **Private Beta** | ~30 invited @illinois.edu students | After waitlist review |
-| **Public Launch** | All @illinois.edu students | After beta feedback |
+| **Public Launch** | All students, plus other email providers (Gmail first, Outlook etc. later) | After beta feedback |
+
+**Why the waitlist is @illinois.edu-only for now:** launch posts collecting signups were tagged and posted on Xiaohongshu and in the r/UIUC community on Reddit, both UIUC-specific audiences. Requiring an Illinois email matched that targeting and reinforced belonging to a UIUC-only early community. This restriction is Private Beta-only, not permanent; see the Public Launch row above and `design-docs/product-launch/audience-and-identity-strategy.md`.
 
 ### 1.5.2 Coming Soon page — **Live**
 
@@ -94,12 +96,14 @@ Authenticated users (invited beta testers) always reach the real app regardless 
 
 ### 1.5.5 Beta invite flow
 
+> See `design-docs/product-launch/audience-and-identity-strategy.md` for the sender-email timeline (founder's personal address now, product domain post-launch) and the account-model decision (open signup, UIUC email as a badge, not a gate).
+
 1. Review waitlist in Supabase → `SELECT * FROM waitlist ORDER BY created_at`
 2. Pick ~30 testers
 3. In Supabase → Authentication → Users → **Invite user** (sends a magic link directly)
 4. Beta tester clicks link → session created → lands on real app
 5. Collect feedback for 1–2 weeks, fix issues
-6. Set `LAUNCH_MODE=live` → public launch
+6. Set `LAUNCH_MODE=live` → public launch, and change the login page from Illinois-email-only to accepting other providers (Gmail first, Outlook etc. to be decided at that point)
 
 ---
 

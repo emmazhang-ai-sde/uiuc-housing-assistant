@@ -1,3 +1,6 @@
+# Mail merge batches (real student emails, local only)
+scripts/mail-merge-batches/
+
 # Python
 __pycache__/
 *.py[cod]
