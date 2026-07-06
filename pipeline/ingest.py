@@ -7,6 +7,7 @@
 
 import hashlib
 import json
+import re
 import sqlite3
 from pathlib import Path
 
@@ -30,13 +31,19 @@ def compute_is_available(status: str) -> bool:
 
 def compute_availability_windows(status: str) -> dict:
     """Pre-compute per-window boolean flags from the raw availability string.
-    Multiple flags can be True simultaneously (e.g. now + august_2026)."""
+    Multiple flags can be True simultaneously (e.g. now + august_2026).
+    Month matches tolerate an exact day ("August 14, 2026") — several scrapers
+    emit dated move-in strings, and "august 2026" alone would miss them."""
     s = (status or "").lower()
+
+    def month_2026(month: str) -> bool:
+        return re.search(rf"{month}\s+(?:\d{{1,2}},?\s*)?2026", s) is not None
+
     return {
         "is_available_now":    "available now" in s or "immediate move-in" in s or "move-in today" in s,
-        "is_available_june":   "june 2026" in s or ("june move-in special" in s and "august 2026" not in s),
-        "is_available_july":   "july 2026" in s,
-        "is_available_august": "august 2026" in s,
+        "is_available_june":   month_2026("june") or ("june move-in special" in s and not month_2026("august")),
+        "is_available_july":   month_2026("july"),
+        "is_available_august": month_2026("august"),
         "is_leased":           "leased" in s,
     }
 

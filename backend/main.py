@@ -133,14 +133,17 @@ def get_listings(
         clauses.append("price_per_bed_low <= ?")
         params.append(ceiling)
 
+    # Month windows use '%Month%2026%' (not '%Month 2026%') so dated strings like
+    # "Available August 14, 2026" and annotated ones like "Available August 2026
+    # (1 of 12 units)" match too — several scrapers emit exact move-in dates.
     if availability_window == "now":
         clauses.append("(availability LIKE '%Available Now%' OR availability LIKE '%Immediate Move-In%')")
     elif availability_window == "june_2026":
-        clauses.append("availability LIKE '%Available June 2026%'")
+        clauses.append("availability LIKE '%Available June%2026%'")
     elif availability_window == "july_2026":
-        clauses.append("availability LIKE '%Available July 2026%'")
+        clauses.append("availability LIKE '%Available July%2026%'")
     elif availability_window == "august_2026":
-        clauses.append("availability LIKE '%Available August 2026%'")
+        clauses.append("availability LIKE '%Available August%2026%'")
     elif availability_window == "leased":
         clauses.append("availability LIKE '%Leased%'")
 
@@ -186,10 +189,12 @@ def get_listings(
 
     def _to_listing(row: sqlite3.Row) -> dict:
         avail = row["availability"] or ""
-        is_available = any(kw in avail for kw in (
-            "Available Now", "Immediate Move-In",
-            "Available June", "Available July", "Available August",
-        ))
+        # Mirrors pipeline/ingest.py compute_is_available — substring match, not a
+        # keyword list, so scraper-specific phrasings like MHM's "Available (LAST
+        # UNIT)" or Smile's "Available now" all count.
+        s = avail.lower()
+        is_available = ("available" in s and "not available" not in s and "leased" not in s) \
+            or "immediate move-in" in s or "move-in today" in s
         return {
             "company":              row["company"]              or "",
             "address":              row["address"]              or "",

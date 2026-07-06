@@ -49,8 +49,9 @@ export function availabilitySortValue(availability: string): number {
   if (status === "now") return 1
 
   const s = availability.toLowerCase()
+  // Optional day between month and year: "august 2026" and "august 14, 2026" both match
   const monthYear = s.match(
-    /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sept?|september|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{4})\b/
+    /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sept?|september|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(?:\d{1,2},?\s+)?(\d{4})\b/
   )
 
   if (monthYear) {
