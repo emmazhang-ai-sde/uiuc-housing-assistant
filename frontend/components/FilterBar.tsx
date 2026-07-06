@@ -1,7 +1,7 @@
 "use client"
 
 import { Filters, DEFAULT_FILTERS } from "@/lib/api"
-import { COMPANIES } from "@/lib/companies"
+import { COMPANIES, UNSCRAPABLE_COMPANIES, FULLY_LEASED_COMPANIES, ExcludedCompany } from "@/lib/companies"
 
 type Props = {
   filters: Filters
@@ -218,28 +218,39 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
 
       <Divider />
 
-      {/* Source */}
-      <div className="flex items-center gap-3">
-        <span className={labelCls}>Source</span>
-        <div className="flex gap-1 items-center">
+      {/* Source — "All" sits on the Source row itself; below it, one row per
+          coverage category (Morandi-muted green/red labels, not vivid defaults)
+          so users can see which companies are searchable, which can't be scraped
+          (ToS or bot protection, reason in the tooltip), and which publish no
+          data right now. */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-3">
+          <span className={labelCls}>Source</span>
           <Pill
             active={filters.company === null}
             onClick={() => onChange({ ...filters, company: null })}
           >
             All
           </Pill>
-          {COMPANIES.map(({ name, logo }) => (
-            <button
-              key={name}
-              title={name}
-              onClick={() => onChange({ ...filters, company: filters.company === name ? null : name })}
-              className={`px-2.5 py-1 rounded-full transition-colors ${
-                filters.company === name ? "bg-neutral-900" : "bg-neutral-100 hover:bg-neutral-200"
-              }`}
-            >
-              <img src={logo} alt={name} className="h-4 object-contain" />
-            </button>
-          ))}
+        </div>
+        <div className="flex flex-col gap-1.5 pl-[68px]">
+          <div className="flex items-center gap-1 flex-wrap max-w-[340px]">
+            <span className="text-[10px] font-semibold text-[#6E8B63] uppercase tracking-wide mr-1">Scraped</span>
+            {COMPANIES.map(({ name, logo }) => (
+              <button
+                key={name}
+                title={name}
+                onClick={() => onChange({ ...filters, company: filters.company === name ? null : name })}
+                className={`px-2.5 py-1 rounded-full transition-colors ${
+                  filters.company === name ? "bg-neutral-900" : "bg-neutral-100 hover:bg-neutral-200"
+                }`}
+              >
+                <img src={logo} alt={name} className="h-4 object-contain" />
+              </button>
+            ))}
+          </div>
+          <ExcludedRow label="Not able to scrape" labelClassName="text-[#B0716A]" companies={UNSCRAPABLE_COMPANIES} />
+          <ExcludedRow label="Fully leased" companies={FULLY_LEASED_COMPANIES} />
         </div>
       </div>
 
@@ -257,6 +268,36 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+// Muted, non-clickable chips for companies we can't include. A chip renders the
+// company logo when one is set in lib/companies.ts, otherwise its name; the
+// exclusion reason shows as a tooltip.
+function ExcludedRow({ label, labelClassName = "text-neutral-400", companies }: {
+  label: string
+  labelClassName?: string
+  companies: ExcludedCompany[]
+}) {
+  return (
+    <div className="flex items-center gap-1 flex-wrap max-w-[340px]">
+      <span className={`text-[10px] font-semibold uppercase tracking-wide mr-1 ${labelClassName}`}>
+        {label}
+      </span>
+      {companies.map(({ name, reason, logo, dark }) => (
+        <span
+          key={name}
+          title={reason}
+          className={`px-2 py-0.5 rounded-full text-[10px] text-neutral-400 cursor-default whitespace-nowrap ${
+            dark ? "bg-neutral-400" : "bg-neutral-50"
+          }`}
+        >
+          {logo
+            ? <img src={logo} alt={name} className={`h-3.5 object-contain ${dark ? "opacity-90" : "opacity-50"}`} />
+            : name}
+        </span>
+      ))}
     </div>
   )
 }

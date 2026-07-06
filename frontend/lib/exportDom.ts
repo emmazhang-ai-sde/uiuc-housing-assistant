@@ -26,8 +26,15 @@ export function buildExportSlug(filters: Filters): string {
 
   if (filters.company) {
     const companyAbbr: Record<string, string> = {
-      "Green Street Realty": "gsr",
-      "University Group":    "ug",
+      "Green Street Realty":  "gsr",
+      "University Group":     "ug",
+      "Smile Student Living": "smile",
+      "MHM Properties":       "mhm",
+      "Seven07":              "seven07",
+      "Bankier Apartments":   "bankier",
+      "Roland Realty":        "roland",
+      "JSJ Property Management": "jsj",
+      "Octave":               "octave",
     }
     parts.push(
       companyAbbr[filters.company] ??
