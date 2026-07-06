@@ -75,6 +75,21 @@ MANUAL_COORDS: dict[str, tuple[float, float]] = {
     # Em-dash key so this doesn't match the correctly-geocoded sibling listing
     # "502 S. Fifth, Champaign" (different URL, already resolves correctly).
     "502 S. Fifth –": (40.11261, -88.23181),
+    # MHM lists this as "101 E. Armory Street" but the street is Armory AVENUE —
+    # Nominatim finds nothing for "Armory Street". Coords from Nominatim
+    # "101 E Armory Ave, Champaign, IL" (Frat Park, Campustown). Verified 2026-07-05.
+    "101 E. Armory": (40.10515, -88.23844),
+    # "59/61 E. Chalmers, Champaign, IL" (no "St" suffix) made Nominatim fall back
+    # to a street-segment match ~0.9km east (lng -88.2289, near Sixth St) instead of
+    # the address point near First St. Coords from Nominatim with the "St" suffix
+    # ("61 E Chalmers St" → house-number match in Seniorland). Verified 2026-07-05.
+    "59 E. Chalmers": (40.10636, -88.23925),
+    "61 E. Chalmers": (40.10636, -88.23912),
+    # "707 S 4th St., Champaign, IL" matched the Champaign City Building downtown
+    # (40.116, -88.243) — the numeral "4th" defeats Nominatim. Spelled out,
+    # "707 S Fourth St, Champaign, IL" returns the Seven07 building itself
+    # (Frat Park, Campustown). Verified 2026-07-05.
+    "707 S 4th": (40.10964, -88.23411),
 }
 
 
@@ -97,6 +112,20 @@ def clean_address(address: str) -> str:
         a = a.split('/')[0].strip()
     # Remove unit designators that confuse Nominatim: "Unit #B", "#7"
     a = re.sub(r'\s+(Unit\s+)?#\w+', '', a, flags=re.IGNORECASE)
+    # Spell out numbered street names — Nominatim maps "S 1st St, Champaign" to
+    # Fisher IL (or the City Building) but resolves "S First St" correctly.
+    # Only ordinals followed by a street suffix are touched, so "1st floor" notes
+    # or ranges like "302-310" are unaffected. Verified 2026-07-05 (Roland batch).
+    ordinals = {"1st": "First", "2nd": "Second", "3rd": "Third", "4th": "Fourth",
+                "5th": "Fifth", "6th": "Sixth", "7th": "Seventh", "8th": "Eighth",
+                "9th": "Ninth"}
+    a = re.sub(
+        r'\b(1st|2nd|3rd|4th|5th|6th|7th|8th|9th)\b(?=\s+(?:St|Street|Ave|Avenue)\b)',
+        lambda m: ordinals[m.group(1).lower()], a, flags=re.IGNORECASE,
+    )
+    # Half-number house numbers ("907.5 S Oak St") fall back to the City Building —
+    # use the whole number; the neighboring coordinate is close enough for the map.
+    a = re.sub(r'\b(\d+)\.5\b', r'\1', a)
     # Bug 2 fix: original code appended ", Champaign, IL" even when city was already present
     # (e.g. "901 W. Western Ave, Urbana" → wrong city added). Now append only ", IL".
     if not re.search(r'\bIL\b', a):

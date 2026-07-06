@@ -144,6 +144,11 @@ def normalize(record: dict) -> dict:
         "lease_dates":        lease_dates,
         "utility_fees":       utility_fees,
         "brochure_url":       brochure_url,
+        # Scraper-provided coordinates (e.g. Smile's AppFolio feed includes exact
+        # lat/lng). Rows that arrive with coords are skipped by pipeline/geocode.py,
+        # which only processes lat IS NULL.
+        "lat":                record.get("lat"),
+        "lng":                record.get("lng"),
         "text":               text,
     }
 
@@ -193,7 +198,7 @@ def write_db(normalized: list[dict], db_path: Path) -> None:
              availability, url,
              photo_url, availability_summary, tagline,
              description, amenities, lease_dates, utility_fees, brochure_url,
-             text)
+             lat, lng, text)
         VALUES
             (:company, :address, :area, :property_type, :roommate_match,
              :unit_type, :beds, :baths, :sqft,
@@ -202,7 +207,7 @@ def write_db(normalized: list[dict], db_path: Path) -> None:
              :availability, :url,
              :photo_url, :availability_summary, :tagline,
              :description, :amenities, :lease_dates, :utility_fees, :brochure_url,
-             :text)
+             :lat, :lng, :text)
     """, normalized)
     conn.commit()
     conn.close()
