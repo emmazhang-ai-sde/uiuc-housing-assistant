@@ -159,5 +159,43 @@ export async function GET() {
     ...duration,
   }
 
-  return NextResponse.json({ events: recent ?? [], counts, metrics })
+  // Growth curve for "Users who've used it" — cumulative distinct users by
+  // calendar day (Central time, matching returningUsers above), so the chart
+  // shows how that single number grew rather than just its current value. A
+  // user starts counting on the day of their first-ever event.
+  const firstSeenDay = new Map<string, string>()
+  for (const r of rows) {
+    const day = dayFmt.format(new Date(r.created_at))
+    const existing = firstSeenDay.get(r.user_id)
+    if (!existing || day < existing) firstSeenDay.set(r.user_id, day)
+  }
+  const newUsersByDay = new Map<string, number>()
+  for (const day of firstSeenDay.values()) {
+    newUsersByDay.set(day, (newUsersByDay.get(day) ?? 0) + 1)
+  }
+  const growth: { date: string; users: number }[] = []
+  if (newUsersByDay.size > 0) {
+    const sortedDays = [...newUsersByDay.keys()].sort()
+    const addDays = (dateStr: string, n: number) => {
+      const d = new Date(dateStr + "T00:00:00Z")
+      d.setUTCDate(d.getUTCDate() + n)
+      return d.toISOString().slice(0, 10)
+    }
+    const lastDay = dayFmt.format(new Date())
+    let cumulative = 0
+    for (let day = sortedDays[0]; day <= lastDay; day = addDays(day, 1)) {
+      cumulative += newUsersByDay.get(day) ?? 0
+      growth.push({ date: day, users: cumulative })
+    }
+  }
+
+  // Tag each table row as "new" (this event happened on the user's first-ever
+  // active day) or "old"/returning (a later day) — lets the table split into
+  // New users / Old users tabs without a separate query.
+  const recentAnnotated = recent.map(r => ({
+    ...r,
+    is_new_user: dayFmt.format(new Date(r.created_at)) === firstSeenDay.get(r.user_id),
+  }))
+
+  return NextResponse.json({ events: recentAnnotated, counts, metrics, growth })
 }

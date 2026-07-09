@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import AppHeader from "@/components/AppHeader"
 import { createClient } from "@/lib/supabase/client"
 import { logEvent } from "@/lib/logEvent"
@@ -11,7 +10,6 @@ export default function AccountPage() {
   const [email, setEmail] = useState<string | null | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [onWaitlist, setOnWaitlist] = useState(false)
-  const [isAdminAccount, setIsAdminAccount] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -33,18 +31,6 @@ export default function AccountPage() {
   useEffect(() => {
     if (email === null) router.replace("/login")
   }, [email, router])
-
-  // Admin accounts (the ADMIN_EMAIL set, plus the "test" dev identity) get an
-  // extra Administration section below — the one place this page differs for an
-  // administration account. The admin email list is server-only and never
-  // shipped to the browser, so we ask the server rather than checking here.
-  useEffect(() => {
-    if (!email) return
-    fetch("/api/admin/status")
-      .then(res => res.json())
-      .then(data => setIsAdminAccount(!!data.isAdmin))
-      .catch(() => setIsAdminAccount(false))
-  }, [email])
 
   async function handleSignOut() {
     setLoading(true)
@@ -107,29 +93,6 @@ export default function AccountPage() {
                   </div>
                 </div>
               </div>
-
-              {isAdminAccount && (
-                <div className="mt-10 pt-8 border-t border-neutral-200">
-                  <div className="mb-4">
-                    <span className="text-sm font-semibold text-neutral-800">
-                      Administration
-                    </span>
-                  </div>
-
-                  <Link
-                    href="/admin/activity"
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 transition-colors px-5 py-4"
-                  >
-                    <div>
-                      <div className="text-sm font-semibold text-neutral-900">Administration Activity</div>
-                      <div className="text-xs text-neutral-500 mt-0.5">
-                        Usage metrics and event logs, admin-only
-                      </div>
-                    </div>
-                    <span className="text-neutral-400" aria-hidden="true">→</span>
-                  </Link>
-                </div>
-              )}
 
               <div className="mt-10 pt-8 border-t border-neutral-200">
                 <div className="w-full max-w-[420px] mx-auto">

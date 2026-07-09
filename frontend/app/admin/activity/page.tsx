@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import AppHeader from "@/components/AppHeader"
 import AdminTabs from "@/components/admin/AdminTabs"
+import GrowthChart from "@/components/admin/GrowthChart"
 import { createClient } from "@/lib/supabase/client"
 
 interface EventRow {
@@ -13,7 +14,10 @@ interface EventRow {
   event_type: string
   metadata: Record<string, unknown>
   created_at: string
+  is_new_user?: boolean
 }
+
+const PAGE_SIZE = 20
 
 interface Metrics {
   active_users: number
@@ -58,8 +62,11 @@ export default function AdminActivityPage() {
   const [events, setEvents] = useState<EventRow[]>([])
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [metrics, setMetrics] = useState<Metrics | null>(null)
+  const [growth, setGrowth] = useState<{ date: string; users: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [forbidden, setForbidden] = useState(false)
+  const [userTab, setUserTab] = useState<"new" | "old">("new")
+  const [page, setPage] = useState(1)
   const router = useRouter()
 
   useEffect(() => {
@@ -86,10 +93,22 @@ export default function AdminActivityPage() {
         setEvents(data.events ?? [])
         setCounts(data.counts ?? {})
         setMetrics(data.metrics ?? null)
+        setGrowth(data.growth ?? [])
       })
       .catch(() => setForbidden(true))
       .finally(() => setLoading(false))
   }, [email])
+
+  const newEvents = events.filter(e => e.is_new_user)
+  const oldEvents = events.filter(e => !e.is_new_user)
+  const tabEvents = userTab === "new" ? newEvents : oldEvents
+  const totalPages = Math.max(1, Math.ceil(tabEvents.length / PAGE_SIZE))
+  const pageEvents = tabEvents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  function switchUserTab(tab: "new" | "old") {
+    setUserTab(tab)
+    setPage(1)
+  }
 
   if (forbidden) {
     return (
@@ -112,7 +131,7 @@ export default function AdminActivityPage() {
             <>
               {/* Key metrics — distinct people, not raw event counts */}
               {metrics && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                   <MetricCard
                     value={pct(metrics.active_users, metrics.registered_accounts)}
                     label="Activation rate"
@@ -126,11 +145,6 @@ export default function AdminActivityPage() {
                     accent
                   />
                   <MetricCard
-                    value={metrics.active_users}
-                    label="Users who've used it"
-                    hint="Distinct people who did any action"
-                  />
-                  <MetricCard
                     value={metrics.active_24h}
                     label="Active in last 24h"
                     hint="Distinct people active since yesterday"
@@ -140,6 +154,15 @@ export default function AdminActivityPage() {
                     label="Returning users"
                     hint="Came back on a different day"
                   />
+                </div>
+              )}
+
+              {/* Users who've used it — as a growth curve, not just a static count */}
+              {metrics && (
+                <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-4 mb-6">
+                  <div className="text-sm font-semibold text-neutral-700">Users who&apos;ve used it</div>
+                  <div className="text-xs text-neutral-400 mt-0.5 mb-2">Cumulative distinct people who&apos;ve done any action, by day</div>
+                  <GrowthChart data={growth} />
                 </div>
               )}
 
@@ -185,6 +208,29 @@ export default function AdminActivityPage() {
                 )}
               </div>
 
+              {/* New vs. returning users — same event log, split by whether this
+                  row happened on the user's first-ever active day */}
+              <div className="flex items-center gap-1 bg-neutral-100 rounded-full p-0.5 mb-3 w-fit">
+                <button
+                  type="button"
+                  onClick={() => switchUserTab("new")}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    userTab === "new" ? "bg-black text-white" : "text-neutral-600 hover:text-neutral-900"
+                  }`}
+                >
+                  New users ({newEvents.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchUserTab("old")}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    userTab === "old" ? "bg-black text-white" : "text-neutral-600 hover:text-neutral-900"
+                  }`}
+                >
+                  Old users ({oldEvents.length})
+                </button>
+              </div>
+
               <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] overflow-hidden overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -196,7 +242,7 @@ export default function AdminActivityPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {events.map(e => (
+                    {pageEvents.map(e => (
                       <tr key={e.id} className="border-b border-neutral-50 last:border-0">
                         <td className="px-4 py-2.5 text-neutral-700 whitespace-nowrap">{e.email}</td>
                         <td className="px-4 py-2.5 text-neutral-700 whitespace-nowrap">{EVENT_LABELS[e.event_type] ?? e.event_type}</td>
@@ -208,9 +254,43 @@ export default function AdminActivityPage() {
                         </td>
                       </tr>
                     ))}
+                    {tabEvents.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-6 text-center text-neutral-400">
+                          No {userTab === "new" ? "new-user" : "returning-user"} activity yet.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
+
+              {tabEvents.length > 0 && (
+                <div className="flex items-center justify-between mt-3 text-sm text-neutral-500">
+                  <span>
+                    Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, tabEvents.length)} of {tabEvents.length}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="px-3 py-1.5 rounded-full bg-white shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-neutral-400">Page {page} of {totalPages}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="px-3 py-1.5 rounded-full bg-white shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
