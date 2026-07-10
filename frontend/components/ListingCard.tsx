@@ -143,30 +143,39 @@ export default function ListingCard({
             ))}
           </div>
 
-          {/* Rent — emphasized as the key data point, with the CTA alongside it */}
-          <div className="flex items-end justify-between gap-2">
-            <div>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xl font-bold text-neutral-900 tracking-tight">
-                {isSingleOccupancy
-                  ? <>{priceTotal}<span className="text-sm text-neutral-400 font-medium">/mo</span></>
-                  : <>{priceBed}<span className="text-sm text-neutral-400 font-medium">/bed</span></>
-                }
-                {overBudget && (
-                  <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[#F5BBA0] text-black">
-                    over budget
-                  </span>
+          {/* Rent — emphasized as the key data point, with the CTA alongside it.
+              price_note listings have no number to emphasize; the note takes the
+              full card width (lead sentence only — cards are narrow; the drawer
+              and map popup carry the whole text) and the CTA drops below it. */}
+          <div className={listing.price_note ? "flex flex-col gap-1.5" : "flex items-end justify-between gap-2"}>
+            {listing.price_note ? (
+              <div className="text-xs font-semibold text-neutral-500 leading-snug" title={listing.price_note}>
+                {listing.price_note.split(". ")[0]}
+              </div>
+            ) : (
+              <div>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xl font-bold text-neutral-900 tracking-tight">
+                  {isSingleOccupancy
+                    ? <>{priceTotal}<span className="text-sm text-neutral-400 font-medium">/mo</span></>
+                    : <>{priceBed}<span className="text-sm text-neutral-400 font-medium">/bed</span></>
+                  }
+                  {overBudget && (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold bg-[#F5BBA0] text-black">
+                      over budget
+                    </span>
+                  )}
+                </div>
+                {!isSingleOccupancy && (
+                  <div className="text-xs text-neutral-400 mt-0.5">{priceTotal} total</div>
                 )}
               </div>
-              {!isSingleOccupancy && (
-                <div className="text-xs text-neutral-400 mt-0.5">{priceTotal} total</div>
-              )}
-            </div>
+            )}
             <a
               href={listing.url}
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className="inline-flex items-center gap-1 text-xs font-bold text-neutral-900 bg-neutral-100 hover:bg-black hover:text-white px-3 py-1.5 rounded-full transition-colors shrink-0"
+              className={`inline-flex items-center gap-1 text-xs font-bold text-neutral-900 bg-neutral-100 hover:bg-black hover:text-white px-3 py-1.5 rounded-full transition-colors shrink-0 ${listing.price_note ? "self-end" : ""}`}
             >
               View Listing →
             </a>

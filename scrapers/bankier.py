@@ -14,8 +14,13 @@
 #   This scraper never requests them; the `url` field just links users there.
 #
 #   Pricing is whole-unit (joint leases): price_total = listed range,
-#   price_per_bed = total ÷ beds. "Pricing unavailable" rows are treated as
-#   Leased (Bankier hides pricing for configs they can't currently lease).
+#   price_per_bed = total ÷ beds. NOTE: the widget's rent numbers proved stale
+#   vs the microsites' real rates (2026-07: $720/bed shown vs $900/bed real),
+#   so pipeline/normalize.py (MANUAL_PRICE_NOTES) drops them before publication
+#   and every surface shows "manual price search required" instead. They are
+#   still scraped here so the raw archive stays a faithful record, and because
+#   "Pricing unavailable" rows are treated as Leased (Bankier hides pricing for
+#   configs they can't currently lease) — that inference is unaffected.
 #   Coordinates come from the cards, so pipeline/geocode.py skips Bankier.
 #   See design-docs/ai-pipeline-implementation-phases/phase-9.4-bankier-scraper.md
 #

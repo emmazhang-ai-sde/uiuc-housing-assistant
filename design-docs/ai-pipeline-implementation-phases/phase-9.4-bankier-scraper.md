@@ -45,3 +45,9 @@ python -m pipeline.ingest
 ## Rough timing
 
 Seconds — six POSTs with a 2s politeness delay.
+
+## Update: widget prices dropped (2026-07-09)
+
+Founder review found the widget's rent numbers are stale against the per-building microsites (example: a 4BR/3BA advertised at $2,880 total / $720 per bed by the widget while the building site lists $900 per person), and the microsites remain off-limits behind Cloudflare, so there is no legal automated source for correct Bankier prices.
+
+Decision: publish Bankier listings without prices. `pipeline/normalize.py` (`MANUAL_PRICE_NOTES`) nulls all four price columns and sets a new `price_note` field ("Manual price search required. Scraping prices is not allowed on Bankier, check the building website for current rates."), which every surface (card, table, map popup, drawer, chat text and exports) renders in place of the price. The scraper still records the widget numbers in the raw JSON archive, both as a faithful record and because the "Pricing unavailable" → Leased inference depends on them.

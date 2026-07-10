@@ -240,12 +240,16 @@ const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, fi
               <div className="text-neutral-500">
                 {popup.unit_type}{bedsLabel(popup.beds, popup.unit_type) ? ` · ${bedsLabel(popup.beds, popup.unit_type)}` : ""}{popup.property_type ? ` · ${popup.property_type}` : ""}
               </div>
-              <div className="font-bold text-neutral-900 text-sm">
-                {popup.beds <= 1
-                  ? <>{priceLabel(popup)}<span className="font-normal text-neutral-400 text-xs">/mo</span></>
-                  : <>{priceLabel(popup)}<span className="font-normal text-neutral-400 text-xs">/bed</span></>
-                }
-              </div>
+              {popup.price_note ? (
+                <div className="text-xs font-medium text-neutral-500 leading-snug">{popup.price_note}</div>
+              ) : (
+                <div className="font-bold text-neutral-900 text-sm">
+                  {popup.beds <= 1
+                    ? <>{priceLabel(popup)}<span className="font-normal text-neutral-400 text-xs">/mo</span></>
+                    : <>{priceLabel(popup)}<span className="font-normal text-neutral-400 text-xs">/bed</span></>
+                  }
+                </div>
+              )}
               <div className={popup.is_available ? "text-green-700 font-medium" : "text-neutral-400"}>
                 {popup.availability}
               </div>

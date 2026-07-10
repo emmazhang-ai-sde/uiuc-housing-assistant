@@ -138,18 +138,25 @@ export function DrawerContent({ listing, onClose }: { listing: Listing; onClose:
         </div>
 
         {/* Price */}
-        <div className="flex gap-6 -mt-1">
-          {!isSingleOccupancy && (
-            <div>
-              <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Per bed</div>
-              <div className="text-xl font-bold text-neutral-900">{priceBed}<span className="text-sm font-medium text-neutral-400">/mo</span></div>
-            </div>
-          )}
-          <div>
-            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Total</div>
-            <div className="text-xl font-bold text-neutral-900">{priceTotal}<span className="text-sm font-medium text-neutral-400">/mo</span></div>
+        {listing.price_note ? (
+          <div className="-mt-1">
+            <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Price</div>
+            <p className="text-sm font-medium text-neutral-500 leading-snug">{listing.price_note}</p>
           </div>
-        </div>
+        ) : (
+          <div className="flex gap-6 -mt-1">
+            {!isSingleOccupancy && (
+              <div>
+                <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Per bed</div>
+                <div className="text-xl font-bold text-neutral-900">{priceBed}<span className="text-sm font-medium text-neutral-400">/mo</span></div>
+              </div>
+            )}
+            <div>
+              <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Total</div>
+              <div className="text-xl font-bold text-neutral-900">{priceTotal}<span className="text-sm font-medium text-neutral-400">/mo</span></div>
+            </div>
+          </div>
+        )}
 
         {/* Availability summary (UG only) */}
         {listing.availability_summary && (

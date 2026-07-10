@@ -30,7 +30,17 @@ function bedsStr(beds: number, unitType: string): string {
   return bedsLabel(beds, unitType)
 }
 
+// Short label for table cells and exports when a listing carries a price_note
+// (e.g. Bankier, whose prices can't be scraped) instead of numbers.
+const MANUAL_PRICE_LABEL = "Manual search required"
+
+function perBedPriceStr(l: Listing): string {
+  if (l.price_note) return MANUAL_PRICE_LABEL
+  return priceStr(l.price_per_bed_low, l.price_per_bed_high)
+}
+
 function totalPriceStr(l: Listing): string {
+  if (l.price_note) return MANUAL_PRICE_LABEL
   return priceStr(l.price_total_low, l.price_total_high)
 }
 
@@ -50,7 +60,7 @@ export function tableRowsHtml(listings: Listing[]): string {
     listing.address,
     listing.unit_type,
     bedsStr(listing.beds, listing.unit_type),
-    priceStr(listing.price_per_bed_low, listing.price_per_bed_high),
+    perBedPriceStr(listing),
     totalPriceStr(listing),
     listing.availability,
     listing.url,
@@ -74,7 +84,7 @@ export function tableRowsTsv(listings: Listing[]): string {
     listing.address,
     listing.unit_type,
     bedsStr(listing.beds, listing.unit_type),
-    priceStr(listing.price_per_bed_low, listing.price_per_bed_high),
+    perBedPriceStr(listing),
     totalPriceStr(listing),
     listing.availability,
     listing.url,
@@ -206,7 +216,9 @@ const SummaryTable = forwardRef<HTMLDivElement, {
                   <td className="px-3 py-3.5">{l.beds}</td>
                   <td className="px-3 py-3.5 font-bold text-base text-neutral-900">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span>{priceStr(l.price_per_bed_low, l.price_per_bed_high)}</span>
+                    {l.price_note
+                      ? <span className="text-xs font-medium text-neutral-500" title={l.price_note}>{MANUAL_PRICE_LABEL}</span>
+                      : <span>{priceStr(l.price_per_bed_low, l.price_per_bed_high)}</span>}
                     {overBudget && (
                       <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#F5BBA0] text-black">
                         over budget

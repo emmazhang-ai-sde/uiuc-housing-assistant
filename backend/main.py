@@ -161,7 +161,7 @@ def get_listings(
     sql = (
         "SELECT company, address, area, property_type, unit_type, beds, baths,"
         " price_per_bed_low, price_per_bed_high, price_total_low, price_total_high,"
-        " availability, url, photo_url, availability_summary, tagline,"
+        " price_note, availability, url, photo_url, availability_summary, tagline,"
         " description, amenities, lease_dates, utility_fees, brochure_url, lat, lng"
         " FROM listings"
     )
@@ -204,6 +204,7 @@ def get_listings(
             "price_per_bed_high":   row["price_per_bed_high"],
             "price_total_low":      row["price_total_low"],
             "price_total_high":     row["price_total_high"],
+            "price_note":           row["price_note"]           or "",
             "availability":         avail,
             "is_available":         is_available,
             "area":                 row["area"]                 or "",

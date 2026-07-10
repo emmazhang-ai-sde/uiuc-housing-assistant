@@ -9,6 +9,7 @@ export interface Listing {
   price_per_bed_high: number | null
   price_total_low: number | null
   price_total_high: number | null
+  price_note: string               // e.g. Bankier: prices can't be scraped; note replaces price in all views
   availability: string
   is_available: boolean          // Phase 6: pre-computed in ingest.py
   area: string

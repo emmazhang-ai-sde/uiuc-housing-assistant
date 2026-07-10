@@ -66,6 +66,25 @@ def format_price_range(low: int | None, high: int | None) -> str:
     return f"${low}–${high}"
 
 
+# ── Manual-price policy ──────────────────────────────────────────────────────
+
+# Bankier's true unit prices live only on its per-building microsites, which sit
+# behind a Cloudflare bot challenge this project does not bypass (see
+# design-docs/ai-pipeline-implementation-phases/phase-9.4-bankier-scraper.md).
+# The homepage search widget we do scrape advertises rent numbers that lag those
+# microsites badly (July 2026: widget said $720/bed for a 4BR/3BA the microsite
+# listed at $900/bed), so its prices are dropped here rather than published
+# wrong. price_note carries the user-facing explanation into every surface
+# (cards, table, map, chat); the widget's "Pricing unavailable" → Leased
+# inference in the scraper is unaffected.
+MANUAL_PRICE_NOTES = {
+    "Bankier Apartments": (
+        "Manual price search required. Scraping prices is not allowed on "
+        "Bankier, check the building website for current rates."
+    ),
+}
+
+
 # ── Availability window policy ───────────────────────────────────────────────
 
 # Academic-year student companies whose sites publish exact lease-start dates
@@ -137,12 +156,17 @@ def normalize(record: dict) -> dict:
     availability         = apply_fall_window(company, availability)
     availability_summary = apply_fall_window(company, availability_summary)
 
+    price_note = MANUAL_PRICE_NOTES.get(company, "")
+    if price_note:
+        ppb_low = ppb_high = ptot_low = ptot_high = None
+
     text = " ".join(filter(None, [
         f"{address}.",
         f"{unit_type}: {beds} bed, {baths} bath"
         + (f", {sqft} sqft" if sqft else "") + ".",
-        f"Price: {format_price_range(ppb_low, ppb_high)}/bed per month,"
-        f" {format_price_range(ptot_low, ptot_high)}/month total.",
+        (f"Price: {price_note}" if price_note else
+         f"Price: {format_price_range(ppb_low, ppb_high)}/bed per month,"
+         f" {format_price_range(ptot_low, ptot_high)}/month total."),
         f"Availability: {availability}.",
         f"Area: {area}.",
         "Roommate match available." if roommate else "",
@@ -167,6 +191,7 @@ def normalize(record: dict) -> dict:
         "price_per_bed_high": ppb_high,
         "price_total_low":    ptot_low,
         "price_total_high":   ptot_high,
+        "price_note":         price_note,
         "availability":       availability,
         "url":                url,
         "photo_url":          photo_url,
@@ -207,6 +232,7 @@ def write_db(normalized: list[dict], db_path: Path) -> None:
             price_per_bed_high  INTEGER,
             price_total_low     INTEGER,
             price_total_high    INTEGER,
+            price_note          TEXT,
             availability         TEXT,
             url                  TEXT,
             photo_url            TEXT,
@@ -228,7 +254,7 @@ def write_db(normalized: list[dict], db_path: Path) -> None:
              unit_type, beds, baths, sqft,
              price_per_bed_low, price_per_bed_high,
              price_total_low,   price_total_high,
-             availability, url,
+             price_note, availability, url,
              photo_url, availability_summary, tagline,
              description, amenities, lease_dates, utility_fees, brochure_url,
              lat, lng, text)
@@ -237,7 +263,7 @@ def write_db(normalized: list[dict], db_path: Path) -> None:
              :unit_type, :beds, :baths, :sqft,
              :price_per_bed_low, :price_per_bed_high,
              :price_total_low,   :price_total_high,
-             :availability, :url,
+             :price_note, :availability, :url,
              :photo_url, :availability_summary, :tagline,
              :description, :amenities, :lease_dates, :utility_fees, :brochure_url,
              :lat, :lng, :text)

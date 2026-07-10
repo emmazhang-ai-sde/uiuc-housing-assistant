@@ -70,7 +70,7 @@ def load_listings(db_path: Path) -> list[dict]:
                availability, area, url, text, company,
                lat, lng, photo_url, availability_summary, tagline,
                description, amenities, lease_dates, utility_fees, brochure_url,
-               property_type
+               property_type, price_note
         FROM listings
     """).fetchall()
     conn.close()
@@ -99,6 +99,7 @@ def load_listings(db_path: Path) -> list[dict]:
             "utility_fees":         r[20],
             "brochure_url":         r[21],
             "property_type":        r[22],
+            "price_note":           r[23],
         }
         for r in rows
     ]
@@ -125,6 +126,7 @@ def main():
                 "price_per_bed_high": l["price_per_bed_high"],
                 "price_total_low":    l["price_total_low"],
                 "price_total_high":   l["price_total_high"],
+                "price_note":         l["price_note"] or "",
                 "availability":       l["availability"],
                 "is_available":       compute_is_available(l["availability"]),
                 **compute_availability_windows(l["availability"]),
