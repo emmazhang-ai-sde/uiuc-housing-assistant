@@ -14,19 +14,6 @@ function splitAddress(address: string): { main: string; code: string | null } {
   return { main: match[1], code: match[2] }
 }
 
-function splitAddressLines(address: string): string[] {
-  const [first, ...rest] = address.split(/\s+([-–])\s+/)
-  if (!rest.length) return [address]
-
-  const lines = [first.trim()]
-  for (let i = 0; i < rest.length; i += 2) {
-    const dash = rest[i]
-    const text = rest[i + 1]?.trim()
-    if (text) lines.push(`${dash} ${text}`)
-  }
-  return lines
-}
-
 const STATUS_BADGE_STYLE = {
   now:         "bg-now-100 text-neutral-900",
   available:   "bg-[#C7DDB5] text-neutral-900",
@@ -77,7 +64,6 @@ export default function ListingCard({
   const overBudget = maxPricePerBed !== null && listing.price_per_bed_high !== null && listing.price_per_bed_high > maxPricePerBed
   const isUnavailable = availabilityStatus(listing.availability) === "unavailable"
   const { main: addressMain, code: addressCode } = splitAddress(listing.address)
-  const addressLines = splitAddressLines(addressMain)
 
   return (
     <article
@@ -118,11 +104,9 @@ export default function ListingCard({
           : <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">{listing.company}</div>
         }
 
-        {/* Address — pr leaves room for the badge when there is no photo */}
-        <h3 className="font-bold text-neutral-900 text-sm leading-snug pr-16">
-          {addressLines.map((line, i) => (
-            <span key={i} className="block">{line}</span>
-          ))}
+        {/* Address */}
+        <h3 className="font-bold text-neutral-900 text-sm leading-snug">
+          {addressMain}
           {addressCode && <span className="block text-neutral-900 font-medium text-xs mt-0.5">{addressCode}</span>}
         </h3>
 
