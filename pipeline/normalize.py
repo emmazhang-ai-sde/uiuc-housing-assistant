@@ -66,6 +66,36 @@ def format_price_range(low: int | None, high: int | None) -> str:
     return f"${low}–${high}"
 
 
+# ── Availability window policy ───────────────────────────────────────────────
+
+# Academic-year student companies whose sites publish exact lease-start dates
+# ("Available August 21, 2026", "Available July 28, 2026 (8 units left)",
+# "Available September 15, 2026") or a transient "Available now". Their whole
+# 2026-27 inventory turns over in the fall, so students filtering the August
+# 2026 window must see all of it — exact dates fragment the results (a Seven07
+# unit whose lease starts July 28 is a fall listing the August filter would
+# miss). Collapse every available unit to the shared August 2026 window,
+# keeping the immediate-move-in signal (the Now filter still finds those) and
+# any "(N units left)" annotation. "Leased" and empty strings pass through.
+FALL_2026_WINDOW_COMPANIES = {
+    "Smile Student Living",
+    "Seven07",
+    "JSJ Property Management",
+}
+
+
+def apply_fall_window(company: str, availability: str) -> str:
+    if company not in FALL_2026_WINDOW_COMPANIES:
+        return availability
+    if not availability or "leased" in availability.lower():
+        return availability
+    note_m = re.search(r"\(([^)]+)\)", availability)
+    note   = f" ({note_m.group(1)})" if note_m else ""
+    if re.search(r"available\s+now", availability, re.IGNORECASE):
+        return f"Available August 2026, Immediate Move-In{note}"
+    return f"Available August 2026{note}"
+
+
 # ── Normalizer ───────────────────────────────────────────────────────────────
 
 def infer_property_type(unit_type: str, raw: str) -> str:
@@ -103,6 +133,9 @@ def normalize(record: dict) -> dict:
     lease_dates          = record.get("lease_dates", "").strip()
     utility_fees         = record.get("utility_fees", "").strip()
     brochure_url         = record.get("brochure_url", "").strip()
+
+    availability         = apply_fall_window(company, availability)
+    availability_summary = apply_fall_window(company, availability_summary)
 
     text = " ".join(filter(None, [
         f"{address}.",
