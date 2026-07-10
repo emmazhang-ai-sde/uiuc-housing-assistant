@@ -5,7 +5,7 @@ import AppHeader from "@/components/AppHeader"
 import FilterBar from "@/components/FilterBar"
 import ListingGrid from "@/components/ListingGrid"
 import { fetchListingsPage, fetchAllListings, Listing, Filters } from "@/lib/api"
-import PropertyDrawer from "@/components/PropertyDrawer"
+import PropertyPanel from "@/components/PropertyPanel"
 import { useFilters } from "@/contexts/FiltersContext"
 import { logEvent } from "@/lib/logEvent"
 
@@ -97,8 +97,14 @@ export default function Home() {
             />
           </div>
         </div>
+
+        {/* Docked detail panel — mirrors the Chat view. Reserves a fixed column on
+            the right so a selected listing's details appear beside the grid rather
+            than a modal covering it. The grid runs 3-wide to leave room for it. */}
+        <div className="contents print:hidden">
+          <PropertyPanel listing={selectedListing} onClose={() => setSelectedListing(null)} />
+        </div>
       </div>
-      <PropertyDrawer listing={selectedListing} onClose={() => setSelectedListing(null)} />
 
       {/* Floating header pill, overlaid on top like the Chat/Map views */}
       <div className="absolute top-0 inset-x-0 z-30 pointer-events-none [&_header>div]:pointer-events-auto print:hidden">
@@ -145,7 +151,7 @@ function BrowseCatalog({
         <ListingGrid
           entries={listings.map(listing => ({ listing }))}
           filters={filters}
-          columns={4}
+          columns={3}
           onSelect={onSelect}
           className={`transition-opacity ${loading ? "opacity-50" : ""}`}
         />
