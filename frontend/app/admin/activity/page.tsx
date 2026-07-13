@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import AppHeader from "@/components/AppHeader"
 import AdminTabs from "@/components/admin/AdminTabs"
 import GrowthChart from "@/components/admin/GrowthChart"
+import ReturnFrequencyChart, { type ReturnBucket } from "@/components/admin/ReturnFrequencyChart"
 import { createClient } from "@/lib/supabase/client"
 
 interface EventRow {
@@ -64,6 +65,7 @@ export default function AdminActivityPage() {
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [growth, setGrowth] = useState<{ date: string; users: number }[]>([])
+  const [returnFrequency, setReturnFrequency] = useState<ReturnBucket[]>([])
   const [loading, setLoading] = useState(true)
   const [forbidden, setForbidden] = useState(false)
   const [userTab, setUserTab] = useState<"new" | "old">("new")
@@ -95,6 +97,7 @@ export default function AdminActivityPage() {
         setCounts(data.counts ?? {})
         setMetrics(data.metrics ?? null)
         setGrowth(data.growth ?? [])
+        setReturnFrequency(data.returnFrequency ?? [])
       })
       .catch(() => setForbidden(true))
       .finally(() => setLoading(false))
@@ -122,7 +125,7 @@ export default function AdminActivityPage() {
   return (
     <div className="relative h-screen bg-neutral-100 overflow-hidden">
       <div className="h-full overflow-y-auto pt-24 px-6 pb-10">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <h1 className="text-xl font-bold text-neutral-900 mb-4">Activity</h1>
           <AdminTabs />
 
@@ -151,19 +154,11 @@ export default function AdminActivityPage() {
                     hint="Distinct people active since yesterday"
                   />
                   <MetricCard
-                    value={metrics.returning_users}
-                    label="Returning users"
-                    hint="Came back on a different day"
+                    value={pct(metrics.returning_users, metrics.active_users)}
+                    label="Return rate"
+                    hint={`${metrics.returning_users} of ${metrics.active_users} people who used it came back on a different day`}
+                    accent
                   />
-                </div>
-              )}
-
-              {/* Users who've used it — as a growth curve, not just a static count */}
-              {metrics && (
-                <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-4 mb-6">
-                  <div className="text-sm font-semibold text-neutral-700">Users who&apos;ve used it</div>
-                  <div className="text-xs text-neutral-400 mt-0.5 mb-2">Cumulative distinct people who&apos;ve done any action, by day</div>
-                  <GrowthChart data={growth} />
                 </div>
               )}
 
@@ -206,6 +201,34 @@ export default function AdminActivityPage() {
                 ))}
                 {Object.keys(counts).length === 0 && (
                   <div className="text-sm text-neutral-400">No activity logged yet.</div>
+                )}
+              </div>
+
+              {/* The two charts, side by side: who has used it, and how often
+                  those people come back. Both are per-person views of the same
+                  event log, so they read as a pair. They split at xl, not lg:
+                  at 1024px a half column squeezes the chart's viewBox enough to
+                  render the axis text at ~8px, so below that they stack full-width. */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mb-6">
+                {metrics && (
+                  <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-4">
+                    <div className="text-sm font-semibold text-neutral-700">Users who&apos;ve used it</div>
+                    <div className="text-xs text-neutral-400 mt-0.5 mb-2">Cumulative distinct people who&apos;ve done any action, by day</div>
+                    <GrowthChart data={growth} />
+                  </div>
+                )}
+
+                {/* Return frequency — the distribution behind the return rate:
+                    how many people came back once vs. five times */}
+                {returnFrequency.length > 0 && (
+                  <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-4">
+                    <div className="text-sm font-semibold text-neutral-700">How often people come back</div>
+                    <div className="text-xs text-neutral-400 mt-0.5 mb-2">
+                      Number of people by how many separate days they returned after their first visit. The grey bar is
+                      everyone who never came back.
+                    </div>
+                    <ReturnFrequencyChart data={returnFrequency} />
+                  </div>
                 )}
               </div>
 

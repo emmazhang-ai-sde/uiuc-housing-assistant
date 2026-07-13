@@ -83,6 +83,26 @@ export async function GET() {
     if (days.size >= 2) returningUsers++
   }
 
+  // Return-frequency distribution — how many people came back N times, where a
+  // "return" is an active day after the first (so distinct days - 1). Same
+  // definition as returningUsers above, just not collapsed to a yes/no: the 0
+  // bucket is the one-and-done crowd, and everything to its right is the tail
+  // that returningUsers counts as a single number. Buckets are dense (a gap in
+  // the middle is a real zero, and has to plot as one) and the long tail is
+  // clamped so one heavy user can't stretch the axis.
+  const TAIL_BUCKET = 10
+  const returnCounts = new Map<number, number>()
+  for (const days of daysByUser.values()) {
+    const returns = Math.min(days.size - 1, TAIL_BUCKET)
+    returnCounts.set(returns, (returnCounts.get(returns) ?? 0) + 1)
+  }
+  const maxReturns = returnCounts.size ? Math.max(...returnCounts.keys()) : 0
+  const returnFrequency = Array.from({ length: maxReturns + 1 }, (_, returns) => ({
+    returns,
+    users: returnCounts.get(returns) ?? 0,
+    capped: returns === TAIL_BUCKET,
+  }))
+
   // Usage duration, estimated from event timestamps. We only log discrete
   // actions (not a heartbeat), so a "session" is a run of one user's events
   // where consecutive events are <= 30 min apart, and its duration is the
@@ -197,5 +217,5 @@ export async function GET() {
     is_new_user: dayFmt.format(new Date(r.created_at)) === firstSeenDay.get(r.user_id),
   }))
 
-  return NextResponse.json({ events: recentAnnotated, counts, metrics, growth })
+  return NextResponse.json({ events: recentAnnotated, counts, metrics, growth, returnFrequency })
 }

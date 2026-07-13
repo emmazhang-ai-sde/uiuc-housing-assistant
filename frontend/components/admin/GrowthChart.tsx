@@ -11,8 +11,11 @@ const GRID_COLOR = "#e5e5e5"   // matches Tailwind neutral-200
 const AXIS_TEXT = "#a3a3a3"    // neutral-400, muted/recessive per spec
 const INK = "#171717"          // neutral-900, for the direct end-label (text token, not series color)
 
-const VB_W = 700
-const VB_H = 220
+// Sized for a half-width card (the charts sit two-up on /admin/activity). The
+// viewBox scales to the card, so its width sets how large the 10px axis text
+// actually renders — a 700-wide box in a ~590px column shrinks it to ~8px.
+const VB_W = 560
+const VB_H = 230
 const PAD = { top: 20, right: 16, bottom: 26, left: 36 }
 
 function niceCeil(max: number): number {
