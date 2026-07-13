@@ -54,6 +54,7 @@ const EVENT_LABELS: Record<string, string> = {
   message_sent: "Messages sent",
   map_search: "Map searches",
   card_view: "Card views",
+  table_view: "Table views",
   listing_view: "Listings viewed",
 }
 
