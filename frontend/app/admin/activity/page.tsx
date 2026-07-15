@@ -47,6 +47,10 @@ function formatDuration(sec: number): string {
   return `${s}s`
 }
 
+// The three browse surfaces get their own top row in the feature-usage strip
+// so they read as a comparable set. Order is deliberate: Map / Card / Table.
+const VIEW_EVENTS = ["map_search", "card_view", "table_view"]
+
 // Friendlier labels than the raw event_type slugs used in the DB.
 const EVENT_LABELS: Record<string, string> = {
   login: "Logins",
@@ -63,6 +67,7 @@ export default function AdminActivityPage() {
   const [email, setEmail] = useState<string | null | undefined>(undefined)
   const [events, setEvents] = useState<EventRow[]>([])
   const [counts, setCounts] = useState<Record<string, number>>({})
+  const [userCounts, setUserCounts] = useState<Record<string, number>>({})
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [growth, setGrowth] = useState<{ date: string; users: number }[]>([])
   const [returnFrequency, setReturnFrequency] = useState<ReturnBucket[]>([])
@@ -95,6 +100,7 @@ export default function AdminActivityPage() {
         if (!data) return
         setEvents(data.events ?? [])
         setCounts(data.counts ?? {})
+        setUserCounts(data.userCounts ?? {})
         setMetrics(data.metrics ?? null)
         setGrowth(data.growth ?? [])
         setReturnFrequency(data.returnFrequency ?? [])
@@ -188,21 +194,27 @@ export default function AdminActivityPage() {
                 </div>
               )}
 
-              {/* Feature usage — raw event counts */}
-              <div className="flex flex-wrap gap-3 mb-8">
-                {Object.entries(counts).map(([type, count]) => (
-                  <div
-                    key={type}
-                    className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-4 py-3"
-                  >
-                    <div className="text-2xl font-bold text-neutral-900">{count}</div>
-                    <div className="text-xs text-neutral-500">{EVENT_LABELS[type] ?? type}</div>
+              {/* Feature usage — raw event counts. Top row is the three browse
+                  surfaces (Map / Card / Table) so they read as a comparable
+                  set; every other event drops to a second row. */}
+              {Object.keys(counts).length === 0 ? (
+                <div className="mb-8 text-sm text-neutral-400">No activity logged yet.</div>
+              ) : (
+                <div className="mb-8 space-y-3">
+                  <div className="flex flex-wrap gap-3">
+                    {VIEW_EVENTS.filter(type => counts[type] != null).map(type => (
+                      <FeatureCard key={type} type={type} count={counts[type]} userCount={userCounts[type]} />
+                    ))}
                   </div>
-                ))}
-                {Object.keys(counts).length === 0 && (
-                  <div className="text-sm text-neutral-400">No activity logged yet.</div>
-                )}
-              </div>
+                  <div className="flex flex-wrap gap-3">
+                    {Object.entries(counts)
+                      .filter(([type]) => !VIEW_EVENTS.includes(type))
+                      .map(([type, count]) => (
+                        <FeatureCard key={type} type={type} count={count} userCount={userCounts[type]} />
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {/* The two charts, side by side: who has used it, and how often
                   those people come back. Both are per-person views of the same
@@ -323,6 +335,28 @@ export default function AdminActivityPage() {
       <div className="absolute top-0 inset-x-0 z-30 pointer-events-none [&_header>div]:pointer-events-auto">
         <AppHeader />
       </div>
+    </div>
+  )
+}
+
+function FeatureCard({
+  type,
+  count,
+  userCount,
+}: {
+  type: string
+  count: number
+  userCount?: number
+}) {
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-4 py-3">
+      <div className="text-2xl font-bold text-neutral-900">{count}</div>
+      <div className="text-xs text-neutral-500">{EVENT_LABELS[type] ?? type}</div>
+      {userCount != null && (
+        <div className="text-[11px] text-neutral-400 mt-0.5">
+          {userCount} {userCount === 1 ? "person" : "people"}
+        </div>
+      )}
     </div>
   )
 }

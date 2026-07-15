@@ -51,6 +51,10 @@ export async function GET() {
   const rows = (all ?? []).filter(r => !isAdminEmail(r.email))
 
   const counts: Record<string, number> = {}
+  // Distinct people per event type, alongside the raw count. "Table views: 3"
+  // is 3 mount events — could be one person reloading /table three times. The
+  // per-user set answers "how many people actually used this" instead.
+  const usersByEvent = new Map<string, Set<string>>()
   const activeUsers = new Set<string>()
   const activeUsers24h = new Set<string>()
   const daysByUser = new Map<string, Set<string>>()
@@ -65,6 +69,8 @@ export async function GET() {
 
   for (const r of rows) {
     counts[r.event_type] = (counts[r.event_type] ?? 0) + 1
+    if (!usersByEvent.has(r.event_type)) usersByEvent.set(r.event_type, new Set())
+    usersByEvent.get(r.event_type)!.add(r.user_id)
     activeUsers.add(r.user_id)
 
     const t = new Date(r.created_at).getTime()
@@ -217,5 +223,8 @@ export async function GET() {
     is_new_user: dayFmt.format(new Date(r.created_at)) === firstSeenDay.get(r.user_id),
   }))
 
-  return NextResponse.json({ events: recentAnnotated, counts, metrics, growth, returnFrequency })
+  const userCounts: Record<string, number> = {}
+  for (const [type, users] of usersByEvent) userCounts[type] = users.size
+
+  return NextResponse.json({ events: recentAnnotated, counts, userCounts, metrics, growth, returnFrequency })
 }

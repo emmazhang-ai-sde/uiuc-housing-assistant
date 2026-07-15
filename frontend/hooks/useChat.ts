@@ -126,6 +126,11 @@ export function useChat() {
       setConversations(prev => [conv, ...prev])
       setActiveId(convId)
       setMessagesByConv(prev => ({ ...prev, [convId!]: [] }))
+      // Typing straight into the composer with no active conversation creates
+      // one on the fly. That's a new chat just as much as clicking "New chat",
+      // so log it the same way — otherwise "Chats opened" misses everyone who
+      // never touches the sidebar, which is most people.
+      logEvent("conversation_open", { conversation_id: convId, new: true })
     }
 
     setLoadingByConv(prev => ({ ...prev, [convId!]: true }))
