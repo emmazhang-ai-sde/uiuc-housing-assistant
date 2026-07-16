@@ -27,4 +27,28 @@
   --color-unavail-700: #B91C1C;
 
   --color-sage: #B9D2A0;
+
+  /* Jobright-inspired accent set — used by the About page and the /card-v2
+     style preview. Mint is the signature accent; ink/mist are the neutral
+     text/surface tones that go with it. */
+  --color-mint-200: #CFFFC4;
+  --color-mint-300: #ACFFE1;
+  --color-mint-400: #00F0A0;
+  --color-mint-600: #28C86E;
+  --color-ink-900: #232424;
+  --color-mist-50: #F7F8F9;
+  --color-mist-100: #F3F4F5;
+}
+
+/* Company-logo marquee on the About page. Content is duplicated exactly twice,
+   so sliding -50% loops seamlessly. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Gentle bob for the floating chips on the About v2 hero image */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
 }

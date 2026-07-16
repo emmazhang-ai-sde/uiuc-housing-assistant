@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import { Nunito_Sans } from "next/font/google";
 import { COMPANIES } from "@/lib/companies";
 import { FiltersProvider } from "@/contexts/FiltersContext";
 import { AuthModalProvider } from "@/contexts/AuthModalContext";
-import { inter } from "@/lib/fonts";
 import "./globals.css";
+
+const nunitoSans = Nunito_Sans({
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "UIUC Housing Assistant",
@@ -17,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className={`${inter.className} min-h-full flex flex-col`}>
+      <body className={`${nunitoSans.className} min-h-full flex flex-col`}>
         <FiltersProvider>
           <AuthModalProvider>{children}</AuthModalProvider>
         </FiltersProvider>

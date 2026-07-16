@@ -34,8 +34,11 @@ export default function ChatWindow({ messages, isLoading, onSuggest, onSelect }:
       <div className="flex-1 overflow-y-auto px-6 pt-24 pb-6">
         <div className="flex flex-col items-center justify-center h-full gap-8 text-center">
           <div>
-            <h1 className="text-5xl font-bold text-neutral-900 leading-[1.3]">
-              Let&rsquo;s talk it through.
+            <h1 className="text-5xl font-extrabold text-ink-900 tracking-tight leading-[1.3]">
+              Let&rsquo;s{" "}
+              <span className="bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] rounded-xl px-2 box-decoration-clone">
+                talk it through.
+              </span>
             </h1>
             <p className="mx-auto text-center text-neutral-500 mt-5 text-sm max-w-md">
               This is where you figure out what you actually want. Ask general questions or specific ones.
@@ -47,7 +50,7 @@ export default function ChatWindow({ messages, isLoading, onSuggest, onSelect }:
               <button
                 key={q}
                 onClick={() => onSuggest(q)}
-                className="whitespace-nowrap px-4 py-3.5 rounded-2xl bg-white text-sm text-neutral-600 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_-6px_rgba(0,0,0,0.12)] transition-shadow"
+                className="whitespace-nowrap px-4 py-3.5 rounded-2xl bg-white border border-mist-100 text-sm text-neutral-600 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:border-mint-400 transition-colors"
               >
                 &ldquo;{q}&rdquo;
               </button>

@@ -23,7 +23,7 @@ export default function UserMenu() {
   }, [])
 
   if (email === undefined) {
-    return <div className="w-8 h-8 rounded-full bg-neutral-100 shrink-0" />
+    return <div className="w-8 h-8 rounded-full bg-mist-100 shrink-0" />
   }
 
   if (email === null) {
@@ -36,7 +36,7 @@ export default function UserMenu() {
     return (
       <Link
         href="/login"
-        className="px-3 py-1 rounded-full text-xs font-medium text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 transition-colors shrink-0"
+        className="px-3 py-1 rounded-full text-xs font-bold bg-mint-400 text-ink-900 hover:bg-[#00D68F] transition-colors shrink-0"
       >
         Log In
       </Link>
@@ -46,14 +46,11 @@ export default function UserMenu() {
   return (
     <Link
       href="/account"
-      className="flex items-center gap-2 pl-1 pr-1 py-1 rounded-full hover:bg-neutral-100 transition-colors max-w-[220px] shrink-0"
+      className="flex items-center gap-2 pl-1 pr-1 py-1 rounded-full hover:bg-mist-100 transition-colors max-w-[220px] shrink-0"
       aria-label="Account"
     >
       <span className="text-xs font-medium text-neutral-600 truncate">{email}</span>
-      <span
-        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
-        style={{ backgroundColor: "#7B90A0" }}
-      >
+      <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-ink-900 bg-mint-400 shrink-0">
         {email.charAt(0).toUpperCase()}
       </span>
     </Link>

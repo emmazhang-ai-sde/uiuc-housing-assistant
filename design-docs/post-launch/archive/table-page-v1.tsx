@@ -46,7 +46,7 @@ export default function TablePage() {
   )
 
   return (
-    <div className="relative flex flex-col h-screen bg-mist-50 overflow-hidden print:h-auto print:overflow-visible">
+    <div className="relative flex flex-col h-screen bg-neutral-100 overflow-hidden print:h-auto print:overflow-visible">
       <div className="flex flex-1 min-h-0">
         {/* Filter block — positioned to match the Map and Card views' filter panel exactly */}
         <div className="shrink-0 overflow-y-auto pt-4 px-4 pb-4 print:hidden">

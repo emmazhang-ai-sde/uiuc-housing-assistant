@@ -10,6 +10,7 @@ import PropertyPanel from "@/components/PropertyPanel"
 import { DEFAULT_FILTERS } from "@/lib/api"
 import type { Listing } from "@/lib/api"
 import { logEvent } from "@/lib/logEvent"
+import { inter } from "@/lib/fonts"
 
 export default function ChatPage() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
@@ -38,7 +39,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="relative h-screen bg-neutral-100 overflow-hidden">
+    <div className={`${inter.className} relative h-screen bg-mist-50 overflow-hidden`}>
       <div className="flex h-full overflow-hidden">
         <ConversationSidebar
           conversations={conversations}

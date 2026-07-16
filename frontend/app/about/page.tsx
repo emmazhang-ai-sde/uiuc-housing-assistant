@@ -1,138 +1,246 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import AppHeader from "@/components/AppHeader"
 import { fetchStatus, DataStatus } from "@/lib/api"
 import { COMPANIES } from "@/lib/companies"
+import { inter } from "@/lib/fonts"
 
-const SCENARIOS = [
-  {
-    emoji: "🎯",
-    title: "Know exactly what you want?",
-    body: (
-      <>
-        If you already have clear filter conditions in mind, like:
-        <ul className="mt-2.5 space-y-1.5">
-          {[
-            "How many beds",
-            "Your budget",
-            "Best move-in date",
-          ].map(q => (
-            <li key={q} className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 shrink-0 mt-1.5" />
-              <span>{q}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2.5">
-          Browse and compare listings directly with{" "}
-          <Link href="/card" className="font-semibold text-neutral-900 underline underline-offset-2">Card view</Link>,{" "}
-          <Link href="/map" className="font-semibold text-neutral-900 underline underline-offset-2">Map view</Link>, or{" "}
-          <span className="font-semibold text-neutral-900">Table view</span>.
-        </p>
-      </>
-    ),
-  },
-  {
-    emoji: "💬",
-    title: "Not sure yet?",
-    body: (
-      <>
-        If you don&rsquo;t have a clear idea yet, or have general questions like:
-        <ul className="mt-2.5 space-y-1.5">
-          {[
-            "When should I start apartment hunting?",
-            "Is it too late to find a place?",
-            "What's the average price near campus?",
-          ].map(q => (
-            <li key={q} className="flex items-start gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-300 shrink-0 mt-1.5" />
-              <span>{q}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2.5">
-          Use{" "}
-          <Link href="/chat" className="font-semibold text-neutral-900 underline underline-offset-2">Chat</Link>{" "}
-          to talk it through with the AI and explore your preferences.
-        </p>
-      </>
-    ),
-  },
+// Jobright-style landing rebuild (2026-07-15). Section order mirrors
+// jobright.ai/ai-agent: hero → logo marquee → stats band → "always on"
+// feature rows → pain wall → two ways to start → CTA banner → footer.
+// Previous version archived at design-docs/post-launch/archive/about-page-jobright-v1.tsx
+
+const TYPED_QUERIES = [
+  "2BR under $900/bed near Grainger",
+  "studio available now",
+  "cheapest 4BR near the Quad",
+  "houses for August 2026",
 ]
 
-const ADVANTAGES = [
-  {
-    title: "One search, every company",
-    description: "Green Street Realty, Universities Group, and more, searched together instead of tab by tab.",
-  },
-  {
-    title: "Price per bed, always",
-    description: (
-      <>
-        A &ldquo;starting at&rdquo; price is often for the{" "}
-        <span className="font-semibold text-neutral-800">cheapest unit type</span>, not the one you want,
-        which can{" "}
-        <span className="font-semibold text-neutral-800">cost twice as much per bed</span>. Every result
-        shows the{" "}
-        <span className="font-semibold text-neutral-800">real price per bed for that exact unit</span>.
-      </>
-    ),
-  },
-  {
-    title: "Plain-English search",
-    description: "Type what you actually want, like \"2BR under $900/bed near Grainger\", no dropdown forms to fight.",
-  },
+const EXTRAS = [
   {
     title: "Live availability",
-    description: (
-      <>
-        Listings are{" "}
-        <span className="font-semibold text-neutral-800">kept up to date</span>, so you won&rsquo;t find your
-        favorite unit{" "}
-        <span className="font-semibold text-neutral-800">already leased</span>{" "}
-        on the property&rsquo;s own site.
-      </>
-    ),
+    body: "Listings stay up to date, so a unit that is already leased never shows up as available.",
   },
   {
-    title: "See it on a map",
-    description: "Every listing plotted relative to campus, so distance is something you see, not something you guess.",
+    title: "Distance you can see",
+    body: "Every listing is plotted relative to campus, with walk and drive times to real landmarks.",
   },
   {
     title: "Free, no spam",
-    description: (
-      <>
-        No login walls, no forms handed to leasing offices, no follow-up calls. Built{" "}
-        <span className="font-semibold text-neutral-800">only for UIUC students</span>.
-      </>
-    ),
+    body: "No login walls, no forms handed to leasing offices, no follow-up calls.",
   },
 ]
 
-const PAIN_POINTS = [
-  {
-    problem: "12 tabs open, one per landlord site, and still no way to compare them side by side.",
-    solution: "One search covers all of them, in one place.",
-  },
-  {
-    problem: "The price you see is for the whole unit, not what actually hits your card each month.",
-    solution: "Every result is normalized to price per bed, so comparisons are honest.",
-  },
-  {
-    problem: "You email, wait two days for a reply, and the unit's already leased by the time they answer.",
-    solution: "Live availability windows are built into every search and filter.",
-  },
-  {
-    problem: "Google Maps says 0.4 miles, but nobody warns you it's a 20-minute walk in January.",
-    solution: "The map view shows every listing relative to campus buildings.",
-  },
-  {
-    problem: "Every follow-up question means another call to an office that's already closed for the day.",
-    solution: "Ask in plain English and get an instant, specific answer.",
-  },
-]
+/* ---------- animation helpers ---------- */
+
+// Fade-up on first scroll into view. Skips motion (but never hides content)
+// when the user prefers reduced motion.
+function Reveal({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode
+  delay?: number
+  className?: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [shown, setShown] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true)
+          io.disconnect()
+        }
+      },
+      { threshold: 0.15 }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  return (
+    <div
+      ref={ref}
+      style={{ transitionDelay: `${delay}ms` }}
+      className={`transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:opacity-100 motion-reduce:translate-y-0 ${
+        shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+      } ${className}`}
+    >
+      {children}
+    </div>
+  )
+}
+
+// Types its text out letter by letter the first time it scrolls into view,
+// then hides the caret. Reduced-motion users get the full text immediately.
+function TypedHeading({ text }: { text: string }) {
+  const ref = useRef<HTMLHeadingElement>(null)
+  const [started, setStarted] = useState(false)
+  const [shown, setShown] = useState(0)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStarted(true)
+          io.disconnect()
+        }
+      },
+      { threshold: 0.6 }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!started) return
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setShown(text.length)
+      return
+    }
+    if (shown >= text.length) return
+    const timer = window.setTimeout(() => setShown(s => s + 1), 55)
+    return () => window.clearTimeout(timer)
+  }, [started, shown, text])
+
+  return (
+    <h2 ref={ref} className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink-900 min-h-[1.25em]">
+      {text.slice(0, shown)}
+      {started && shown < text.length && (
+        <span className="inline-block w-[3px] h-[0.9em] bg-mint-400 align-middle ml-1" aria-hidden />
+      )}
+      <span className="sr-only">{text}</span>
+    </h2>
+  )
+}
+
+// Typewriter loop over example queries, shown inside the hero's mock search
+// pill. Reduced-motion users get the first query as static text.
+function TypedQuery() {
+  const [text, setText] = useState("")
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setText(TYPED_QUERIES[0])
+      return
+    }
+    let queryIdx = 0
+    let charIdx = 0
+    let deleting = false
+    let timer: number
+
+    const tick = () => {
+      const q = TYPED_QUERIES[queryIdx]
+      if (!deleting) {
+        charIdx += 1
+        setText(q.slice(0, charIdx))
+        if (charIdx === q.length) {
+          deleting = true
+          timer = window.setTimeout(tick, 1700)
+          return
+        }
+        timer = window.setTimeout(tick, 45)
+      } else {
+        charIdx -= 1
+        setText(q.slice(0, charIdx))
+        if (charIdx === 0) {
+          deleting = false
+          queryIdx = (queryIdx + 1) % TYPED_QUERIES.length
+        }
+        timer = window.setTimeout(tick, 22)
+      }
+    }
+    timer = window.setTimeout(tick, 500)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  return (
+    <>
+      {text}
+      <span className="inline-block w-0.5 h-[1.1em] bg-mint-600 align-middle ml-0.5 animate-pulse motion-reduce:animate-none" />
+    </>
+  )
+}
+
+/* ---------- CSS-only product mocks for the feature rows ---------- */
+
+function MockSources() {
+  return (
+    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-5 flex flex-col gap-3">
+      <div className="flex items-center gap-2 rounded-full border border-mist-100 bg-mist-50 px-4 py-2 text-sm text-neutral-500">
+        <span aria-hidden>🔍</span> near Grainger, under $900/bed
+      </div>
+      {COMPANIES.slice(0, 4).map(({ name, logo }) => (
+        <div key={name} className="flex items-center justify-between rounded-xl border border-mist-100 px-4 py-2.5">
+          <img src={logo} alt={name} className="h-4 object-contain object-left" />
+          <span className="w-5 h-5 rounded-full bg-[#28C86E1A] text-mint-600 flex items-center justify-center text-[11px] font-bold">✓</span>
+        </div>
+      ))}
+      <span className="self-center text-[11px] font-bold uppercase tracking-widest text-neutral-400">
+        + {Math.max(COMPANIES.length - 4, 0)} more, one result list
+      </span>
+    </div>
+  )
+}
+
+function MockListingCard() {
+  return (
+    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] overflow-hidden max-w-sm mx-auto">
+      <div className="relative h-28 bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)]">
+        <span className="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase bg-mint-400 text-ink-900">
+          Available Now
+        </span>
+      </div>
+      <div className="p-4 flex flex-col gap-2.5">
+        <div className="font-bold text-ink-900 text-sm">308 E Green St, Champaign</div>
+        <div className="flex gap-1.5">
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-[#3C96FA1A] text-[#3C96FA]">2 Bed</span>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-[#8C78FF1A] text-[#8C78FF]">Apartment</span>
+        </div>
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="text-xl font-bold text-ink-900 tracking-tight">
+              $785<span className="text-sm text-neutral-400 font-medium">/bed</span>
+            </div>
+            <div className="text-xs text-neutral-400">$1,570 total, not a teaser price</div>
+          </div>
+          <span className="text-xs font-bold text-ink-900 bg-mint-400 px-3 py-1.5 rounded-full">View →</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MockChat() {
+  return (
+    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-5 flex flex-col gap-3">
+      <span className="self-end max-w-[85%] bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] text-ink-900 rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium">
+        2BR under $900/bed near Grainger?
+      </span>
+      <span className="self-start max-w-[85%] bg-mist-50 border border-mist-100 text-ink-900 rounded-2xl rounded-tl-md px-4 py-2.5 text-sm">
+        Found 37 units. Want them sorted by walk time?
+      </span>
+      <span className="self-end max-w-[85%] bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] text-ink-900 rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium">
+        Yes please
+      </span>
+      <span className="self-start bg-mist-50 border border-mist-100 rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-1.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-mint-400 animate-bounce [animation-delay:0ms] motion-reduce:animate-none" />
+        <span className="w-1.5 h-1.5 rounded-full bg-mint-400 animate-bounce [animation-delay:150ms] motion-reduce:animate-none" />
+        <span className="w-1.5 h-1.5 rounded-full bg-mint-400 animate-bounce [animation-delay:300ms] motion-reduce:animate-none" />
+      </span>
+    </div>
+  )
+}
 
 export default function AboutPage() {
   const [status, setStatus] = useState<DataStatus | null>(null)
@@ -141,140 +249,302 @@ export default function AboutPage() {
     fetchStatus().then(setStatus).catch(() => {})
   }, [])
 
-  const statLine =
-    status?.listing_count != null && status?.property_count != null
-      ? `${status.listing_count} floor plans · ${status.property_count} properties · ${COMPANIES.length} companies`
-      : null
+  const statBlocks = [
+    { value: status?.listing_count?.toLocaleString() ?? "…", label: "Floor plans tracked" },
+    { value: status?.property_count?.toLocaleString() ?? "…", label: "Properties across town" },
+    { value: String(COMPANIES.length), label: "Companies, one search" },
+    { value: "100%", label: "Free for UIUC students" },
+  ]
+
+  const features: { title: string; body: string; cta: { label: string; href: string }; mock: React.ReactNode }[] = [
+    {
+      title: "One Search, Every Company",
+      body: "Green Street Realty, Universities Group, Smile and every other tracked source, answered together in one list instead of twelve tabs.",
+      cta: { label: "Browse Every Company", href: "/card" },
+      mock: <MockSources />,
+    },
+    {
+      title: "The Real Price Per Bed",
+      body: "A starting-at price is usually the cheapest unit type, which can cost twice as much per bed as the one you want. Every result here is normalized to the exact unit, so comparisons stay honest.",
+      cta: { label: "Compare Real Prices", href: "/card" },
+      mock: <MockListingCard />,
+    },
+    {
+      title: "Your Own Housing Expert",
+      body: "Type what you actually want, in plain English. The conversation remembers context, so you can narrow things down turn by turn instead of fighting dropdown forms.",
+      cta: { label: "Start Chatting", href: "/chat" },
+      mock: <MockChat />,
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`${inter.className} min-h-screen bg-white text-ink-900`}>
       <div className="sticky top-0 z-30 bg-white">
         <AppHeader />
       </div>
 
-      {/* Hero */}
-      <section className="px-6 pt-24 pb-20 text-center">
-        <h1 className="text-5xl sm:text-6xl font-bold text-neutral-900 tracking-tight leading-[1.15] max-w-3xl mx-auto">
-          Apartment hunting near UIUC,<br />without the tab-hopping.
-        </h1>
-        <p className="text-neutral-500 text-base sm:text-lg max-w-xl mx-auto mt-6 leading-relaxed">
-          One place to search every UIUC-area leasing company by price, beds, location, and availability,
-          in plain English.
-        </p>
-        {statLine && (
-          <p className="text-xs uppercase tracking-widest font-medium text-neutral-400 mt-6">
-            {statLine}
+      {/* Hero — mirrors jobright's SKIP THE HUNT block */}
+      <section className="px-6 pt-20 pb-16 text-center">
+        <Reveal>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-mist-50 border border-mist-100 text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-7">
+            <span className="w-2 h-2 rounded-full bg-mint-400" />
+            AI housing copilot, built for UIUC
+          </div>
+          <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight leading-[1.08] max-w-3xl mx-auto">
+            <span className="block">SKIP THE TAB-HOPPING</span>
+            <span className="block mt-3">
+              <span className="bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] rounded-2xl px-3 box-decoration-clone">
+                Find Your Place Faster
+              </span>
+            </span>
+          </h1>
+        </Reveal>
+        <Reveal delay={120}>
+          <div className="flex items-center gap-2.5 max-w-md mx-auto mt-9 rounded-full border border-mist-100 bg-white px-5 py-3 text-sm text-neutral-600 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)] text-left">
+            <span aria-hidden>🔍</span>
+            <span className="truncate"><TypedQuery /></span>
+          </div>
+          <p className="text-neutral-500 text-base sm:text-lg max-w-xl mx-auto mt-6 leading-relaxed">
+            One search across every UIUC-area leasing company, with honest price per bed and
+            live availability, in plain English.
           </p>
-        )}
-        <div className="flex items-center justify-center gap-3 mt-9">
-          <Link
-            href="/chat"
-            className="px-6 py-2.5 rounded-full bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 transition-colors"
-          >
-            Start chatting
-          </Link>
-          <Link
-            href="/map"
-            className="px-6 py-2.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-semibold hover:bg-neutral-200 transition-colors"
-          >
-            Browse the map
-          </Link>
-        </div>
-        <img
-          src="/logos/project-picture.png"
-          alt="Illustration of a UIUC campus building"
-          className="w-full max-w-3xl mx-auto mt-14 rounded-3xl shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
-        />
-      </section>
-
-      {/* What you can do here */}
-      <section className="px-6 py-16 bg-neutral-50">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 text-center mb-10">
-            What you can do here
-          </h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {SCENARIOS.map(({ emoji, title, body }) => (
-              <div
-                key={title}
-                className="p-7 bg-white rounded-3xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)]"
-              >
-                <div className="w-10 h-10 flex items-center justify-center text-xl mb-4">{emoji}</div>
-                <div className="font-semibold text-neutral-900 mb-2">{title}</div>
-                <div className="text-sm text-neutral-500 leading-relaxed">{body}</div>
-              </div>
-            ))}
+          <div className="flex items-center justify-center gap-3 mt-8">
+            <Link
+              href="/chat"
+              className="px-6 py-3 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors"
+            >
+              Try it free
+            </Link>
+            <Link
+              href="/map"
+              className="px-6 py-3 rounded-full bg-white border border-neutral-200 text-ink-900 text-sm font-bold hover:border-neutral-400 transition-colors"
+            >
+              Browse the map
+            </Link>
           </div>
-        </div>
+        </Reveal>
+        <Reveal delay={240}>
+          <img
+            src="/logos/project-picture.png"
+            alt="Illustration of a UIUC campus building"
+            className="w-full max-w-3xl mx-auto mt-14 rounded-3xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
+          />
+        </Reveal>
       </section>
 
-      {/* Advantages */}
-      <section className="px-6 py-20">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 text-center mb-10">
-            Why it&rsquo;s better
-          </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-8">
-            {ADVANTAGES.map(({ title, description }) => (
-              <div key={title}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-glow-600 shrink-0" />
-                  <span className="font-semibold text-neutral-900">{title}</span>
+      {/* Stats + coverage panel — one gradient card like jobright's tools-page
+          strip: big stats with left rules on top, thin divider, then a labeled
+          logo row. Replaces the old marquee + grey stats band. */}
+      <section className="px-6 pb-20">
+        <Reveal>
+          {/* Exact values from jobright's .seo-rating-section-content:
+              border-radius 0 80px 80px 80px (square top-left), gradient
+              266deg #B5FFE4→#D2FFC8, 72px padding, 2px solid black left rules
+              with 48px inset, 52/60 bold values, 18/24 medium labels,
+              2px rgba(0,0,0,.04) divider, 32px gaps, logo row justify-between.
+              Mobile sizes are our own fallback (their page is desktop-only). */}
+          <div className="max-w-6xl mx-auto rounded-[0_80px_80px_80px] bg-[linear-gradient(266deg,#B5FFE4,#D2FFC8)] p-8 md:p-[72px]">
+            {/* 4 stats (jobright fits 3), so slightly smaller values and a
+                tighter 32px inset keep every label on one line */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8">
+              {statBlocks.map(({ value, label }) => (
+                <div key={label} className="border-l-2 border-black pl-5 lg:pl-8 pr-2">
+                  <div className="text-3xl md:text-[44px] md:leading-[52px] font-bold text-black whitespace-nowrap">{value}</div>
+                  <div className="text-sm md:text-[15px] lg:text-base font-medium text-black capitalize mt-1.5">{label}</div>
                 </div>
-                <p className="text-sm text-neutral-500 leading-relaxed pl-3.5">{description}</p>
+              ))}
+            </div>
+            <div className="mt-8 border-t-2 border-[rgba(0,0,0,0.04)]" />
+            {/* 8 logos read as two tidy rows of four instead of a ragged wrap */}
+            <div className="pt-8 flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-12">
+              <span className="text-lg md:text-2xl md:leading-8 font-medium text-black whitespace-nowrap lg:shrink-0">One search across</span>
+              <div className="flex-1 grid grid-cols-3 sm:grid-cols-4 gap-x-8 gap-y-6 items-center justify-items-center">
+                {COMPANIES.map(({ name, logo }) => (
+                  <img key={name} src={logo} alt={name} className="h-5 max-w-[110px] w-auto object-contain" />
+                ))}
               </div>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* Feature rows — per-block bold title, dark body, black pill CTA with
+          circled arrow (button radius 28px, black, hover #00F0A0CC, straight
+          from jobright's CSS). Centered sentence-case headline, white bg. */}
+      <section className="px-6 py-24">
+        <div className="max-w-5xl mx-auto">
+          <Reveal>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink-900 text-center mb-16" style={{ textWrap: "balance" }}>
+              A Housing Search That&rsquo;s Always On
+            </h2>
+          </Reveal>
+          <div className="flex flex-col gap-20">
+            {features.map(({ title, body, cta, mock }, i) => (
+              <Reveal key={title}>
+                <div className="grid md:grid-cols-2 gap-10 md:gap-14 items-center">
+                  <div className={i % 2 === 1 ? "md:order-2" : ""}>
+                    <h3 className="text-3xl sm:text-4xl font-bold tracking-tight text-ink-900 mb-4">{title}</h3>
+                    <p className="text-base text-ink-900/80 font-medium leading-relaxed mb-8">{body}</p>
+                    <Link
+                      href={cta.href}
+                      className="inline-flex items-center gap-3 rounded-[28px] bg-black text-white px-6 py-3.5 text-base font-semibold hover:bg-[#00F0A0CC] transition-colors"
+                    >
+                      {cta.label}
+                      <span className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center text-sm leading-none" aria-hidden>
+                        ›
+                      </span>
+                    </Link>
+                  </div>
+                  <div className={i % 2 === 1 ? "md:order-1" : ""}>{mock}</div>
+                </div>
+              </Reveal>
             ))}
           </div>
+
+          {/* Secondary trio */}
+          <Reveal>
+            <div className="grid sm:grid-cols-3 gap-4 mt-20">
+              {EXTRAS.map(({ title, body }) => (
+                <div key={title} className="p-6 bg-white rounded-2xl border border-mist-100 hover:border-mint-400 transition-colors">
+                  <span className="w-6 h-6 rounded-full bg-[#28C86E1A] text-mint-600 flex items-center justify-center text-xs font-bold mb-3">✓</span>
+                  <div className="font-bold text-ink-900 mb-1.5">{title}</div>
+                  <p className="text-sm text-neutral-500 leading-relaxed">{body}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* Pain points solved */}
-      <section className="px-6 py-20 bg-neutral-50">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-400 text-center mb-10">
-            Built for the way UIUC students actually search
-          </h2>
-          <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] overflow-hidden">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-neutral-100">
-                  <th className="text-left text-xs font-bold uppercase tracking-widest text-neutral-400 px-5 py-3.5 w-1/2">
-                    Before
-                  </th>
-                  <th className="text-left text-xs font-bold uppercase tracking-widest text-neutral-400 px-5 py-3.5 w-1/2">
-                    Now
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {PAIN_POINTS.map(({ problem, solution }) => (
-                  <tr key={problem} className="border-b border-neutral-100 last:border-b-0">
-                    <td className="text-sm font-medium text-neutral-900 leading-relaxed px-5 py-4 align-top">
-                      {problem}
-                    </td>
-                    <td className="text-sm font-medium leading-relaxed px-5 py-4 align-top" style={{ color: "#2d8a4e" }}>
-                      {solution}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Two ways to start — full-bleed grey band (Apple-style, contrasts with
+          the white features above and the gradient CTA below), white
+          question-cards with tag chips, typewriter title */}
+      <section className="px-6 py-24 bg-mist-50">
+        <div className="max-w-5xl mx-auto">
+          <Reveal>
+            <div className="text-center mb-12">
+              <TypedHeading text="Two Ways to Start" />
+            </div>
+          </Reveal>
+          <div className="grid sm:grid-cols-2 gap-6">
+            <Reveal>
+              <div className="p-8 bg-white rounded-3xl border border-mist-100 hover:border-mint-400 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:translate-y-0 h-full flex flex-col">
+                <div className="w-11 h-11 flex items-center justify-center text-xl mb-4 rounded-xl bg-mist-50 border border-mist-100">🎯</div>
+                <div className="text-lg font-extrabold text-ink-900 mb-2">Already know what you want?</div>
+                <p className="text-sm text-neutral-500 leading-relaxed">
+                  Set your filters, then compare everything that matches, side by side or plotted
+                  around campus.
+                </p>
+                <div className="flex flex-wrap gap-1.5 mt-4">
+                  {["Beds", "Budget", "Move-in date", "Company"].map(tag => (
+                    <span key={tag} className="px-2 py-1 rounded-md bg-black/[.04] text-[13px] font-medium text-ink-900">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 mt-auto pt-6">
+                  <Link href="/map" className="px-5 py-2.5 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors">
+                    See the Map
+                  </Link>
+                </div>
+              </div>
+            </Reveal>
+            <Reveal delay={100}>
+              <div className="p-8 bg-white rounded-3xl border border-mist-100 hover:border-mint-400 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:translate-y-0 h-full flex flex-col">
+                <div className="w-11 h-11 flex items-center justify-center text-xl mb-4 rounded-xl bg-mist-50 border border-mist-100">💬</div>
+                <div className="text-lg font-extrabold text-ink-900 mb-2">Still figuring it out?</div>
+                <p className="text-sm text-neutral-500 leading-relaxed">
+                  Ask anything: when to start looking, whether it&rsquo;s too late, what prices near
+                  campus really look like. Narrow it down turn by turn.
+                </p>
+                <div className="flex flex-wrap gap-1.5 mt-4">
+                  {["Plain English", "Remembers context", "Instant answers"].map(tag => (
+                    <span key={tag} className="px-2 py-1 rounded-md bg-black/[.04] text-[13px] font-medium text-ink-900">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 mt-auto pt-6">
+                  <Link href="/chat" className="px-5 py-2.5 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors">
+                    Start chatting
+                  </Link>
+                </div>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* CTA footer */}
-      <section className="px-6 py-24 text-center">
-        <h2 className="text-3xl font-bold text-neutral-900 tracking-tight">Ready to find your place?</h2>
-        <div className="flex items-center justify-center gap-3 mt-8">
-          <Link
-            href="/card"
-            className="px-6 py-2.5 rounded-full bg-neutral-900 text-white text-sm font-semibold hover:bg-neutral-800 transition-colors"
-          >
-            Get started
-          </Link>
-        </div>
+      {/* CTA banner */}
+      <section className="px-6 pt-10 pb-24">
+        <Reveal>
+          <div className="max-w-5xl mx-auto rounded-[32px] bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] px-8 py-16 text-center">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink-900">Ready to find your place?</h2>
+            <p className="text-sm text-ink-900/70 font-medium mt-3">
+              Every UIUC-area leasing company, one search.
+            </p>
+            <Link
+              href="/card"
+              className="inline-block px-7 py-3 rounded-full bg-ink-900 text-white text-sm font-bold hover:bg-black transition-colors mt-8"
+            >
+              Get started
+            </Link>
+          </div>
+        </Reveal>
       </section>
+
+      {/* Footer — jobright's multi-column layout: bold wordmark row on top,
+          then bold column headers with link lists. Coverage is informational
+          (no product pages per company yet), so those entries are plain text. */}
+      <footer className="px-6 pt-14 pb-12 border-t border-mist-100">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-12">
+            <div className="text-2xl font-extrabold tracking-tight text-ink-900">UIUC Housing</div>
+            <div className="text-sm text-neutral-400">Built for UIUC students in Champaign-Urbana.</div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-12">
+            <div>
+              <div className="font-bold text-ink-900 mb-4">Features</div>
+              <ul className="space-y-2.5 text-[15px]">
+                {([
+                  ["AI Chat", "/chat"],
+                  ["Map View", "/map"],
+                  ["Card View", "/card"],
+                  ["Table View", "/table"],
+                  ["Rate & Report", "/feedback"],
+                ] as const).map(([label, href]) => (
+                  <li key={href}>
+                    <Link href={href} className="text-ink-900/80 hover:text-mint-600 transition-colors">{label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="md:col-span-2">
+              <div className="font-bold text-ink-900 mb-4">Coverage</div>
+              <ul className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-[15px] text-ink-900/60">
+                {COMPANIES.map(({ name }) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="md:justify-self-end">
+              <div className="font-bold text-ink-900 mb-4">Information</div>
+              <ul className="space-y-2.5 text-[15px]">
+                {([
+                  ["About Us", "/about"],
+                  ["Join the Waitlist", "/coming-soon"],
+                  ["Log In", "/login"],
+                  ["My Account", "/account"],
+                ] as const).map(([label, href]) => (
+                  <li key={href}>
+                    <Link href={href} className="text-ink-900/80 hover:text-mint-600 transition-colors">{label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

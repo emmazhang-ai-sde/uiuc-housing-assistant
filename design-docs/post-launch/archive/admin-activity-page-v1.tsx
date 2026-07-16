@@ -122,17 +122,17 @@ export default function AdminActivityPage() {
 
   if (forbidden) {
     return (
-      <div className="h-screen flex items-center justify-center bg-mist-50 text-neutral-500 text-sm">
+      <div className="h-screen flex items-center justify-center bg-neutral-100 text-neutral-500 text-sm">
         Not authorized.
       </div>
     )
   }
 
   return (
-    <div className="relative h-screen bg-mist-50 overflow-hidden">
+    <div className="relative h-screen bg-neutral-100 overflow-hidden">
       <div className="h-full overflow-y-auto pt-24 px-6 pb-10">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-xl font-extrabold tracking-tight text-ink-900 mb-4">Activity</h1>
+          <h1 className="text-xl font-bold text-neutral-900 mb-4">Activity</h1>
           <AdminTabs />
 
           {loading ? (
@@ -223,7 +223,7 @@ export default function AdminActivityPage() {
                   render the axis text at ~8px, so below that they stack full-width. */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 mb-6">
                 {metrics && (
-                  <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] px-5 py-4">
+                  <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-4">
                     <div className="text-sm font-semibold text-neutral-700">Users who&apos;ve used it</div>
                     <div className="text-xs text-neutral-400 mt-0.5 mb-2">Cumulative distinct people who&apos;ve done any action, by day</div>
                     <GrowthChart data={growth} />
@@ -233,7 +233,7 @@ export default function AdminActivityPage() {
                 {/* Return frequency — the distribution behind the return rate:
                     how many people came back once vs. five times */}
                 {returnFrequency.length > 0 && (
-                  <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] px-5 py-4">
+                  <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-4">
                     <div className="text-sm font-semibold text-neutral-700">How often people come back</div>
                     <div className="text-xs text-neutral-400 mt-0.5 mb-2">
                       Number of people by how many separate days they returned after their first visit. The grey bar is
@@ -246,7 +246,7 @@ export default function AdminActivityPage() {
 
               {/* New vs. returning users — same event log, split by whether this
                   row happened on the user's first-ever active day */}
-              <div className="flex items-center gap-1 bg-mist-100 rounded-full p-0.5 mb-3 w-fit">
+              <div className="flex items-center gap-1 bg-neutral-100 rounded-full p-0.5 mb-3 w-fit">
                 <button
                   type="button"
                   onClick={() => switchUserTab("new")}
@@ -267,7 +267,7 @@ export default function AdminActivityPage() {
                 </button>
               </div>
 
-              <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] overflow-hidden overflow-x-auto">
+              <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] overflow-hidden overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wide text-neutral-400 border-b border-neutral-100">
@@ -311,7 +311,7 @@ export default function AdminActivityPage() {
                       type="button"
                       onClick={() => setPage(p => Math.max(1, p - 1))}
                       disabled={page === 1}
-                      className="px-3 py-1.5 rounded-full bg-white border border-mist-100 font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:border-mint-400 transition-colors"
+                      className="px-3 py-1.5 rounded-full bg-white shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
                     >
                       Previous
                     </button>
@@ -320,7 +320,7 @@ export default function AdminActivityPage() {
                       type="button"
                       onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                       disabled={page === totalPages}
-                      className="px-3 py-1.5 rounded-full bg-white border border-mist-100 font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:border-mint-400 transition-colors"
+                      className="px-3 py-1.5 rounded-full bg-white shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50"
                     >
                       Next
                     </button>
@@ -349,8 +349,8 @@ function FeatureCard({
   userCount?: number
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] px-4 py-3">
-      <div className="text-2xl font-bold text-ink-900">{count}</div>
+    <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-4 py-3">
+      <div className="text-2xl font-bold text-neutral-900">{count}</div>
       <div className="text-xs text-neutral-500">{EVENT_LABELS[type] ?? type}</div>
       {userCount != null && (
         <div className="text-[11px] text-neutral-400 mt-0.5">
@@ -373,8 +373,8 @@ function MetricCard({
   accent?: boolean
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] px-5 py-4">
-      <div className="text-3xl font-bold" style={{ color: accent ? "#28C86E" : "#232424" }}>{value}</div>
+    <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-4">
+      <div className="text-3xl font-bold" style={{ color: accent ? "#ff5f05" : "#13294b" }}>{value}</div>
       <div className="text-sm font-semibold text-neutral-700 mt-1">{label}</div>
       <div className="text-xs text-neutral-400 mt-0.5">{hint}</div>
     </div>

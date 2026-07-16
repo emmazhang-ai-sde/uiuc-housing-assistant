@@ -167,7 +167,7 @@ export default function AssistantMessage({
   }, [sortedListings])
 
   const answerBubble = answer ? (
-    <div className="w-fit max-w-3xl bg-[#Fef7da] rounded-3xl rounded-tl-lg px-5 py-3.5 text-[15px] font-medium leading-relaxed text-black">
+    <div className="w-fit max-w-3xl bg-white border border-mist-100 rounded-3xl rounded-tl-lg px-5 py-3.5 text-[15px] font-medium leading-relaxed text-ink-900">
       <ReactMarkdown
         components={{
           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -292,7 +292,7 @@ export default function AssistantMessage({
 
   return (
     <div className="flex items-start gap-3 my-4 pr-11">
-      <div className="w-8 h-8 bg-[#Fef7da] rounded-full flex items-center justify-center shrink-0 text-sm mt-1">
+      <div className="w-8 h-8 bg-white border border-mist-100 rounded-full flex items-center justify-center shrink-0 text-sm mt-1">
         🏠
       </div>
       <div className="flex-1 min-w-0 space-y-4">
@@ -303,7 +303,7 @@ export default function AssistantMessage({
             <SearchSummary count={listings.length} applied={filtersApplied ?? {}} filters={filters} />
 
             {/* Sort bar + view controls */}
-            <div className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] px-5 py-3 flex flex-col gap-2 text-sm">
+            <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] px-5 py-3 flex flex-col gap-2 text-sm">
               {/* Row 1: Sort pills + view toggle */}
               <div className="flex items-center gap-3">
               <span className="text-neutral-900 text-sm font-normal shrink-0 w-20">Sort</span>
@@ -325,8 +325,8 @@ export default function AssistantMessage({
                       }}
                       className={`px-3 py-1 rounded-full text-sm font-normal transition-colors ${
                         active
-                          ? "bg-black text-white"
-                          : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
+                          ? "bg-ink-900 text-white"
+                          : "bg-mist-100 text-neutral-900 hover:bg-neutral-200"
                       }`}
                     >
                       {label}{arrow}
@@ -339,7 +339,7 @@ export default function AssistantMessage({
               <div className="flex-1" />
 
               {/* View toggle */}
-              <div className="flex items-center gap-1 bg-neutral-100 rounded-full p-0.5">
+              <div className="flex items-center gap-1 bg-mist-100 rounded-full p-0.5">
                 <button
                   onClick={() => setView("cards")}
                   className={`px-3 py-1 rounded-full text-sm font-normal transition-colors ${
@@ -383,7 +383,7 @@ export default function AssistantMessage({
                     setSortLandmark(lm)
                     if (lm) setSortBy("default")
                   }}
-                  className="text-sm rounded-full border border-neutral-200 bg-neutral-100 px-3 py-1 text-neutral-700 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                  className="text-sm rounded-full border border-mist-100 bg-mist-100 px-3 py-1 text-neutral-700 focus:outline-none focus:ring-1 focus:ring-mint-400"
                 >
                   <option value="">Select a landmark…</option>
                   {LANDMARKS.map(lm => (
@@ -410,7 +410,7 @@ export default function AssistantMessage({
                   <>
                     <button
                       onClick={copyTable}
-                      className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-normal text-neutral-700 transition-colors hover:bg-neutral-200"
+                      className="rounded-full bg-mist-100 px-3 py-1 text-sm font-normal text-neutral-700 transition-colors hover:bg-neutral-200"
                     >
                       {tableCopyStatus === "copied" ? "Copied" : tableCopyStatus === "failed" ? "Copy failed" : "Copy table"}
                     </button>
@@ -513,15 +513,15 @@ function SearchSummary({
   ]
 
   return (
-    <div className="w-fit max-w-3xl rounded-3xl rounded-tl-lg bg-[#Fef7da] px-5 py-3.5 text-sm leading-relaxed text-black">
-      <div className="font-bold text-black underline">
+    <div className="w-fit max-w-3xl rounded-3xl rounded-tl-lg bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] px-5 py-3.5 text-sm leading-relaxed text-ink-900">
+      <div className="font-bold text-ink-900 underline">
         {count} unit{count !== 1 ? "s" : ""} found
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
         {rows.map(r => (
           <Fragment key={r.label}>
-            <dt className="font-bold text-black whitespace-nowrap">{r.label}</dt>
-            <dd className="text-black">{r.value}</dd>
+            <dt className="font-bold text-ink-900 whitespace-nowrap">{r.label}</dt>
+            <dd className="text-ink-900">{r.value}</dd>
           </Fragment>
         ))}
       </dl>

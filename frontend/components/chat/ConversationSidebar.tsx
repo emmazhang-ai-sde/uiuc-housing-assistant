@@ -16,21 +16,12 @@ export default function ConversationSidebar({
   onNew,
 }: ConversationSidebarProps) {
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-stone-50 border-r border-stone-200 shrink-0 h-full">
+    <aside className="hidden md:flex flex-col w-64 bg-white border-r border-mist-100 shrink-0 h-full">
       {/* Header */}
-      <div className="p-4 border-b border-stone-200">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xl">🏠</span>
-          <span className="font-semibold text-neutral-800 text-sm leading-tight">
-            UIUC Housing<br />
-            <span className="font-normal text-neutral-400 text-[11px] uppercase tracking-widest">
-              Assistant
-            </span>
-          </span>
-        </div>
+      <div className="p-4 border-b border-mist-100">
         <button
           onClick={onNew}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-white border border-stone-200 text-sm text-neutral-700 font-medium hover:bg-stone-100 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-mint-400 text-sm text-ink-900 font-bold hover:bg-[#00D68F] transition-colors"
         >
           <span className="text-base leading-none">+</span>
           New Chat
@@ -51,8 +42,8 @@ export default function ConversationSidebar({
                   onClick={() => onSelect(conv.id)}
                   className={`w-full text-left px-3 py-2.5 rounded-xl text-sm leading-snug transition-colors ${
                     conv.id === activeId
-                      ? "bg-stone-200 text-neutral-900 font-medium"
-                      : "text-neutral-600 hover:bg-stone-100"
+                      ? "bg-mint-400/15 text-ink-900 font-medium"
+                      : "text-neutral-600 hover:bg-mist-50"
                   }`}
                 >
                   <span className="line-clamp-2">{conv.title}</span>
@@ -64,8 +55,8 @@ export default function ConversationSidebar({
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-stone-200">
-        <p className="text-[11px] text-center" style={{ color: "#7B90A0" }}>
+      <div className="p-4 border-t border-mist-100">
+        <p className="text-[11px] text-center text-neutral-400">
           Champaign-Urbana, IL
         </p>
       </div>

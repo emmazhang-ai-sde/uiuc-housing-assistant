@@ -20,10 +20,10 @@ const AVAIL_OPTIONS: { label: string; value: "now" | "june_2026" | "july_2026" |
   { label: "Leased",  value: "leased" },
 ]
 
-const labelCls  = "text-black font-bold text-xs shrink-0"
+const labelCls  = "text-ink-900 font-bold text-xs shrink-0"
 const pillBase  = "px-3 py-1 rounded-full text-xs font-medium"
-const pillOn    = `${pillBase} bg-black text-white`
-const pillOff   = `${pillBase} bg-neutral-100 text-neutral-900`
+const pillOn    = `${pillBase} bg-ink-900 text-white`
+const pillOff   = `${pillBase} bg-mist-100 text-neutral-900`
 
 function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
   const selectedBeds = filters.beds ?? []
@@ -31,7 +31,7 @@ function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
   const bufferValue  = filters.buffer_value ?? (bufferType === "fixed" ? 50 : 15)
 
   return (
-    <div className="w-full rounded-2xl bg-white px-5 py-3 text-sm shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] flex flex-col gap-2">
+    <div className="w-full rounded-2xl bg-white border border-mist-100 px-5 py-3 text-sm shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col gap-2">
 
       {/* 2-col grid: Type+Beds | Max$/bed+Buffer */}
       <div className="grid grid-cols-2 gap-6 w-full">
@@ -61,7 +61,7 @@ function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
         <div className="flex flex-col gap-2 min-w-0">
           <div className="flex items-center gap-5 shrink-0">
             <span className={`w-20 ${labelCls}`}>Max $/bed</span>
-            <span className="inline-flex w-16 items-center gap-1 rounded-full bg-neutral-100 py-1 pl-3 pr-2 text-xs text-neutral-700">
+            <span className="inline-flex w-16 items-center gap-1 rounded-full bg-mist-100 py-1 pl-3 pr-2 text-xs text-neutral-700">
               <span className="text-neutral-400">$</span>
               <span>{filters.max_price_per_bed ?? "900"}</span>
             </span>
@@ -73,7 +73,7 @@ function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
                 <span key={type} className={bufferType === type ? pillOn : pillOff}>{label}</span>
               ))}
               {bufferType !== "exact" && (
-                <span className="w-11 rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-700">
+                <span className="w-11 rounded-full bg-mist-100 px-2.5 py-1 text-xs text-neutral-700">
                   {bufferValue}
                 </span>
               )}
@@ -103,7 +103,7 @@ function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
             <span
               key={name}
               title={name}
-              className={`px-2.5 py-1 rounded-full ${filters.company === name ? "bg-black" : "bg-neutral-100"}`}
+              className={`px-2.5 py-1 rounded-full ${filters.company === name ? "bg-ink-900" : "bg-mist-100"}`}
             >
               <img src={logo} alt={name} className="h-4 object-contain" />
             </span>
@@ -130,11 +130,11 @@ export default function UserBubble({ text, filters }: { text: string; filters: F
     <div className="flex justify-end items-start gap-3 mt-10 mb-4">
       <div className="flex max-w-[80%] flex-col items-end gap-3">
         {hasActiveFilters(filters) && <ReadOnlyFilterSnapshot filters={filters} />}
-        <div className="bg-[#Fef7da] rounded-3xl rounded-tr-lg px-5 py-3.5 text-[15px] text-black font-medium leading-relaxed">
+        <div className="bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] rounded-3xl rounded-tr-lg px-5 py-3.5 text-[15px] text-ink-900 font-medium leading-relaxed">
           {text}
         </div>
       </div>
-      <div className="w-8 h-8 bg-[#Fef7da] rounded-full flex items-center justify-center shrink-0 text-sm">
+      <div className="w-8 h-8 bg-mint-200 rounded-full flex items-center justify-center shrink-0 text-sm">
         🌽
       </div>
     </div>

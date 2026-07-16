@@ -8,6 +8,7 @@ import { fetchListingsPage, fetchAllListings, Listing, Filters } from "@/lib/api
 import PropertyPanel from "@/components/PropertyPanel"
 import { useFilters } from "@/contexts/FiltersContext"
 import { logEvent } from "@/lib/logEvent"
+import { inter } from "@/lib/fonts"
 
 const CATALOG_PAGE_SIZE = 24
 
@@ -75,7 +76,7 @@ export default function Home() {
   }
 
   return (
-    <div className="relative flex flex-col h-screen bg-neutral-100 overflow-hidden print:h-auto print:overflow-visible">
+    <div className={`${inter.className} relative flex flex-col h-screen bg-mist-50 overflow-hidden print:h-auto print:overflow-visible`}>
       <div className="flex flex-1 min-h-0">
         {/* Filter block — positioned to match the Map view's filter panel exactly */}
         <div className="shrink-0 overflow-y-auto pt-4 px-4 pb-4 print:hidden">
@@ -164,7 +165,7 @@ function BrowseCatalog({
           <button
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1 || loading}
-            className="px-4 py-2 rounded-full text-xs font-semibold bg-white text-neutral-700 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 rounded-full text-xs font-bold bg-white border border-mist-100 text-neutral-700 hover:border-mint-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             ← Previous
           </button>
@@ -174,7 +175,7 @@ function BrowseCatalog({
           <button
             onClick={() => onPageChange(page + 1)}
             disabled={page >= totalPages || loading}
-            className="px-4 py-2 rounded-full text-xs font-semibold bg-white text-neutral-700 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 rounded-full text-xs font-bold bg-white border border-mist-100 text-neutral-700 hover:border-mint-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Next →
           </button>

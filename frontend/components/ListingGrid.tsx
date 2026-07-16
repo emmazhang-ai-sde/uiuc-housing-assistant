@@ -1,7 +1,7 @@
 "use client"
 
 import { forwardRef } from "react"
-import ListingCard from "@/components/ListingCard"
+import ListingCardV2 from "@/components/ListingCardV2"
 import type { Listing, Filters } from "@/lib/api"
 
 export type ListingGridEntry = {
@@ -27,6 +27,9 @@ const COLS_CLASS: Record<3 | 4, string> = {
   4: "sm:grid-cols-2 lg:grid-cols-4",
 }
 
+// Renders the jobright-style ListingCardV2 everywhere — promoted from the
+// /card-v2 preview to the one true card skin (2026-07-15). The old skin lives
+// at design-docs/post-launch/archive/listing-card-v1.tsx if ever needed.
 const ListingGrid = forwardRef<HTMLDivElement, Props>(function ListingGrid(
   { entries, filters = null, maxPricePerBed = null, columns, onSelect, className = "" },
   ref
@@ -34,7 +37,7 @@ const ListingGrid = forwardRef<HTMLDivElement, Props>(function ListingGrid(
   return (
     <div ref={ref} className={`grid grid-cols-1 ${COLS_CLASS[columns]} gap-3 ${className}`}>
       {entries.map(({ listing, walkMins, driveMins }, i) => (
-        <ListingCard
+        <ListingCardV2
           key={`${listing.url}-${i}`}
           listing={listing}
           maxPricePerBed={maxPricePerBed}

@@ -2,8 +2,11 @@
 
 import { useState, useRef } from "react"
 import AppHeader from "@/components/AppHeader"
+import { inter } from "@/lib/fonts"
 
-const ORANGE = "#ff5f05"
+// Filled-star color — jobright's amber tag color, keeps the gold-star
+// convention while staying inside the jobright palette.
+const STAR_AMBER = "#FDA700"
 
 // Example openers shown in the textarea placeholder, straight from the ask.
 const PLACEHOLDER =
@@ -82,35 +85,34 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="relative h-screen bg-neutral-100 overflow-hidden">
+    <div className={`${inter.className} relative h-screen bg-mist-50 overflow-hidden`}>
       <div className="h-full overflow-y-auto">
         <div className="min-h-full flex items-start justify-center pt-28 pb-10 px-6">
-          <div className="w-full max-w-[560px] bg-white rounded-3xl shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-8 sm:p-10">
+          <div className="w-full max-w-[560px] bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] p-8 sm:p-10">
             {status === "sent" ? (
               <div className="text-center py-8">
                 <div className="text-4xl mb-4">🎉</div>
-                <h1 className="text-xl font-bold text-neutral-900 mb-2">Thank you!</h1>
+                <h1 className="text-xl font-extrabold tracking-tight text-ink-900 mb-2">Thank you!</h1>
                 <p className="text-sm text-neutral-500 mb-6">
                   Your feedback went straight to the developer.
                 </p>
                 <button
                   onClick={reset}
-                  className="px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: ORANGE }}
+                  className="px-5 py-2.5 rounded-full text-sm font-bold bg-mint-400 text-ink-900 hover:bg-[#00D68F] transition-colors"
                 >
                   Send another
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} onPaste={handlePaste}>
-                <h1 className="text-xl font-bold text-neutral-900 mb-1">Rate &amp; Report</h1>
+                <h1 className="text-xl font-extrabold tracking-tight text-ink-900 mb-1">Rate &amp; Report</h1>
                 <p className="text-sm text-neutral-500 mb-6">
                   Rate the product, report what&apos;s broken, or tell me what you want next.
                 </p>
 
                 {/* Rating */}
                 <div className="mb-6">
-                  <label className="text-xs font-bold uppercase tracking-widest text-neutral-400 block mb-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-mint-600 block mb-2">
                     How would you rate it?
                   </label>
                   <div className="flex gap-1" onMouseLeave={() => setHoverRating(0)}>
@@ -121,7 +123,7 @@ export default function FeedbackPage() {
                         onClick={() => setRating(star === rating ? 0 : star)}
                         onMouseEnter={() => setHoverRating(star)}
                         className="text-3xl leading-none transition-transform hover:scale-110"
-                        style={{ color: (hoverRating || rating) >= star ? ORANGE : "#d4d4d4" }}
+                        style={{ color: (hoverRating || rating) >= star ? STAR_AMBER : "#d4d4d4" }}
                         aria-label={`${star} star${star > 1 ? "s" : ""}`}
                       >
                         ★
@@ -132,7 +134,7 @@ export default function FeedbackPage() {
 
                 {/* Message */}
                 <div className="mb-5">
-                  <label className="text-xs font-bold uppercase tracking-widest text-neutral-400 block mb-2">
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-mint-600 block mb-2">
                     What&apos;s on your mind?
                   </label>
                   <textarea
@@ -140,7 +142,7 @@ export default function FeedbackPage() {
                     onChange={e => setMessage(e.target.value)}
                     placeholder={PLACEHOLDER}
                     rows={6}
-                    className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-300 resize-y"
+                    className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-ink-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-mint-400 resize-y"
                   />
                 </div>
 
@@ -157,7 +159,7 @@ export default function FeedbackPage() {
                       <button
                         type="button"
                         onClick={removeImage}
-                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-neutral-900 text-white text-sm flex items-center justify-center shadow-md hover:bg-neutral-700"
+                        className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-ink-900 text-white text-sm flex items-center justify-center shadow-md hover:bg-black"
                         aria-label="Remove screenshot"
                       >
                         ✕
@@ -167,7 +169,7 @@ export default function FeedbackPage() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full rounded-2xl border-2 border-dashed border-neutral-300 px-4 py-6 text-sm text-neutral-500 hover:border-neutral-400 hover:text-neutral-700 transition-colors"
+                      className="w-full rounded-2xl border-2 border-dashed border-neutral-200 px-4 py-6 text-sm text-neutral-500 hover:border-mint-400 hover:text-ink-900 transition-colors"
                     >
                       📎 Paste a screenshot, or click to upload an image
                     </button>
@@ -185,14 +187,13 @@ export default function FeedbackPage() {
                 </div>
 
                 {status === "error" && (
-                  <p className="text-sm text-red-500 mb-4">{errorMsg}</p>
+                  <p className="text-sm text-[#FF465A] mb-4">{errorMsg}</p>
                 )}
 
                 <button
                   type="submit"
                   disabled={status === "sending"}
-                  className="w-full py-3 rounded-xl text-white text-base font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
-                  style={{ backgroundColor: ORANGE }}
+                  className="w-full py-3 rounded-full bg-mint-400 text-ink-900 text-base font-bold hover:bg-[#00D68F] transition-colors disabled:opacity-50"
                 >
                   {status === "sending" ? "Sending…" : "Send to developer"}
                 </button>

@@ -6,8 +6,11 @@
 // mounts is what happens on a successful verify — passed in as `onSuccess`
 // (the page redirects to /card; the modal just closes itself).
 import { useState } from "react"
+import { Nunito_Sans } from "next/font/google"
 import { createClient } from "@/lib/supabase/client"
 import { logEvent } from "@/lib/logEvent"
+
+const nunitoSans = Nunito_Sans({ subsets: ["latin"] })
 
 export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
   const [emailInput, setEmailInput] = useState("")
@@ -127,7 +130,7 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] p-10 w-full max-w-[480px]">
+    <div className={`bg-white rounded-3xl shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-10 w-full max-w-[480px] ${nunitoSans.className}`}>
       <div className="mb-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -136,7 +139,7 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
           className="w-full rounded-2xl mb-5 object-cover"
         />
         <div className="text-center">
-          <div className="font-extrabold tracking-tight text-ink-900 text-[23px] leading-none">
+          <div className="font-bold text-black text-[23px] leading-none">
             UIUC Housing Assistant
           </div>
           <div className="text-[14px] text-black mt-1 uppercase tracking-widest font-medium">
@@ -147,7 +150,7 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
 
       {step === "email" && (
         <div className="mb-6 leading-relaxed">
-          <p className="text-base font-bold text-center text-mint-600">
+          <p className="text-base font-bold text-center" style={{ color: "rgb(255, 95, 5)" }}>
             Waiting list email login only. 🎉🎉
           </p>
           <p className="text-sm text-center text-black mt-2">
@@ -181,14 +184,14 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
               required
               inputMode="numeric"
               autoComplete="one-time-code"
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-center font-mono text-xl tracking-[0.35em] text-black placeholder-black focus:outline-none focus:ring-2 focus:ring-mint-400 transition"
+              className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-center font-mono text-xl tracking-[0.35em] text-black placeholder-black focus:outline-none focus:ring-2 focus:ring-[#7B90A0]/40 transition"
             />
           </div>
-          {error && <p className="text-sm text-[#FF465A]">{error}</p>}
+          {error && <p className="text-sm text-red-500">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-full bg-mint-400 text-ink-900 text-base font-bold hover:bg-[#00D68F] transition-colors disabled:opacity-50"
+            className="w-full py-3 rounded-xl bg-neutral-900 text-white text-base font-semibold hover:bg-neutral-700 transition-colors disabled:opacity-50"
           >
             {loading ? "Verifying…" : "Verify code"}
           </button>
@@ -229,7 +232,7 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
             We&apos;ll email an 8-digit code.
           </p>
           <div>
-            <div className="flex items-center w-full px-4 py-3 rounded-xl border border-neutral-200 focus-within:ring-2 focus-within:ring-mint-400 transition">
+            <div className="flex items-center w-full px-4 py-3 rounded-xl border border-neutral-200 focus-within:ring-2 focus-within:ring-[#7B90A0]/40 transition">
               <input
                 type="email"
                 value={emailInput}
@@ -242,11 +245,11 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
               />
             </div>
           </div>
-          {error && <p className="text-sm text-[#FF465A]">{error}</p>}
+          {error && <p className="text-sm text-red-500">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-full bg-mint-400 text-ink-900 text-base font-bold hover:bg-[#00D68F] transition-colors disabled:opacity-50"
+            className="w-full py-3 rounded-xl bg-neutral-900 text-white text-base font-semibold hover:bg-neutral-700 transition-colors disabled:opacity-50"
           >
             {loading ? "Sending…" : "Send code"}
           </button>

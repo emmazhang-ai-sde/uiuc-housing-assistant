@@ -45,17 +45,17 @@ export default function AdminFeedbackPage() {
 
   if (forbidden) {
     return (
-      <div className="h-screen flex items-center justify-center bg-mist-50 text-neutral-500 text-sm">
+      <div className="h-screen flex items-center justify-center bg-neutral-100 text-neutral-500 text-sm">
         Not authorized.
       </div>
     )
   }
 
   return (
-    <div className="relative h-screen bg-mist-50 overflow-hidden">
+    <div className="relative h-screen bg-neutral-100 overflow-hidden">
       <div className="h-full overflow-y-auto pt-24 px-6 pb-10">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-xl font-extrabold tracking-tight text-ink-900 mb-4">Feedback</h1>
+          <h1 className="text-xl font-bold text-neutral-900 mb-4">Feedback</h1>
           <AdminTabs />
 
           {loading ? (
@@ -67,7 +67,7 @@ export default function AdminFeedbackPage() {
               {rows.map(row => (
                 <div
                   key={row.id}
-                  className="bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] p-5"
+                  className="bg-white rounded-2xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] p-5"
                 >
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <span className="text-sm font-semibold text-neutral-700 truncate">{row.email}</span>
@@ -77,7 +77,7 @@ export default function AdminFeedbackPage() {
                   </div>
 
                   {row.rating != null && (
-                    <div className="text-lg mb-2" style={{ color: "#FDA700" }}>
+                    <div className="text-lg mb-2" style={{ color: "#ff5f05" }}>
                       {"★".repeat(row.rating)}
                       <span className="text-neutral-200">{"★".repeat(5 - row.rating)}</span>
                     </div>

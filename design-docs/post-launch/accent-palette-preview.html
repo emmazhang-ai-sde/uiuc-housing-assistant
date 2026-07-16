@@ -1,0 +1,315 @@
+<title>渐变主色方案对比 · Jobright 风格</title>
+<style>
+  :root {
+    --bg: #F7F8F9;
+    --surface: #FFFFFF;
+    --line: #ECEEF0;
+    --ink: #232424;
+    --sub: #6D7378;
+    --mock: #F7F8F9;
+    --mock-card: #FFFFFF;
+    --mock-line: #E9EBED;
+    --on-grad: #232424;
+    --on-accent: #15181A;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151618;
+      --surface: #1E2023;
+      --line: #2C2F33;
+      --ink: #F0F1F2;
+      --sub: #9BA1A8;
+      --mock: #26282C;
+      --mock-card: #2E3136;
+      --mock-line: #3A3E44;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151618;
+    --surface: #1E2023;
+    --line: #2C2F33;
+    --ink: #F0F1F2;
+    --sub: #9BA1A8;
+    --mock: #26282C;
+    --mock-card: #2E3136;
+    --mock-line: #3A3E44;
+  }
+  :root[data-theme="light"] {
+    --bg: #F7F8F9;
+    --surface: #FFFFFF;
+    --line: #ECEEF0;
+    --ink: #232424;
+    --sub: #6D7378;
+    --mock: #F7F8F9;
+    --mock-card: #FFFFFF;
+    --mock-line: #E9EBED;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "SF Pro Text", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  code, .hex { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 48px 24px 64px; }
+
+  .eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--sub); margin-bottom: 10px;
+  }
+  h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -.02em; line-height: 1.2; text-wrap: balance; margin: 0 0 14px; }
+  .intro { max-width: 62ch; color: var(--sub); font-size: 15px; margin: 0 0 8px; }
+  .intro strong { color: var(--ink); font-weight: 600; }
+
+  /* 配方条 */
+  .recipe { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 40px; }
+  .tok {
+    display: flex; align-items: center; gap: 9px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 14px 7px 8px; font-size: 12.5px; color: var(--sub);
+  }
+  .tok i { width: 22px; height: 22px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.06); }
+  .tok .hex { color: var(--ink); font-size: 12px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 18px; }
+
+  .cand {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+    padding: 18px; display: flex; flex-direction: column; gap: 14px;
+    transition: border-color .18s ease;
+  }
+  .cand:hover { border-color: var(--a); }
+  .cand h2 { font-size: 16px; font-weight: 800; letter-spacing: -.01em; margin: 0; }
+  .cand h2 .en { color: var(--sub); font-weight: 600; font-size: 12.5px; margin-left: 6px; }
+  .cand .desc { font-size: 12.5px; color: var(--sub); margin: 3px 0 0; }
+  .tag-now {
+    float: right; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    background: color-mix(in srgb, var(--a) 14%, transparent); color: var(--deep);
+    border-radius: 999px; padding: 3px 9px; margin-top: 2px;
+  }
+
+  /* 迷你界面 */
+  .mock {
+    background: var(--mock); border: 1px solid var(--mock-line); border-radius: 14px;
+    padding: 16px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .mk-h { font-size: 17px; font-weight: 800; letter-spacing: -.01em; margin: 0; }
+  .mark {
+    background: linear-gradient(266deg, var(--g1), var(--g2));
+    color: var(--on-grad); border-radius: 8px; padding: 1px 7px;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  }
+  .bubbles { display: flex; flex-direction: column; gap: 7px; }
+  .bub { font-size: 12.5px; padding: 8px 13px; max-width: 85%; line-height: 1.45; }
+  .bub.user {
+    align-self: flex-end;
+    background: linear-gradient(266deg, var(--g1), var(--g2)); color: var(--on-grad);
+    border-radius: 14px 14px 4px 14px; font-weight: 500;
+  }
+  .bub.bot {
+    align-self: flex-start;
+    background: var(--mock-card); border: 1px solid var(--mock-line); color: var(--ink);
+    border-radius: 14px 14px 14px 4px;
+  }
+  .mk-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .cta {
+    background: var(--a); color: var(--on-accent);
+    font-size: 12.5px; font-weight: 700; border-radius: 999px; padding: 7px 15px;
+    cursor: pointer; transition: filter .15s ease;
+  }
+  .cta:hover, .cta:focus-visible { filter: brightness(.92); outline: none; }
+  .chip {
+    background: color-mix(in srgb, var(--a) 12%, transparent); color: var(--deep);
+    font-size: 11px; font-weight: 600; border-radius: 8px; padding: 4px 9px;
+  }
+  .badge {
+    background: var(--a); color: var(--on-accent);
+    font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    border-radius: 999px; padding: 4px 9px;
+  }
+  .side-item {
+    background: color-mix(in srgb, var(--a) 14%, transparent); color: var(--ink);
+    font-size: 12px; font-weight: 500; border-radius: 10px; padding: 8px 12px;
+  }
+
+  .swatches { display: flex; gap: 10px; }
+  .sw { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .sw i { height: 26px; border-radius: 8px; display: block; border: 1px solid rgba(0,0,0,.06); }
+  .sw .hex { font-size: 10.5px; color: var(--sub); }
+  .sw .role { font-size: 10px; color: var(--sub); letter-spacing: .05em; text-transform: uppercase; }
+
+  .note { margin-top: 36px; max-width: 62ch; color: var(--sub); font-size: 13.5px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .note strong { color: var(--ink); }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">UIUC Housing · Jobright 风格探索</div>
+  <h1>同一套配方，换一种颜色</h1>
+  <p class="intro">Jobright 的绿不是图片，是他们自选的<strong>品牌色值</strong>：主色 <code>#00F0A0</code>，渐变 <code>266deg · #ACFFE1 → #CFFFC4</code>，直接取自他们线上的 CSS。整个风格的配方其实是四件套：<strong>1 个高饱和主色 + 2 个超浅的邻近色渐变停靠点 + 墨黑文字 + 雾灰底</strong>。把前三样换掉，风格不变，气质就变了。下面每张卡片都是同一套聊天界面元素，只换颜色。</p>
+
+  <div class="recipe">
+    <span class="tok"><i style="background:#00F0A0"></i>主色 <span class="hex">#00F0A0</span></span>
+    <span class="tok"><i style="background:linear-gradient(266deg,#ACFFE1,#CFFFC4)"></i>渐变 <span class="hex">#ACFFE1 → #CFFFC4</span></span>
+    <span class="tok"><i style="background:#232424"></i>墨色 <span class="hex">#232424</span></span>
+    <span class="tok"><i style="background:#F7F8F9;border-color:#E2E4E7"></i>雾灰 <span class="hex">#F7F8F9</span></span>
+  </div>
+
+  <div class="grid">
+
+    <article class="cand" style="--a:#00F0A0;--g1:#ACFFE1;--g2:#CFFFC4;--deep:#0B8F63;">
+      <div>
+        <span class="tag-now">当前在用</span>
+        <h2>薄荷绿<span class="en">Mint</span></h2>
+        <p class="desc">Jobright 原版，About / card-v2 / Chat 现在就是它</p>
+      </div>
+      <div class="mock">
+        <p class="mk-h">without the <span class="mark">tab-hopping.</span></p>
+        <div class="bubbles">
+          <span class="bub user">2BR under $900/bed, what's available?</span>
+          <span class="bub bot">Found 37 units near Grainger.</span>
+        </div>
+        <div class="mk-row">
+          <span class="cta" tabindex="0">Start chatting</span>
+          <span class="chip">2 Bed</span>
+          <span class="badge">Available Now</span>
+        </div>
+        <div class="side-item">Apartments near Grainger</div>
+      </div>
+      <div class="swatches">
+        <div class="sw"><i style="background:#00F0A0"></i><span class="role">主色</span><span class="hex">#00F0A0</span></div>
+        <div class="sw"><i style="background:#ACFFE1"></i><span class="role">渐变 1</span><span class="hex">#ACFFE1</span></div>
+        <div class="sw"><i style="background:#CFFFC4"></i><span class="role">渐变 2</span><span class="hex">#CFFFC4</span></div>
+      </div>
+    </article>
+
+    <article class="cand" style="--a:#FF5F05;--g1:#FFCDB5;--g2:#FFE7C9;--deep:#D14A00;">
+      <div>
+        <h2>伊利尼橙<span class="en">Illini</span></h2>
+        <p class="desc">UIUC 品牌橙 #FF5F05，和 coming-soon、登录页同源</p>
+      </div>
+      <div class="mock">
+        <p class="mk-h">without the <span class="mark">tab-hopping.</span></p>
+        <div class="bubbles">
+          <span class="bub user">2BR under $900/bed, what's available?</span>
+          <span class="bub bot">Found 37 units near Grainger.</span>
+        </div>
+        <div class="mk-row">
+          <span class="cta" tabindex="0">Start chatting</span>
+          <span class="chip">2 Bed</span>
+          <span class="badge">Available Now</span>
+        </div>
+        <div class="side-item">Apartments near Grainger</div>
+      </div>
+      <div class="swatches">
+        <div class="sw"><i style="background:#FF5F05"></i><span class="role">主色</span><span class="hex">#FF5F05</span></div>
+        <div class="sw"><i style="background:#FFCDB5"></i><span class="role">渐变 1</span><span class="hex">#FFCDB5</span></div>
+        <div class="sw"><i style="background:#FFE7C9"></i><span class="role">渐变 2</span><span class="hex">#FFE7C9</span></div>
+      </div>
+    </article>
+
+    <article class="cand" style="--a:#14C8F0;--g1:#BCEBFF;--g2:#D6F7EF;--deep:#0A93B8;">
+      <div>
+        <h2>晴空蓝<span class="en">Sky</span></h2>
+        <p class="desc">取自 jobright 自己的标签青蓝 #14C8F0，提为主色</p>
+      </div>
+      <div class="mock">
+        <p class="mk-h">without the <span class="mark">tab-hopping.</span></p>
+        <div class="bubbles">
+          <span class="bub user">2BR under $900/bed, what's available?</span>
+          <span class="bub bot">Found 37 units near Grainger.</span>
+        </div>
+        <div class="mk-row">
+          <span class="cta" tabindex="0">Start chatting</span>
+          <span class="chip">2 Bed</span>
+          <span class="badge">Available Now</span>
+        </div>
+        <div class="side-item">Apartments near Grainger</div>
+      </div>
+      <div class="swatches">
+        <div class="sw"><i style="background:#14C8F0"></i><span class="role">主色</span><span class="hex">#14C8F0</span></div>
+        <div class="sw"><i style="background:#BCEBFF"></i><span class="role">渐变 1</span><span class="hex">#BCEBFF</span></div>
+        <div class="sw"><i style="background:#D6F7EF"></i><span class="role">渐变 2</span><span class="hex">#D6F7EF</span></div>
+      </div>
+    </article>
+
+    <article class="cand" style="--a:#8C78FF;--g1:#D9D2FF;--g2:#F1DEFF;--deep:#6A52E8;">
+      <div>
+        <h2>长春花紫<span class="en">Periwinkle</span></h2>
+        <p class="desc">Jobright 的标签紫 #8C78FF，渐变从紫过渡到粉紫</p>
+      </div>
+      <div class="mock">
+        <p class="mk-h">without the <span class="mark">tab-hopping.</span></p>
+        <div class="bubbles">
+          <span class="bub user">2BR under $900/bed, what's available?</span>
+          <span class="bub bot">Found 37 units near Grainger.</span>
+        </div>
+        <div class="mk-row">
+          <span class="cta" tabindex="0">Start chatting</span>
+          <span class="chip">2 Bed</span>
+          <span class="badge">Available Now</span>
+        </div>
+        <div class="side-item">Apartments near Grainger</div>
+      </div>
+      <div class="swatches">
+        <div class="sw"><i style="background:#8C78FF"></i><span class="role">主色</span><span class="hex">#8C78FF</span></div>
+        <div class="sw"><i style="background:#D9D2FF"></i><span class="role">渐变 1</span><span class="hex">#D9D2FF</span></div>
+        <div class="sw"><i style="background:#F1DEFF"></i><span class="role">渐变 2</span><span class="hex">#F1DEFF</span></div>
+      </div>
+    </article>
+
+    <article class="cand" style="--a:#FF5C7A;--g1:#FFCFDC;--g2:#FFE4D4;--deep:#E63E62;">
+      <div>
+        <h2>珊瑚粉<span class="en">Coral</span></h2>
+        <p class="desc">暖色方向，渐变从粉过渡到杏</p>
+      </div>
+      <div class="mock">
+        <p class="mk-h">without the <span class="mark">tab-hopping.</span></p>
+        <div class="bubbles">
+          <span class="bub user">2BR under $900/bed, what's available?</span>
+          <span class="bub bot">Found 37 units near Grainger.</span>
+        </div>
+        <div class="mk-row">
+          <span class="cta" tabindex="0">Start chatting</span>
+          <span class="chip">2 Bed</span>
+          <span class="badge">Available Now</span>
+        </div>
+        <div class="side-item">Apartments near Grainger</div>
+      </div>
+      <div class="swatches">
+        <div class="sw"><i style="background:#FF5C7A"></i><span class="role">主色</span><span class="hex">#FF5C7A</span></div>
+        <div class="sw"><i style="background:#FFCFDC"></i><span class="role">渐变 1</span><span class="hex">#FFCFDC</span></div>
+        <div class="sw"><i style="background:#FFE4D4"></i><span class="role">渐变 2</span><span class="hex">#FFE4D4</span></div>
+      </div>
+    </article>
+
+    <article class="cand" style="--a:#BEE13E;--g1:#E2F89B;--g2:#F0FBC9;--deep:#7A9312;">
+      <div>
+        <h2>柠檬青<span class="en">Lime</span></h2>
+        <p class="desc">你站上原有的 glow 色系（#BEE13E）套进同一配方</p>
+      </div>
+      <div class="mock">
+        <p class="mk-h">without the <span class="mark">tab-hopping.</span></p>
+        <div class="bubbles">
+          <span class="bub user">2BR under $900/bed, what's available?</span>
+          <span class="bub bot">Found 37 units near Grainger.</span>
+        </div>
+        <div class="mk-row">
+          <span class="cta" tabindex="0">Start chatting</span>
+          <span class="chip">2 Bed</span>
+          <span class="badge">Available Now</span>
+        </div>
+        <div class="side-item">Apartments near Grainger</div>
+      </div>
+      <div class="swatches">
+        <div class="sw"><i style="background:#BEE13E"></i><span class="role">主色</span><span class="hex">#BEE13E</span></div>
+        <div class="sw"><i style="background:#E2F89B"></i><span class="role">渐变 1</span><span class="hex">#E2F89B</span></div>
+        <div class="sw"><i style="background:#F0FBC9"></i><span class="role">渐变 2</span><span class="hex">#F0FBC9</span></div>
+      </div>
+    </article>
+
+  </div>
+
+  <p class="note"><strong>怎么换：</strong>选好一个方案告诉我名字就行。三个页面的颜色都走 <code>globals.css</code> 里的 mint token 和这条渐变，我把 token 值和渐变停靠点整体替换，About、card-v2、Chat 会一起换色。也可以在这些方案基础上再调（更灰一点、更浅一点、换渐变方向都可以）。</p>
+</div>

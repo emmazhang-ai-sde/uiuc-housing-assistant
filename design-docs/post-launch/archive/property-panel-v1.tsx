@@ -15,12 +15,12 @@ export default function PropertyPanel({
   onClose: () => void
 }) {
   return (
-    <aside className="hidden lg:flex flex-col relative w-[420px] shrink-0 h-full bg-white border-l border-mist-100 overflow-y-auto">
+    <aside className="hidden lg:flex flex-col relative w-[420px] shrink-0 h-full bg-white border-l border-neutral-100 overflow-y-auto">
       {listing ? (
         <DrawerContent listing={listing} onClose={onClose} />
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-8">
-          <div className="w-12 h-12 rounded-full bg-mist-50 border border-mist-100 flex items-center justify-center text-xl">
+          <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-xl">
             🏠
           </div>
           <p className="text-sm text-neutral-400 max-w-[220px] leading-relaxed">

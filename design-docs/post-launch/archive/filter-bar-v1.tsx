@@ -38,8 +38,8 @@ function Pill({ active, onClick, children }: {
       onClick={onClick}
       className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
         active
-          ? "bg-ink-900 text-white"
-          : "bg-mist-100 text-neutral-900 hover:bg-neutral-200"
+          ? "bg-neutral-900 text-white"
+          : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
       }`}
     >
       {children}
@@ -48,7 +48,7 @@ function Pill({ active, onClick, children }: {
 }
 
 function Divider() {
-  return <div className="h-px bg-mist-100 -mx-1" />
+  return <div className="h-px bg-neutral-100 -mx-1" />
 }
 
 export default function FilterBar({ filters, onChange, className = "" }: Props) {
@@ -72,7 +72,7 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
     !!filters.company
 
   return (
-    <div className={`bg-white/95 backdrop-blur-sm rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] px-4 py-3 flex flex-col gap-2.5 text-sm min-w-max ${className}`}>
+    <div className={`bg-white/92 backdrop-blur-sm rounded-2xl shadow-md px-4 py-3 flex flex-col gap-2.5 text-sm min-w-max ${className}`}>
 
       {/* Beds */}
       <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
                 const v = e.target.value.replace(/\D/g, "").slice(0, 4)
                 onChange({ ...filters, max_price_per_bed: v ? Number(v) : null })
               }}
-              className="pl-6 pr-2 py-1 w-16 rounded-full text-xs text-neutral-700 bg-mist-100 focus:outline-none focus:ring-2 focus:ring-mint-400"
+              className="pl-6 pr-2 py-1 w-16 rounded-full text-xs text-neutral-700 bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-300"
             />
           </div>
           <div className={`flex gap-1 items-center transition-opacity ${filters.max_price_per_bed == null ? "opacity-35 pointer-events-none" : ""}`}>
@@ -138,7 +138,7 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
                   const v = e.target.value.replace(/\D/g, "").slice(0, 3)
                   onChange({ ...filters, buffer_value: v ? Number(v) : null })
                 }}
-                className="w-11 px-2.5 py-1 rounded-full text-xs text-neutral-700 bg-mist-100 focus:outline-none focus:ring-2 focus:ring-mint-400"
+                className="w-11 px-2.5 py-1 rounded-full text-xs text-neutral-700 bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-300"
               />
             )}
           </div>
@@ -219,10 +219,10 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
       <Divider />
 
       {/* Source — "All" sits on the Source row itself; below it, one row per
-          coverage category (jobright green/red labels since the 2026-07-15
-          restyle) so users can see which companies are searchable, which can't
-          be scraped (ToS or bot protection, reason in the tooltip), and which
-          publish no data right now. */}
+          coverage category (Morandi-muted green/red labels, not vivid defaults)
+          so users can see which companies are searchable, which can't be scraped
+          (ToS or bot protection, reason in the tooltip), and which publish no
+          data right now. */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-3">
           <span className={labelCls}>Source</span>
@@ -235,21 +235,21 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
         </div>
         <div className="flex flex-col gap-1.5 pl-[68px]">
           <div className="flex items-center gap-1 flex-wrap max-w-[340px]">
-            <span className="text-[10px] font-semibold text-mint-600 uppercase tracking-wide mr-1">Scraped</span>
+            <span className="text-[10px] font-semibold text-[#6E8B63] uppercase tracking-wide mr-1">Scraped</span>
             {COMPANIES.map(({ name, logo }) => (
               <button
                 key={name}
                 title={name}
                 onClick={() => onChange({ ...filters, company: filters.company === name ? null : name })}
                 className={`px-2.5 py-1 rounded-full transition-colors ${
-                  filters.company === name ? "bg-ink-900" : "bg-mist-100 hover:bg-neutral-200"
+                  filters.company === name ? "bg-neutral-900" : "bg-neutral-100 hover:bg-neutral-200"
                 }`}
               >
                 <img src={logo} alt={name} className="h-4 object-contain" />
               </button>
             ))}
           </div>
-          <ExcludedRow label="Not able to scrape" labelClassName="text-[#FF465A]" companies={UNSCRAPABLE_COMPANIES} />
+          <ExcludedRow label="Not able to scrape" labelClassName="text-[#B0716A]" companies={UNSCRAPABLE_COMPANIES} />
           <ExcludedRow label="Fully leased" companies={FULLY_LEASED_COMPANIES} />
         </div>
       </div>
@@ -261,7 +261,7 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
           <div className="flex justify-end">
             <button
               onClick={() => onChange(DEFAULT_FILTERS)}
-              className="text-xs text-neutral-400 hover:text-ink-900 transition-colors"
+              className="text-xs text-neutral-400 hover:text-neutral-700 transition-colors"
             >
               Clear all
             </button>

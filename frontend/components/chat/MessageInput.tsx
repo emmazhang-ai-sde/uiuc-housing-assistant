@@ -36,12 +36,12 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
   }
 
   return (
-    <div className="px-6 py-4 bg-neutral-100">
+    <div className="px-6 py-4 bg-mist-50">
       <div
         className={`flex items-end gap-2 max-w-3xl mx-auto bg-white rounded-2xl p-2 transition-shadow ${
           canSend
-            ? "shadow-[0_10px_34px_-10px_rgba(0,0,0,0.2)] ring-2 ring-black"
-            : "shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
+            ? "shadow-[0_10px_34px_-10px_rgba(0,0,0,0.2)] ring-2 ring-mint-400"
+            : "border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)]"
         }`}
       >
         <textarea
@@ -57,10 +57,10 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
         <button
           onClick={submit}
           disabled={!canSend}
-          className={`shrink-0 mb-0.5 w-9 h-9 rounded-xl flex items-center justify-center text-sm font-semibold transition-colors ${
+          className={`shrink-0 mb-0.5 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
             canSend
-              ? "bg-black text-white"
-              : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+              ? "bg-mint-400 text-ink-900 hover:bg-[#00D68F]"
+              : "bg-mist-100 text-neutral-400 cursor-not-allowed"
           }`}
         >
           ↑

@@ -11,17 +11,15 @@ function priceStr(low: number | null | undefined, high: number | null | undefine
   return `$${low.toLocaleString()}–$${high?.toLocaleString()}`
 }
 
-// Matches ListingCardV2's badge language so a listing's status reads the same
-// in cards, table rows, and this drawer.
 const STATUS_BADGE_STYLE = {
-  now:         "bg-mint-400 text-ink-900",
-  available:   "bg-mint-200 text-ink-900",
-  unavailable: "bg-mist-100 text-neutral-500",
+  now:         "bg-now-100 text-neutral-900",
+  available:   "bg-[#C7DDB5] text-neutral-900",
+  unavailable: "bg-neutral-100 text-black",
 } as const
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[10px] font-bold text-mint-600 uppercase tracking-widest mb-2">
+    <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">
       {children}
     </div>
   )
@@ -130,7 +128,7 @@ export function DrawerContent({ listing, onClose }: { listing: Listing; onClose:
 
         {/* Tagline */}
         {listing.tagline && (
-          <p className="text-sm font-semibold text-mint-600 -mt-2">{listing.tagline}</p>
+          <p className="text-sm font-semibold text-[#8A9E7E] -mt-2">{listing.tagline}</p>
         )}
 
         {/* Unit type + area */}
@@ -185,7 +183,7 @@ export function DrawerContent({ listing, onClose }: { listing: Listing; onClose:
               {amenityList.map(a => (
                 <span
                   key={a}
-                  className="px-2.5 py-1 rounded-full bg-mist-100 text-neutral-600 text-xs font-medium"
+                  className="px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-medium"
                 >
                   {a}
                 </span>
@@ -221,7 +219,7 @@ export function DrawerContent({ listing, onClose }: { listing: Listing; onClose:
             href={listing.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 text-center text-sm font-bold text-white bg-ink-900 hover:bg-black px-4 py-2.5 rounded-full transition-colors"
+            className="flex-1 text-center text-sm font-bold text-white bg-neutral-900 hover:bg-neutral-700 px-4 py-2.5 rounded-full transition-colors"
           >
             View Listing →
           </a>
@@ -230,7 +228,7 @@ export function DrawerContent({ listing, onClose }: { listing: Listing; onClose:
               href={listing.brochure_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-bold text-neutral-700 bg-mist-100 hover:bg-neutral-200 px-4 py-2.5 rounded-full transition-colors"
+              className="text-sm font-bold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 px-4 py-2.5 rounded-full transition-colors"
             >
               Brochure PDF
             </a>

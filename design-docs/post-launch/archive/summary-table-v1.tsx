@@ -5,12 +5,10 @@ import { Listing, Filters } from "@/lib/api"
 import { COMPANY_LOGOS } from "@/lib/companies"
 import { availabilitySortValue, availabilityStatus, bedsLabel, splitAvailabilityLines } from "@/lib/availability"
 
-// Matches ListingCardV2's badge language so a listing's status reads the same
-// in cards, table rows, and the detail drawer.
 const STATUS_BADGE_STYLE = {
-  now:         "bg-mint-400 text-ink-900",
-  available:   "bg-mint-200 text-ink-900",
-  unavailable: "bg-mist-100 text-neutral-500",
+  now:         "bg-now-100 text-neutral-900",
+  available:   "bg-[#C7DDB5] text-neutral-900",
+  unavailable: "bg-neutral-100 text-black",
 } as const
 
 type SortKey = "price" | "beds" | "availability" | "walk"
@@ -145,7 +143,7 @@ const SummaryTable = forwardRef<HTMLDivElement, {
   })
 
   return (
-    <section className="mt-6 overflow-hidden rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] bg-white">
+    <section className="mt-6 overflow-hidden rounded-3xl shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)] bg-white">
       <div ref={tableRef} className="overflow-hidden">
         <table className="w-full table-fixed text-left border-collapse text-sm text-neutral-600">
           <colgroup>
@@ -160,31 +158,31 @@ const SummaryTable = forwardRef<HTMLDivElement, {
           </colgroup>
           <thead>
             <tr className="text-[11px] font-bold uppercase text-neutral-400 tracking-wider">
-              <th className="px-3 py-3.5 bg-mist-50 whitespace-nowrap text-center">#</th>
-              <th className="px-3 py-3.5 bg-mist-50 whitespace-nowrap">Source</th>
-              <th className="px-3 py-3.5 bg-mist-50 whitespace-nowrap">Address</th>
-              <th className="px-3 py-3.5 bg-mist-50 whitespace-nowrap">Unit</th>
+              <th className="px-3 py-3.5 bg-neutral-50 whitespace-nowrap text-center">#</th>
+              <th className="px-3 py-3.5 bg-neutral-50 whitespace-nowrap">Source</th>
+              <th className="px-3 py-3.5 bg-neutral-50 whitespace-nowrap">Address</th>
+              <th className="px-3 py-3.5 bg-neutral-50 whitespace-nowrap">Unit</th>
               <th
-                className="px-3 py-3.5 bg-mist-50 whitespace-nowrap cursor-pointer select-none hover:text-neutral-600 transition-colors"
+                className="px-3 py-3.5 bg-neutral-50 whitespace-nowrap cursor-pointer select-none hover:text-neutral-600 transition-colors"
                 onClick={() => handleSort("beds")}
               >
                 Beds <SortArrow col="beds" sortKey={sortKey} dir={sortDir} />
               </th>
               <th
-                className="px-3 py-3.5 bg-mist-50 whitespace-nowrap cursor-pointer select-none hover:text-neutral-600 transition-colors"
+                className="px-3 py-3.5 bg-neutral-50 whitespace-nowrap cursor-pointer select-none hover:text-neutral-600 transition-colors"
                 onClick={() => handleSort("price")}
               >
                 Price/bed <SortArrow col="price" sortKey={sortKey} dir={sortDir} />
               </th>
               <th
-                className="px-3 py-3.5 bg-mist-50 whitespace-nowrap cursor-pointer select-none hover:text-neutral-600 transition-colors"
+                className="px-3 py-3.5 bg-neutral-50 whitespace-nowrap cursor-pointer select-none hover:text-neutral-600 transition-colors"
                 onClick={() => handleSort("availability")}
               >
                 Availability <SortArrow col="availability" sortKey={sortKey} dir={sortDir} />
               </th>
               {hasWalk && (
                 <th
-                  className="px-3 py-3.5 bg-mist-50 whitespace-nowrap cursor-pointer select-none hover:text-neutral-600 transition-colors"
+                  className="px-3 py-3.5 bg-neutral-50 whitespace-nowrap cursor-pointer select-none hover:text-neutral-600 transition-colors"
                   onClick={() => handleSort("walk")}
                 >
                   Walk <SortArrow col="walk" sortKey={sortKey} dir={sortDir} />
@@ -192,7 +190,7 @@ const SummaryTable = forwardRef<HTMLDivElement, {
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-mist-100">
+          <tbody className="divide-y divide-neutral-100">
             {sorted.map(({ listing: l, walkMins }, i) => {
               const statusStyle = STATUS_BADGE_STYLE[availabilityStatus(l.availability)]
               const overBudget =
@@ -200,7 +198,7 @@ const SummaryTable = forwardRef<HTMLDivElement, {
                 l.price_per_bed_high !== null &&
                 l.price_per_bed_high > maxPricePerBed
               return (
-                <tr key={i} className="bg-white hover:bg-mist-50 transition-colors">
+                <tr key={i} className="bg-white hover:bg-neutral-50 transition-colors">
                   <td className="px-3 py-3.5 text-center text-xs text-neutral-400 tabular-nums">{i + 1}</td>
                   <td className="px-3 py-3.5">
                     {COMPANY_LOGOS[l.company]
@@ -210,19 +208,19 @@ const SummaryTable = forwardRef<HTMLDivElement, {
                   </td>
                   <td className="px-3 py-3.5">
                     <a href={l.url} target="_blank" rel="noopener noreferrer"
-                      className="text-neutral-600 hover:text-ink-900 underline decoration-neutral-300 hover:decoration-mint-400 font-medium transition-colors break-words">
+                      className="text-neutral-600 hover:text-neutral-900 underline decoration-neutral-300 hover:decoration-neutral-500 font-medium transition-colors break-words">
                       {l.address}
                     </a>
                   </td>
                   <td className="px-3 py-3.5 italic break-words">{l.unit_type}</td>
                   <td className="px-3 py-3.5">{l.beds}</td>
-                  <td className="px-3 py-3.5 font-bold text-base text-ink-900">
+                  <td className="px-3 py-3.5 font-bold text-base text-neutral-900">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     {l.price_note
                       ? <span className="text-xs font-medium text-neutral-500" title={l.price_note}>{MANUAL_PRICE_LABEL}</span>
                       : <span>{priceStr(l.price_per_bed_low, l.price_per_bed_high)}</span>}
                     {overBudget && (
-                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FF465A1A] text-[#FF465A]">
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#F5BBA0] text-black">
                         over budget
                       </span>
                     )}
