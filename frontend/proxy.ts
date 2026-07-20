@@ -46,20 +46,39 @@ export async function proxy(request: NextRequest) {
 
   const path = request.nextUrl.pathname
   const launchMode = process.env.LAUNCH_MODE ?? "live"
+  // Only the pre-launch lockout still uses the /coming-soon page. Every
+  // launched mode ("live", "open") has retired the waitlist funnel — see
+  // design-docs/post-launch/open-registration.md.
+  const isPreLaunch = launchMode === "coming_soon"
+
+  // The waitlist page is no longer public once launched: redirect /coming-soon
+  // to /login so stale "join the waitlist" links still land somewhere useful.
+  if (!isPreLaunch && path.startsWith("/coming-soon")) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/login"
+    return NextResponse.redirect(url)
+  }
+
   // /about is the public marketing page — always reachable, logged in or not,
-  // launched or not. /login is only public once the product is actually
-  // live — during coming_soon it must fall through to the redirect below
-  // like any other gated path, otherwise it's reachable (and discoverable)
-  // before launch.
+  // launched or not. /api/status must be public for the same reason: it feeds
+  // the listing/property counts in /about's stats band, so gating it left a
+  // logged-out visitor's counts stuck on their "…" placeholder (the redirect
+  // returns the login page's HTML, which fails the fetch's res.json()). It
+  // carries no user data and needs no backend token — see app/api/status/route.ts.
+  // /login is public once launched; during the pre-launch lockout it must fall
+  // through to the rewrite below like any other gated path, otherwise it's
+  // reachable (and discoverable) before launch. /coming-soon is only public
+  // during the pre-launch lockout (above, it redirects away in every launched mode).
   const isPublic = path.startsWith("/about") ||
+                   path.startsWith("/api/status") ||
                    path.startsWith("/auth/callback") ||
-                   path.startsWith("/coming-soon") ||
-                   (path.startsWith("/login") && launchMode === "live")
+                   (isPreLaunch && path.startsWith("/coming-soon")) ||
+                   (!isPreLaunch && path.startsWith("/login"))
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
     const isApiRoute = path.startsWith("/api")
-    if (launchMode !== "live" && !isApiRoute) {
+    if (isPreLaunch && !isApiRoute) {
       // Show the Coming Soon waitlist page IN PLACE — the address bar keeps
       // whatever page was requested (/chat, /map, /login, ...) instead of
       // bouncing to /coming-soon. Clicking a gated tab should land you on
@@ -70,7 +89,7 @@ export async function proxy(request: NextRequest) {
       url.pathname = "/coming-soon"
       return NextResponse.rewrite(url)
     }
-    url.pathname = launchMode === "coming_soon" ? "/coming-soon" : "/login"
+    url.pathname = isPreLaunch ? "/coming-soon" : "/login"
     return NextResponse.redirect(url)
   }
 
