@@ -83,18 +83,30 @@ def status():
     return {"last_scraped": date_str, "listing_count": row[0], "property_count": row[1]}
 
 
+# Allowed ORDER BY clauses for /api/listings, keyed by the `sort` query param.
+# Keep these keys in sync with SORT_OPTIONS in frontend/components/SortButton.tsx.
+SORT_ORDERS: dict[str, str] = {
+    "beds":       "(beds IS NULL) ASC, beds ASC, price_per_bed_low ASC",
+    "price_asc":  "(price_per_bed_low IS NULL) ASC, price_per_bed_low ASC, beds ASC",
+    "price_desc": "(price_per_bed_low IS NULL) ASC, price_per_bed_low DESC, beds ASC",
+    "company":    "company ASC, beds ASC, price_per_bed_low ASC",
+}
+
+
 @app.get("/api/listings")
 def get_listings(
     beds:               list[int] | None = Query(None),
+    min_price_per_bed:  int       | None = Query(None),   # floor; the buffer below never widens this end
     max_price_per_bed:  int       | None = Query(None),
     buffer_type:        str       | None = Query(None),   # "percent" | "fixed" | "exact"
     buffer_value:       float     | None = Query(None),
     availability_window: str      | None = Query(None),   # "now" | "june_2026" | ...
-    company:            str       | None = Query(None),
+    company:            list[str] | None = Query(None),   # multi-select; omitted means every source
     property_type:      str       | None = Query(None),
     penthouse:          bool      | None = Query(None),
     page:               int       | None = Query(None, ge=1),
     page_size:          int       | None = Query(None, ge=1, le=100),
+    sort:               str       | None = Query(None),
     _=Depends(verify_token),
 ):
     latest_txt = os.path.join(SNAPSHOTS_DIR, "latest.txt")
@@ -121,8 +133,18 @@ def get_listings(
         if parts:
             clauses.append(f"({' OR '.join(parts)})")
 
+    # Price is a range as of 2026-07-20. The buffer stays a ceiling-only concept:
+    # it widens how far ABOVE the stated max a listing may sit, and never moves
+    # the floor, so "between $700 and $900, +15%" means 700 <= price <= 1035.
+    if min_price_per_bed is not None:
+        clauses.append("price_per_bed_low >= ?")
+        params.append(int(min_price_per_bed))
+
     if max_price_per_bed is not None:
-        btype = buffer_type or "percent"
+        # No buffer_type means the user never picked a tolerance, which reads as
+        # "exact". It used to fall back to +15%, so an untouched control quietly
+        # returned listings above the stated max.
+        btype = buffer_type
         bval  = buffer_value
         if btype == "percent":
             ceiling = int(max_price_per_bed * (1 + (bval if bval is not None else 15) / 100))
@@ -148,8 +170,9 @@ def get_listings(
         clauses.append("availability LIKE '%Leased%'")
 
     if company:
-        clauses.append("company = ?")
-        params.append(company)
+        placeholders = ",".join("?" * len(company))
+        clauses.append(f"company IN ({placeholders})")
+        params.extend(company)
 
     if property_type:
         clauses.append("property_type = ?")
@@ -178,7 +201,10 @@ def get_listings(
             count_sql += " WHERE " + " AND ".join(clauses)
         total = con.execute(count_sql, params).fetchone()[0]
 
-    sql += " ORDER BY (beds IS NULL) ASC, beds ASC, price_per_bed_low ASC"
+    # Sort is chosen from a fixed map rather than interpolated, so the client can
+    # never inject SQL through the `sort` param. Every option pushes NULLs last and
+    # ends with a stable tiebreak, otherwise rows drift between pages.
+    sql += " ORDER BY " + SORT_ORDERS.get(sort or "", SORT_ORDERS["beds"])
     query_params = list(params)
     if page_size is not None:
         sql += " LIMIT ? OFFSET ?"

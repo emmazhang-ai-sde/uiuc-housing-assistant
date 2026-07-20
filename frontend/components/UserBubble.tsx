@@ -27,8 +27,10 @@ const pillOff   = `${pillBase} bg-mist-100 text-neutral-900`
 
 function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
   const selectedBeds = filters.beds ?? []
-  const bufferType   = filters.buffer_type ?? "percent"
-  const bufferValue  = filters.buffer_value ?? (bufferType === "fixed" ? 50 : 15)
+  // Null when the user never picked a tolerance — this snapshot echoes what was
+  // actually sent, so it must not invent a +15% that no query applied.
+  const bufferType   = filters.buffer_type
+  const bufferValue  = filters.buffer_value
 
   return (
     <div className="w-full rounded-2xl bg-white border border-mist-100 px-5 py-3 text-sm shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex flex-col gap-2">
@@ -72,7 +74,7 @@ function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
               {([ ["exact", "exact"], ["percent", "+%"], ["fixed", "+$"] ] as const).map(([type, label]) => (
                 <span key={type} className={bufferType === type ? pillOn : pillOff}>{label}</span>
               ))}
-              {bufferType !== "exact" && (
+              {(bufferType === "percent" || bufferType === "fixed") && (
                 <span className="w-11 rounded-full bg-mist-100 px-2.5 py-1 text-xs text-neutral-700">
                   {bufferValue}
                 </span>
@@ -98,12 +100,12 @@ function ReadOnlyFilterSnapshot({ filters }: { filters: Filters }) {
       <div className="flex items-center gap-5 shrink-0">
         <span className={`w-16 ${labelCls}`}>Source</span>
         <div className="flex gap-1">
-          <span className={filters.company === null ? pillOn : pillOff}>All</span>
+          <span className={!filters.company?.length ? pillOn : pillOff}>All</span>
           {COMPANIES.map(({ name, logo }) => (
             <span
               key={name}
               title={name}
-              className={`px-2.5 py-1 rounded-full ${filters.company === name ? "bg-ink-900" : "bg-mist-100"}`}
+              className={`px-2.5 py-1 rounded-full ${filters.company?.includes(name) ? "bg-ink-900" : "bg-mist-100"}`}
             >
               <img src={logo} alt={name} className="h-4 object-contain" />
             </span>
@@ -118,8 +120,9 @@ function hasActiveFilters(f: Filters): boolean {
   return (
     f.beds !== null ||
     f.availability_window !== null ||
+    f.min_price_per_bed !== null ||
     f.max_price_per_bed !== null ||
-    f.company !== null ||
+    !!f.company?.length ||
     f.property_type !== null ||
     f.penthouse !== null
   )
