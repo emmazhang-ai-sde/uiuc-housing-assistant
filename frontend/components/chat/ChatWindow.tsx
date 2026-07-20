@@ -7,6 +7,7 @@ import AssistantMessage from "@/components/AssistantMessage"
 import UserBubble from "@/components/UserBubble"
 import type { ChatMessage } from "@/hooks/useChat"
 import type { Listing } from "@/lib/api"
+import { DEFAULT_FILTERS } from "@/lib/api"
 
 const SUGGESTED = [
   "When should I start apartment hunting?",
@@ -83,7 +84,7 @@ export default function ChatWindow({ messages, isLoading, onSuggest, onSelect }:
                 listings={msg.listings}
                 maxPricePerBed={msg.maxPricePerBed ?? null}
                 query={msg.content}
-                filters={msg.filters ?? { beds: null, availability_window: null, max_price_per_bed: null, company: null, buffer_type: "percent", buffer_value: 15, property_type: null, penthouse: null }}
+                filters={msg.filters ?? DEFAULT_FILTERS}
                 filtersApplied={msg.filtersApplied ?? {}}
                 onSelect={onSelect}
               />
