@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, forwardRef, useImperativeHandle } from "react"
+import { useState, useRef, forwardRef, useImperativeHandle, useMemo } from "react"
 import Map, { Marker, Popup, Source, Layer } from "react-map-gl/maplibre"
 import type { MapRef } from "react-map-gl/maplibre"
 import type { FillLayerSpecification, LineLayerSpecification } from "maplibre-gl"
@@ -9,11 +9,16 @@ import { LANDMARKS, Landmark } from "@/lib/landmarks"
 import { COMPANY_LOGOS } from "@/lib/companies"
 import { availabilityStatus, bedsLabel } from "@/lib/availability"
 import { exportMapAsHtml } from "@/lib/exportMap"
+import { buildMapStyle, GRAIN_DATA_URI, DEFAULT_THEME, themePins, pinTextColor, type MapTheme } from "@/lib/mapTheme"
 
-const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron"
 const MAP_HEIGHT = "clamp(560px, 60vh, 720px)"
 
 const DEFAULT_VIEW = { longitude: -88.227, latitude: 40.1095, zoom: 14 }
+
+// react-map-gl's MapProps type omits maplibre's preserveDrawingBuffer option
+// (needed so the WebGL canvas can be exported); pass it through untyped.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MAP_EXTRA_PROPS = { preserveDrawingBuffer: true } as any
 
 // Exact OSM polygon for the UIUC Main Quad (way fetched from Overpass API).
 // Coordinates are [lng, lat] per GeoJSON spec.
@@ -80,47 +85,72 @@ const QUAD_OUTLINE_LAYER: LineLayerSpecification = {
   },
 }
 
-// Mirrors the badge colors in ListingCard.tsx / globals.css exactly.
-const PIN_COLORS: Record<string, { bg: string; text: string }> = {
-  now:         { bg: "#D2F55E", text: "#1a1a1a" },  // --color-now-100
-  available:   { bg: "#C7DDB5", text: "#1a1a1a" },  // same as badge
-  unavailable: { bg: "#f5f5f5", text: "#1a1a1a" },  // neutral-100
-}
-
-function pinColors(l: Listing) {
-  return PIN_COLORS[availabilityStatus(l.availability ?? "")]
-}
-
 function priceLabel(l: Listing): string {
   const v = l.beds <= 1 ? l.price_total_low : l.price_per_bed_low
   return v != null ? `$${v.toLocaleString()}` : "—"
 }
 
+// ── Illustrated building stickers (geo-anchored, scale with zoom) ──────────
+// Each hand-drawn building is pinned over its real footprint via an image
+// source, so it grows/shrinks with zoom. `widthMeters` is the on-ground width;
+// `aspect` is the PNG's height/width so it never distorts. Add more by
+// extending this array.
+type BuildingSticker = { id: string; url: string; lat: number; lng: number; widthMeters: number; aspect: number }
+
+const BUILDING_STICKERS: BuildingSticker[] = [
+  // Grainger Engineering Library illustration over its real footprint.
+  { id: "grainger-library", url: "/landmark/Grainger-library.png", lat: 40.1125, lng: -88.2269, widthMeters: 150, aspect: 0.512 },
+  // Campus Instructional Facility, one block west of Grainger.
+  { id: "cif", url: "/landmark/CIF.png", lat: 40.1125, lng: -88.2283, widthMeters: 90, aspect: 0.667 },
+]
+
+function stickerCorners(s: BuildingSticker): [[number, number], [number, number], [number, number], [number, number]] {
+  const dLng = (s.widthMeters / 2) / (111320 * Math.cos((s.lat * Math.PI) / 180))
+  const dLat = (s.widthMeters * s.aspect / 2) / 110540
+  return [
+    [s.lng - dLng, s.lat + dLat], // top-left
+    [s.lng + dLng, s.lat + dLat], // top-right
+    [s.lng + dLng, s.lat - dLat], // bottom-right
+    [s.lng - dLng, s.lat - dLat], // bottom-left
+  ]
+}
+
 interface Props {
   listings: Listing[]
   filters: Filters
+  theme?: MapTheme
+  showBuildingSticker?: boolean
   walkMinsByUrl?: Record<string, number | null>
   mapHeight?: string
   className?: string
+  // Panel mode: when onSelectListing is provided, pin clicks hand the listing
+  // to an external detail panel instead of opening the built-in popup.
+  selectedListing?: Listing | null
+  onSelectListing?: (l: Listing | null) => void
 }
 
 export interface MapViewHandle {
   saveMapHtml: () => Promise<void>
 }
 
-const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, filters, walkMinsByUrl, mapHeight, className }, ref) {
+const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, filters, theme = DEFAULT_THEME, showBuildingSticker, walkMinsByUrl, mapHeight, className, selectedListing, onSelectListing }, ref) {
   const [popup, setPopup]                   = useState<Listing | null>(null)
   const [landmarkPopup, setLandmarkPopup]   = useState<Landmark | null>(null)
   const [saving, setSaving]                 = useState(false)
   const mapRef                              = useRef<MapRef>(null)
   const mapped = listings.filter(l => l.lat != null && l.lng != null)
 
+  // Basemap style derived from the chosen theme (Classic → untouched positron).
+  const mapStyle = useMemo(() => buildMapStyle(theme), [theme])
+  // Availability price-pin backgrounds from the theme (Classic → lime/sage).
+  const pins = useMemo(() => themePins(theme), [theme])
+
   async function saveMapImage() {
     const mapInstance = mapRef.current?.getMap()
     if (!mapInstance) return
     setSaving(true)
     try {
-      await exportMapAsHtml(mapInstance, listings, filters)
+      await exportMapAsHtml(mapInstance, listings, filters, theme)
     } catch (e) {
       console.error("Map export failed:", e)
     } finally {
@@ -132,14 +162,13 @@ const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, fi
 
   return (
     <div className={className ?? "relative rounded-3xl overflow-hidden shadow-[0_2px_12px_-2px_rgba(0,0,0,0.06)]"}>
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Map
         ref={mapRef}
-        {...({ preserveDrawingBuffer: true } as any)}
+        {...MAP_EXTRA_PROPS}
         initialViewState={DEFAULT_VIEW}
         style={{ width: "100%", height: mapHeight ?? MAP_HEIGHT }}
-        mapStyle={MAP_STYLE}
-        onClick={() => { setPopup(null); setLandmarkPopup(null) }}
+        mapStyle={mapStyle}
+        onClick={() => { setPopup(null); setLandmarkPopup(null); onSelectListing?.(null) }}
       >
         {/* Main Quad polygon */}
         <Source id="main-quad" type="geojson" data={MAIN_QUAD_GEOJSON}>
@@ -147,22 +176,39 @@ const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, fi
           <Layer {...QUAD_OUTLINE_LAYER} />
         </Source>
 
+        {/* Illustrated building stickers, pinned over their real footprint */}
+        {showBuildingSticker && BUILDING_STICKERS.map(s => (
+          <Source key={s.id} id={`sticker-${s.id}`} type="image" url={s.url} coordinates={stickerCorners(s)}>
+            <Layer id={`sticker-${s.id}-img`} type="raster" paint={{ "raster-opacity": 1, "raster-fade-duration": 0, "raster-resampling": "linear" }} />
+          </Source>
+        ))}
+
         {/* Listing price pins */}
         {mapped.map((l, i) => {
-          const { bg, text } = pinColors(l)
+          const bg = pins[availabilityStatus(l.availability ?? "")]
+          const text = pinTextColor(bg)
+          // Same identity the pipeline uses for stable listing IDs: address|unit_type.
+          const isSelected = selectedListing != null
+            && l.address === selectedListing.address
+            && l.unit_type === selectedListing.unit_type
           return (
             <Marker
               key={i}
               longitude={l.lng!}
               latitude={l.lat!}
               anchor="bottom"
-              onClick={e => { e.originalEvent.stopPropagation(); setPopup(l); setLandmarkPopup(null) }}
+              onClick={e => {
+                e.originalEvent.stopPropagation()
+                if (onSelectListing) onSelectListing(l)
+                else setPopup(l)
+                setLandmarkPopup(null)
+              }}
             >
               <div
                 style={{ background: bg, color: text }}
-                className="px-2 py-0.5 rounded-full text-[11px] font-semibold shadow-md
+                className={`px-2 py-0.5 rounded-full text-[11px] font-semibold shadow-md
                            cursor-pointer hover:scale-110 transition-transform select-none
-                           border border-white/60"
+                           border ${isSelected ? "border-neutral-900 scale-110 ring-2 ring-neutral-900/20" : "border-white/60"}`}
               >
                 {priceLabel(l)}
               </div>
@@ -226,8 +272,8 @@ const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, fi
                   href={popup.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="shrink-0 text-[11px] font-bold text-neutral-900
-                             bg-neutral-100 hover:bg-neutral-900 hover:text-white
+                  className="shrink-0 text-[11px] font-bold text-white
+                             bg-neutral-900 hover:bg-black
                              px-2.5 py-1 rounded-full transition-colors"
                 >
                   View Listing
@@ -260,6 +306,20 @@ const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, fi
           </Popup>
         )}
       </Map>
+
+      {/* Paper-grain overlay — sits above tiles (and pins) at low opacity */}
+      {theme.grain > 0 && (
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url("${GRAIN_DATA_URI}")`,
+            backgroundSize: "220px 220px",
+            mixBlendMode: "multiply",
+            opacity: theme.grain,
+          }}
+        />
+      )}
 
       {mapped.length < listings.length && (
         <div className="px-4 py-2 text-xs text-neutral-400 bg-white border-t border-neutral-100">

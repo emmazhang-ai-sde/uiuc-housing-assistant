@@ -24,7 +24,7 @@ export function buildExportSlug(filters: Filters): string {
     parts.push(avMap[filters.availability_window] ?? filters.availability_window)
   }
 
-  if (filters.company) {
+  if (filters.company?.length) {
     const companyAbbr: Record<string, string> = {
       "Green Street Realty":  "gsr",
       "University Group":     "ug",
@@ -36,10 +36,19 @@ export function buildExportSlug(filters: Filters): string {
       "JSJ Property Management": "jsj",
       "Octave":               "octave",
     }
+    // Multi-select: abbreviate each pick and join, so a two-company export reads
+    // "gsr-ug". Past three the count keeps the filename from running away.
+    const slug = (c: string) =>
+      companyAbbr[c] ?? c.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
     parts.push(
-      companyAbbr[filters.company] ??
-      filters.company.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+      filters.company.length > 3
+        ? `${filters.company.length}sources`
+        : filters.company.map(slug).join("-")
     )
+  }
+
+  if (filters.min_price_per_bed != null) {
+    parts.push(`min${filters.min_price_per_bed}`)
   }
 
   if (filters.max_price_per_bed != null) {

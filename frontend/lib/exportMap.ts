@@ -3,19 +3,9 @@ import type { Listing, Filters } from "@/lib/api"
 import { LANDMARKS } from "@/lib/landmarks"
 import { availabilityStatus, bedsLabel } from "@/lib/availability"
 import { downloadBlob, buildExportSlug } from "@/lib/exportDom"
+import { buildMapStyle, GRAIN_DATA_URI, themePins, pinTextColor, type MapTheme } from "@/lib/mapTheme"
 
-const MAP_STYLE    = "https://tiles.openfreemap.org/styles/positron"
 const MAPLIBRE_VER = "5.24.0"
-
-const PIN_COLORS: Record<string, { bg: string; text: string }> = {
-  now:         { bg: "#D2F55E", text: "#1a1a1a" },
-  available:   { bg: "#C7DDB5", text: "#1a1a1a" },
-  unavailable: { bg: "#f5f5f5", text: "#1a1a1a" },
-}
-
-function pinColors(l: Listing) {
-  return PIN_COLORS[availabilityStatus(l.availability ?? "")]
-}
 
 function priceLabel(l: Listing): string {
   const v = l.beds <= 1 ? l.price_total_low : l.price_per_bed_low
@@ -37,8 +27,22 @@ export async function exportMapAsHtml(
   _sourceMap: maplibregl.Map,
   listings: Listing[],
   filters: Filters,
+  theme: MapTheme,
 ) {
   const mapped = listings.filter(l => l.lat != null && l.lng != null)
+
+  // Recolored basemap style + optional paper-grain overlay, matching the live map.
+  const mapStyle  = buildMapStyle(theme)
+  const grainCss  = theme.grain > 0
+    ? `#grain { position: fixed; inset: 0; pointer-events: none; mix-blend-mode: multiply;
+        background-image: url("${GRAIN_DATA_URI}"); background-size: 220px 220px;
+        opacity: ${theme.grain}; z-index: 5; }`
+    : ""
+  const grainDiv  = theme.grain > 0 ? `<div id="grain"></div>` : ""
+
+  // Themed availability pin colors (match the live map).
+  const pins  = themePins(theme)
+  const pinBg = (l: Listing) => pins[availabilityStatus(l.availability ?? "")]
 
   const lngs = mapped.map(l => l.lng!)
   const lats  = mapped.map(l => l.lat!)
@@ -49,8 +53,8 @@ export async function exportMapAsHtml(
     url:          l.url,
     label:        priceLabel(l),
     suffix:       priceSuffix(l),
-    bg:           pinColors(l).bg,
-    text:         pinColors(l).text,
+    bg:           pinBg(l),
+    text:         pinTextColor(pinBg(l)),
     photo_url:    l.photo_url   ?? "",
     company:      l.company     ?? "",
     address:      l.address     ?? "",
@@ -233,10 +237,12 @@ html, body { width: 100%; height: 100%; }
 /* text-green-700 font-medium  /  text-neutral-400 */
 .popup-avail-yes { color: #15803d; font-weight: 500; }
 .popup-avail-no  { color: #a3a3a3; }
+${grainCss}
 </style>
 </head>
 <body>
 <div id="map"></div>
+${grainDiv}
 <div id="filter-bar"></div>
 <script>
 const MARKERS   = ${JSON.stringify(markers)};
@@ -266,7 +272,7 @@ const MAIN_QUAD = {
 
 const map = new maplibregl.Map({
   container: "map",
-  style: "${MAP_STYLE}",
+  style: ${JSON.stringify(mapStyle)},
   bounds: [[${Math.min(...lngs)}, ${Math.min(...lats)}], [${Math.max(...lngs)}, ${Math.max(...lats)}]],
   fitBoundsOptions: { padding: 60 },
 });
