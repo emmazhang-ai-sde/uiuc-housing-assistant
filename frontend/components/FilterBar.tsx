@@ -2,31 +2,13 @@
 
 import { Filters, DEFAULT_FILTERS } from "@/lib/api"
 import { COMPANIES, UNSCRAPABLE_COMPANIES, FULLY_LEASED_COMPANIES, ExcludedCompany } from "@/lib/companies"
+import { BED_OPTIONS, AVAIL_OPTIONS } from "@/lib/filterOptions"
 
 type Props = {
   filters: Filters
   onChange: (f: Filters) => void
   className?: string
 }
-
-const BED_OPTIONS: { label: string; value: number | null }[] = [
-  { label: "Any",    value: null },
-  { label: "Studio", value: 0 },
-  { label: "1",      value: 1 },
-  { label: "2",      value: 2 },
-  { label: "3",      value: 3 },
-  { label: "4",      value: 4 },
-  { label: "5+",     value: 5 },
-]
-
-const AVAIL_OPTIONS: { label: string; value: "now" | "june_2026" | "july_2026" | "august_2026" | "leased" | null; dot?: string; dotBorder?: boolean }[] = [
-  { label: "All",     value: null },
-  { label: "Now",     value: "now",         dot: "#D2F55E" },
-  { label: "Jun '26", value: "june_2026" },
-  { label: "Jul '26", value: "july_2026" },
-  { label: "Aug '26", value: "august_2026", dot: "#C7DDB5" },
-  { label: "Leased",  value: "leased",      dot: "#f5f5f5", dotBorder: true },
-]
 
 function Pill({ active, onClick, children }: {
   active: boolean
@@ -64,12 +46,19 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
     onChange({ ...filters, beds: next.length ? next : null })
   }
 
+  function toggleCompany(name: string) {
+    const cur = filters.company ?? []
+    const next = cur.includes(name) ? cur.filter(c => c !== name) : [...cur, name]
+    onChange({ ...filters, company: next.length ? next : null })
+  }
+
   const hasAnyFilter =
     !!filters.beds?.length ||
+    filters.min_price_per_bed != null ||
     filters.max_price_per_bed != null ||
     !!filters.property_type ||
     filters.availability_window != null ||
-    !!filters.company
+    !!filters.company?.length
 
   return (
     <div className={`bg-white/95 backdrop-blur-sm rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] px-4 py-3 flex flex-col gap-2.5 text-sm min-w-max ${className}`}>
@@ -93,9 +82,9 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
 
       <Divider />
 
-      {/* Price */}
+      {/* Price — a range as of 2026-07-20. The buffer applies to the max only. */}
       <div className="flex items-center gap-3">
-        <span className={labelCls}>Max $/bed</span>
+        <span className={labelCls}>$/bed</span>
         <div className="flex items-center gap-1.5">
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none">$</span>
@@ -104,7 +93,24 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={4}
-              placeholder="900"
+              placeholder="Min"
+              value={filters.min_price_per_bed ?? ""}
+              onChange={e => {
+                const v = e.target.value.replace(/\D/g, "").slice(0, 4)
+                onChange({ ...filters, min_price_per_bed: v ? Number(v) : null })
+              }}
+              className="pl-6 pr-2 py-1 w-16 rounded-full text-xs text-neutral-700 bg-mist-100 focus:outline-none focus:ring-2 focus:ring-mint-400"
+            />
+          </div>
+          <span className="text-neutral-400 text-xs">–</span>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs pointer-events-none">$</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              placeholder="Max"
               value={filters.max_price_per_bed ?? ""}
               onChange={e => {
                 const v = e.target.value.replace(/\D/g, "").slice(0, 4)
@@ -117,7 +123,7 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
             {([ ["exact", "Exact"], ["percent", "+%"], ["fixed", "+$"] ] as const).map(([type, label]) => (
               <Pill
                 key={type}
-                active={(filters.buffer_type ?? "percent") === type}
+                active={filters.buffer_type === type}
                 onClick={() => onChange({
                   ...filters,
                   buffer_type: type,
@@ -127,7 +133,8 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
                 {label}
               </Pill>
             ))}
-            {(filters.buffer_type ?? "percent") !== "exact" && (
+            {/* Amount box belongs to +%/+$ only — see FilterChips.tsx */}
+            {(filters.buffer_type === "percent" || filters.buffer_type === "fixed") && (
               <input
                 type="text"
                 inputMode="numeric"
@@ -227,7 +234,7 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
         <div className="flex items-center gap-3">
           <span className={labelCls}>Source</span>
           <Pill
-            active={filters.company === null}
+            active={!filters.company?.length}
             onClick={() => onChange({ ...filters, company: null })}
           >
             All
@@ -240,9 +247,9 @@ export default function FilterBar({ filters, onChange, className = "" }: Props) 
               <button
                 key={name}
                 title={name}
-                onClick={() => onChange({ ...filters, company: filters.company === name ? null : name })}
+                onClick={() => toggleCompany(name)}
                 className={`px-2.5 py-1 rounded-full transition-colors ${
-                  filters.company === name ? "bg-ink-900" : "bg-mist-100 hover:bg-neutral-200"
+                  filters.company?.includes(name) ? "bg-ink-900" : "bg-mist-100 hover:bg-neutral-200"
                 }`}
               >
                 <img src={logo} alt={name} className="h-4 object-contain" />

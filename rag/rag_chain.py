@@ -275,7 +275,9 @@ def build_where(filters: dict) -> dict | None:
 
     if filters.get("max_price_per_bed") is not None:
         price        = filters["max_price_per_bed"]
-        btype        = filters.get("buffer_type") or "percent"
+        # Mirrors backend/main.py: no explicit tolerance means exact, so a stated
+        # ceiling is honoured as-is rather than quietly widened by PRICE_FLEX_MARGIN.
+        btype        = filters.get("buffer_type")
         bvalue       = filters.get("buffer_value")
         if btype == "percent":
             ceiling = int(price * (1 + (bvalue if bvalue is not None else PRICE_FLEX_MARGIN * 100) / 100))
@@ -310,8 +312,13 @@ def build_where(filters: dict) -> dict | None:
     elif filters.get("available_only"):
         clauses.append({"is_available": {"$eq": True}})
 
-    if filters.get("company"):
-        clauses.append({"company": {"$eq": filters["company"]}})
+    # Company is multi-select as of 2026-07-20 and arrives from the UI filters,
+    # never from extract_filters (the prompt has no company field). A bare string
+    # is still accepted so older persisted conversations keep filtering.
+    company = filters.get("company")
+    if company:
+        names = [company] if isinstance(company, str) else list(company)
+        clauses.append({"company": {"$eq": names[0]} if len(names) == 1 else {"$in": names}})
 
     if filters.get("property_type"):
         clauses.append({"property_type": {"$eq": filters["property_type"]}})

@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import AppHeader from "@/components/AppHeader"
-import FilterBar from "@/components/FilterBar"
+import FilterChips from "@/components/FilterChips"
 import ListingGrid from "@/components/ListingGrid"
-import { fetchListingsPage, fetchAllListings, Listing, Filters } from "@/lib/api"
+import SortButton, { DEFAULT_SORT } from "@/components/SortButton"
+import { fetchListingsPage, fetchAllListings, Listing, Filters, ListingSort } from "@/lib/api"
 import PropertyPanel from "@/components/PropertyPanel"
 import { useFilters } from "@/contexts/FiltersContext"
 import { logEvent } from "@/lib/logEvent"
@@ -22,15 +23,17 @@ export default function Home() {
   // enough to just load in full and scroll.
   const hasAnyFilter =
     !!filters.beds?.length ||
+    filters.min_price_per_bed != null ||
     filters.max_price_per_bed != null ||
     !!filters.property_type ||
     filters.availability_window != null ||
-    !!filters.company
+    !!filters.company?.length
 
   const [catalogListings, setCatalogListings] = useState<Listing[]>([])
   const [catalogTotal, setCatalogTotal]       = useState(0)
   const [catalogPage, setCatalogPage]         = useState(1)
   const [catalogLoading, setCatalogLoading]   = useState(true)
+  const [sort, setSort]                       = useState<ListingSort>(DEFAULT_SORT)
 
   useEffect(() => { logEvent("card_view") }, [])
 
@@ -44,8 +47,8 @@ export default function Home() {
     setCatalogLoading(true)
 
     const request = hasAnyFilter
-      ? fetchAllListings(filters).then(listings => ({ listings, total: listings.length }))
-      : fetchListingsPage(filters, 1, CATALOG_PAGE_SIZE)
+      ? fetchAllListings(filters, sort).then(listings => ({ listings, total: listings.length }))
+      : fetchListingsPage(filters, 1, CATALOG_PAGE_SIZE, sort)
 
     request
       .then(({ listings, total }) => {
@@ -61,11 +64,13 @@ export default function Home() {
       })
       .finally(() => { if (!cancelled) setCatalogLoading(false) })
     return () => { cancelled = true }
-  }, [filters, hasAnyFilter])
+    // `sort` is a dep so changing it refetches from page 1, which the block above
+    // already does — a new ordering makes the old page number meaningless.
+  }, [filters, hasAnyFilter, sort])
 
   function goToCatalogPage(page: number) {
     setCatalogLoading(true)
-    fetchListingsPage(filters, page, CATALOG_PAGE_SIZE)
+    fetchListingsPage(filters, page, CATALOG_PAGE_SIZE, sort)
       .then(({ listings, total }) => {
         setCatalogListings(listings)
         setCatalogTotal(total)
@@ -78,32 +83,58 @@ export default function Home() {
   return (
     <div className={`${inter.className} relative flex flex-col h-screen bg-mist-50 overflow-hidden print:h-auto print:overflow-visible`}>
       <div className="flex flex-1 min-h-0">
-        {/* Filter block — positioned to match the Map view's filter panel exactly */}
-        <div className="shrink-0 overflow-y-auto pt-4 px-4 pb-4 print:hidden">
-          <FilterBar filters={filters} onChange={setFilters} />
-        </div>
-
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 pt-24 pb-6 print:overflow-visible">
-          <div className="max-w-7xl mx-auto">
-            <BrowseCatalog
-              listings={catalogListings}
-              total={catalogTotal}
-              page={catalogPage}
-              pageSize={CATALOG_PAGE_SIZE}
-              loading={catalogLoading}
-              paginated={!hasAnyFilter}
+        {/* One scroll container for the whole page. The detail panel used to be a
+            flush sibling column pinned to the viewport edge, which is why the grid
+            needed a mirrored 444px of left padding to look centred. It is now a
+            rounded block inside the content row below, so panel and grid centre
+            together as one unit and the padding trick is gone. */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden pt-20 pb-6 px-6 print:overflow-visible">
+          {/* Filter chips, centred under the floating header — the same bar the
+              Map view uses, replacing the left sidebar panel this page had. It
+              scrolls with the grid rather than floating, so nothing covers the
+              cards. */}
+          {/* Sort rides in the chip row's `trailing` slot — the same slot the Map
+              uses for its color picker — so it sits inline with Beds/Price/Type
+              rather than on a row of its own above the grid. */}
+          <div className="flex justify-center mb-4 print:hidden">
+            <FilterChips
               filters={filters}
-              onPageChange={goToCatalogPage}
-              onSelect={handleSelect}
+              onChange={setFilters}
+              resultCount={catalogTotal || null}
+              loading={catalogLoading}
+              trailing={<SortButton value={sort} onChange={setSort} />}
             />
           </div>
-        </div>
 
-        {/* Docked detail panel — mirrors the Chat view. Reserves a fixed column on
-            the right so a selected listing's details appear beside the grid rather
-            than a modal covering it. The grid runs 3-wide to leave room for it. */}
-        <div className="contents print:hidden">
-          <PropertyPanel listing={selectedListing} onClose={() => setSelectedListing(null)} />
+          {/* Detail block + grid share one centred row. `items-start` is what puts
+              the block's top edge level with the first row of cards instead of
+              running to the top of the page. Wider than the usual max-w-7xl because
+              this row now carries the 480px panel that used to live outside it. */}
+          <div className="mx-auto flex max-w-[1400px] items-start gap-6">
+            <div className="contents print:hidden">
+              <PropertyPanel
+                listing={selectedListing}
+                onClose={() => setSelectedListing(null)}
+                variant="block"
+              />
+            </div>
+
+            {/* min-w-0 so the grid can shrink beside the fixed-width block rather
+                than forcing the row wider than its container. */}
+            <div className="min-w-0 flex-1">
+              <BrowseCatalog
+                listings={catalogListings}
+                total={catalogTotal}
+                page={catalogPage}
+                pageSize={CATALOG_PAGE_SIZE}
+                loading={catalogLoading}
+                paginated={!hasAnyFilter}
+                filters={filters}
+                onPageChange={goToCatalogPage}
+                onSelect={handleSelect}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -140,12 +171,6 @@ function BrowseCatalog({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3 pt-4">
-        <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">
-          {total.toLocaleString()} listings, sorted by beds
-        </span>
-      </div>
-
       {loading && listings.length === 0 ? (
         <div className="text-center text-sm text-neutral-400 py-16">Loading listings…</div>
       ) : (
