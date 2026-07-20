@@ -3,12 +3,15 @@
 import { useEffect, useRef, useState  } from "react"
 import dynamic from "next/dynamic"
 import AppHeader from "@/components/AppHeader"
-import MapFilterBar from "@/components/MapFilterBar"
+import FilterChips from "@/components/FilterChips"
 import SaveButton from "@/components/SaveButton"
+import MapColorPicker from "@/components/MapColorPicker"
 import { fetchAllListings } from "@/lib/api"
 import type { Listing } from "@/lib/api"
 import type { MapViewHandle } from "@/components/MapView"
+import { DrawerContent } from "@/components/PropertyDrawer"
 import { useSaveAction } from "@/hooks/useSaveAction"
+import { useMapTheme } from "@/hooks/useMapTheme"
 import { useFilters } from "@/contexts/FiltersContext"
 import { logEvent } from "@/lib/logEvent"
 
@@ -16,11 +19,26 @@ const MapView = dynamic(() => import("@/components/MapView"), { ssr: false })
 
 export default function MapPage() {
   const { filters, setFilters }     = useFilters()
+  const { theme, presets, custom, applyPreset, applyCustom, setColors, setGrain, reset } = useMapTheme()
   const [listings, setListings]     = useState<Listing[]>([])
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState(false)
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
   const mapSave    = useSaveAction()
   const mapViewRef = useRef<MapViewHandle>(null)
+
+  function handleSelectListing(listing: Listing | null) {
+    setSelectedListing(listing)
+    if (listing) logEvent("listing_view", { url: listing.url, company: listing.company, source: "map" })
+  }
+
+  // Escape closes the detail panel, matching the Card view drawer.
+  useEffect(() => {
+    if (!selectedListing) return
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setSelectedListing(null) }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [selectedListing])
 
   useEffect(() => {
     let cancelled = false
@@ -41,10 +59,11 @@ export default function MapPage() {
 
   const hasAnyFilter =
     !!filters.beds?.length ||
+    filters.min_price_per_bed != null ||
     filters.max_price_per_bed != null ||
     !!filters.property_type ||
     filters.availability_window != null ||
-    !!filters.company
+    !!filters.company?.length
 
   function handleSave() {
     if (!mapViewRef.current) return
@@ -58,8 +77,12 @@ export default function MapPage() {
         ref={mapViewRef}
         listings={listings}
         filters={filters}
+        theme={theme}
+        showBuildingSticker
         mapHeight="100%"
         className="absolute inset-0 w-full h-full"
+        selectedListing={selectedListing}
+        onSelectListing={handleSelectListing}
       />
 
       {/* Floating header pill, centered on top of the map */}
@@ -67,7 +90,30 @@ export default function MapPage() {
         <AppHeader />
       </div>
 
-      <MapFilterBar filters={filters} onChange={setFilters} />
+      {/* Filter chips run along the top under the floating header (Expedia
+          pattern), leaving the map itself unobstructed. The row is centred to
+          line up with the header pill above it, and the color picker rides at
+          its right end so every control lives on one line. */}
+      <div className="absolute top-[68px] left-4 right-4 z-20 flex justify-center">
+        <FilterChips
+          filters={filters}
+          onChange={setFilters}
+          resultCount={error ? null : listings.length}
+          loading={loading}
+          trailing={
+            <MapColorPicker
+              theme={theme}
+              presets={presets}
+              custom={custom}
+              onApplyPreset={applyPreset}
+              onApplyCustom={applyCustom}
+              onSetColors={setColors}
+              onSetGrain={setGrain}
+              onReset={reset}
+            />
+          }
+        />
+      </div>
 
         {/* Save button — top right */}
         <div className="absolute top-4 right-4 z-10">
@@ -83,8 +129,8 @@ export default function MapPage() {
 
         {/* Loading overlay */}
         {loading && (
-          <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px] flex items-center justify-center z-20 pointer-events-none">
-            <div className="bg-white/90 rounded-2xl shadow-md px-5 py-3 text-sm text-neutral-500">
+          <div className="absolute inset-0 bg-white/30 backdrop-blur-[2px] flex items-center justify-center z-10 pointer-events-none">
+            <div className="bg-white/90 rounded-2xl border border-mist-100 shadow-md px-5 py-3 text-sm text-neutral-500">
               Loading listings…
             </div>
           </div>
@@ -93,7 +139,7 @@ export default function MapPage() {
         {/* Empty state */}
         {!loading && !error && listings.length === 0 && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-            <div className="bg-white/90 rounded-2xl shadow-md px-5 py-3 text-sm text-neutral-500">
+            <div className="bg-white/90 rounded-2xl border border-mist-100 shadow-md px-5 py-3 text-sm text-neutral-500">
               No listings match the current filters.
             </div>
           </div>
@@ -102,11 +148,23 @@ export default function MapPage() {
         {/* Error state */}
         {error && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-            <div className="bg-white/90 rounded-2xl shadow-md px-5 py-3 text-sm text-red-500">
+            <div className="bg-white/90 rounded-2xl border border-mist-100 shadow-md px-5 py-3 text-sm text-[#FF465A]">
               Failed to load listings. Please try again.
             </div>
           </div>
         )}
+
+        {/* Listing detail panel — same content as the Card view drawer, but no
+            backdrop so the map stays interactive while it is open */}
+        <div
+          className={`absolute inset-y-0 right-0 z-40 w-full max-w-[420px] bg-white shadow-2xl overflow-y-auto transition-transform duration-300 ease-in-out ${
+            selectedListing ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          {selectedListing && (
+            <DrawerContent listing={selectedListing} onClose={() => setSelectedListing(null)} />
+          )}
+        </div>
     </div>
   )
 }
