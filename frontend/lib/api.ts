@@ -62,9 +62,17 @@ export interface DataStatus {
   property_count: number | null
 }
 
+// Every caller swallows the rejection (the counts degrade to "…" placeholders
+// rather than breaking the page), so warn here or the failure is invisible.
 export async function fetchStatus(): Promise<DataStatus> {
-  const res = await fetch(`${API_URL}/api/status`)
-  if (!res.ok) throw new Error(`API error: ${res.status}`)
+  const res = await fetch(`/api/status`)
+  if (!res.ok) {
+    console.warn(
+      `fetchStatus: /api/status returned ${res.status}. Listing/property counts ` +
+      `will render as "…". Is the Python backend running, and is BACKEND_URL set?`
+    )
+    throw new Error(`API error: ${res.status}`)
+  }
   return res.json()
 }
 
