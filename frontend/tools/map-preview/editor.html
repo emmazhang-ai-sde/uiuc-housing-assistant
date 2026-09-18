@@ -38,8 +38,8 @@
     <div id="controls"></div>
 
     <div class="slider">
-      <label>Paper grain <span id="grainVal">5%</span></label>
-      <input id="grain-op" type="range" min="0" max="30" value="5" />
+      <label>Paper grain <span id="grainVal">0%</span></label>
+      <input id="grain-op" type="range" min="0" max="30" value="0" />
     </div>
 
     <div class="actions">
@@ -77,9 +77,9 @@ const ROLES = [
 ];
 
 const DEFAULT = {
-  LAND:"#FFFFFF", RESID:"#FBFBFA", ROAD:"#9E9E9E", CASE:"#1E1E1E", PATH:"#B4B4B4",
-  LAWN:"#B7D9A0", WOOD:"#9BC47C", WATER:"#A6CEE8", WATERLINE:"#87B4DA",
-  BLDG:"#B79A7C", BLDG_OUT:"#1E1E1E", LABEL:"#1A1A1A", HALO:"#FFFFFF", BOUNDARY:"#2A2A2A",
+  LAND:"#FFFFFF", RESID:"#FFFDEE", ROAD:"#FFFFFF", CASE:"#FFFFFF", PATH:"#D6D6D6",
+  LAWN:"#CFECCA", WOOD:"#CFECCA", WATER:"#A4D5F2", WATERLINE:"#A4D5F2",
+  BLDG:"#E9EAEF", BLDG_OUT:"#C1C1D1", LABEL:"#546E7A", HALO:"#FFFFFF", BOUNDARY:"#C9C4BC",
 };
 // Persist the working palette + grain across refreshes; cleared only by Reset.
 const STORAGE_KEY = "uiuc:map-editor";
@@ -95,7 +95,7 @@ function save(){
 }
 const saved = loadSaved();
 let PAL = saved ? { ...DEFAULT, ...saved.colors } : { ...DEFAULT };
-const savedGrain = saved && typeof saved.grain === "number" ? saved.grain : 5;
+const savedGrain = saved && typeof saved.grain === "number" ? saved.grain : 0;
 
 const GRAIN_SVG = "<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'>"
   + "<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/>"
@@ -164,7 +164,7 @@ document.getElementById("copy").addEventListener("click", ()=>{
 document.getElementById("reset").addEventListener("click", ()=>{
   PAL={...DEFAULT};
   for(const [k] of ROLES){ textInputs[k].col.value=PAL[k]; textInputs[k].txt.value=PAL[k]; textInputs[k].txt.classList.remove("bad"); }
-  grainOp.value=5; applyGrain(); apply();
+  grainOp.value=0; applyGrain(); apply();
   try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}  // clear only on manual reset
 });
 

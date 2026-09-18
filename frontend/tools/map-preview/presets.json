@@ -1,23 +1,26 @@
 {
   "presets": [
     {
-      "name": "Lavender",
+      "name": "Default",
       "grain": 0,
       "colors": {
-        "LAND": "#F1EFF6",
-        "RESID": "#ECE9F1",
-        "LAWN": "#CFE5BB",
-        "WOOD": "#CFE5BB",
-        "WATER": "#E0EDF8",
-        "WATERLINE": "#87B4DA",
-        "BLDG": "#B8A8C8",
-        "BLDG_OUT": "#FFFFFF",
-        "ROAD": "#E1DFE2",
+        "LAND": "#FFFFFF",
+        "RESID": "#FFFDEE",
+        "LAWN": "#CFECCA",
+        "WOOD": "#CFECCA",
+        "WATER": "#A4D5F2",
+        "WATERLINE": "#A4D5F2",
+        "BLDG": "#E9EAEF",
+        "BLDG_OUT": "#C1C1D1",
+        "ROAD": "#FFFFFF",
         "CASE": "#FFFFFF",
-        "PATH": "#FFFFFF",
-        "LABEL": "#852CCF",
+        "PATH": "#D6D6D6",
+        "LABEL": "#546E7A",
         "HALO": "#FFFFFF",
-        "BOUNDARY": "#FFFFFF"
+        "BOUNDARY": "#C9C4BC",
+        "PIN_NOW": "#EED6DA",
+        "PIN_AVAIL": "#EED6DA",
+        "PIN_UNAVAIL": "#F5F5F5"
       }
     }
   ]

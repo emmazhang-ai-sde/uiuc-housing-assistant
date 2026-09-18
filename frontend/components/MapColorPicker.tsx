@@ -4,18 +4,16 @@ import { useEffect, useState } from "react"
 import {
   type MapPalette,
   type MapTheme,
-  BASELINE_PALETTE,
-  CLASSIC_THEME,
   CUSTOM_THEME_NAME,
+  DEFAULT_THEME,
   PALETTE_GROUPS,
 } from "@/lib/mapTheme"
 
 type Props = {
   theme: MapTheme
   presets: MapTheme[]
-  // The remembered hand-edited palette, or null before the user has made one.
   custom: MapTheme | null
-  onApplyPreset: (name: string) => void
+  onApplyDefault: () => void
   onApplyCustom: () => void
   onSetColors: (patch: Partial<MapPalette>) => void
   onSetGrain: (grain: number) => void
@@ -27,10 +25,8 @@ const HEX = /^#[0-9a-fA-F]{6}$/
 function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const [text, setText] = useState(value)
   const [bad, setBad] = useState(false)
-  // Resync the local buffer when the canonical value changes externally
-  // (preset applied / reset) — the React-recommended "adjust state during
-  // render" pattern, avoiding a state-setting effect.
   const [prevValue, setPrevValue] = useState(value)
+
   if (value !== prevValue) {
     setPrevValue(value)
     setText(value)
@@ -41,8 +37,12 @@ function ColorRow({ label, value, onChange }: { label: string; value: string; on
     setText(raw)
     let v = raw.trim()
     if (v && v[0] !== "#") v = "#" + v
-    if (HEX.test(v)) { setBad(false); onChange(v.toUpperCase()) }
-    else setBad(true)
+    if (HEX.test(v)) {
+      setBad(false)
+      onChange(v.toUpperCase())
+    } else {
+      setBad(true)
+    }
   }
 
   return (
@@ -69,17 +69,14 @@ function ColorRow({ label, value, onChange }: { label: string; value: string; on
   )
 }
 
-function PresetChip({ preset, active, label, onClick }: {
-  preset: MapTheme
+function ThemeChip({ theme, active, label, onClick }: {
+  theme: MapTheme
   active: boolean
-  // Overrides the chip's text when the theme's internal name is not what the UI
-  // should say — "Custom" is stored on the theme but reads as "Customized".
   label?: string
   onClick: () => void
 }) {
-  const dots = preset.colors
-    ? [preset.colors.LAND, preset.colors.LAWN, preset.colors.WATER]
-    : ["#f2f3f0", "#dcdcdc", "#c8c8c8"] // untouched-positron preview
+  const dots = [theme.colors.LAND, theme.colors.LAWN, theme.colors.WATER]
+
   return (
     <button
       onClick={onClick}
@@ -96,16 +93,26 @@ function PresetChip({ preset, active, label, onClick }: {
           />
         ))}
       </span>
-      <span>{label ?? preset.label ?? preset.name}</span>
+      <span>{label ?? theme.label ?? theme.name}</span>
     </button>
   )
 }
 
-export default function MapColorPicker({ theme, presets, custom, onApplyPreset, onApplyCustom, onSetColors, onSetGrain, onReset }: Props) {
+export default function MapColorPicker({
+  theme,
+  presets,
+  custom,
+  onApplyDefault,
+  onApplyCustom,
+  onSetColors,
+  onSetGrain,
+  onReset,
+}: Props) {
   const [open, setOpen] = useState(false)
-  const current = theme.colors ?? BASELINE_PALETTE
+  const current = theme.colors
+  const grainPct = Math.round(theme.grain * 100)
+  const defaultTheme = presets[0] ?? DEFAULT_THEME
 
-  // Escape closes the panel (matches the map page's drawer idiom).
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false) }
@@ -113,13 +120,6 @@ export default function MapColorPicker({ theme, presets, custom, onApplyPreset, 
     return () => window.removeEventListener("keydown", handler)
   }, [open])
 
-  const grainPct = Math.round(theme.grain * 100)
-  // Reset reverts to the preset the current colors derive from, so the button
-  // names that preset the way the chips do rather than echoing its stored id.
-  const resetTarget = presets.find(p => p.name === (theme.basePreset ?? CLASSIC_THEME.name)) ?? CLASSIC_THEME
-
-  // The panel is absolutely positioned so this can sit inline in the Map's
-  // filter chip row: in normal flow it would push the row's height when opened.
   return (
     <div className="relative">
       <button
@@ -142,7 +142,7 @@ export default function MapColorPicker({ theme, presets, custom, onApplyPreset, 
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-2 z-50 w-[340px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-7rem)] overflow-y-auto rounded-2xl border border-neutral-200/70 bg-white/95 p-4 shadow-xl backdrop-blur-sm">
+        <div className="absolute top-full right-0 z-50 mt-2 max-h-[calc(100vh-7rem)] w-[340px] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-neutral-200/70 bg-white/95 p-4 shadow-xl backdrop-blur-sm">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm font-semibold text-neutral-900">Map colors</div>
             <button
@@ -150,20 +150,14 @@ export default function MapColorPicker({ theme, presets, custom, onApplyPreset, 
               aria-label="Close"
               className="flex h-6 w-6 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
             >
-              ✕
+              x
             </button>
           </div>
 
-          {/* Presets */}
-          {/* The three presets fit one row; Customized wraps below them rather than
-              squeezing the row to four. Its dots preview the remembered palette, or
-              the current one before any edits exist. */}
           <div className="mb-3 flex flex-wrap items-center gap-1.5">
-            {presets.map(p => (
-              <PresetChip key={p.name} preset={p} active={theme.name === p.name} onClick={() => onApplyPreset(p.name)} />
-            ))}
-            <PresetChip
-              preset={custom ?? { name: CUSTOM_THEME_NAME, grain: theme.grain, colors: current }}
+            <ThemeChip theme={defaultTheme} active={theme.name === defaultTheme.name} onClick={onApplyDefault} />
+            <ThemeChip
+              theme={custom ?? { name: CUSTOM_THEME_NAME, label: "Customized", grain: theme.grain, colors: current, basePreset: DEFAULT_THEME.name }}
               active={theme.name === CUSTOM_THEME_NAME}
               label="Customized"
               onClick={onApplyCustom}
@@ -172,7 +166,6 @@ export default function MapColorPicker({ theme, presets, custom, onApplyPreset, 
 
           <div className="-mx-1 mb-3 h-px bg-neutral-100" />
 
-          {/* Per-element colors */}
           <div className="flex flex-col gap-2">
             {PALETTE_GROUPS.map(g => (
               <div key={g.group} className="flex flex-col gap-1">
@@ -191,14 +184,16 @@ export default function MapColorPicker({ theme, presets, custom, onApplyPreset, 
 
           <div className="-mx-1 my-3 h-px bg-neutral-100" />
 
-          {/* Paper grain */}
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between text-[13px] text-neutral-700">
               <span>Paper grain</span>
               <span className="font-mono text-xs text-neutral-500">{grainPct}%</span>
             </div>
             <input
-              type="range" min={0} max={30} value={grainPct}
+              type="range"
+              min={0}
+              max={30}
+              value={grainPct}
               onChange={e => onSetGrain(Number(e.target.value) / 100)}
               className="w-full accent-neutral-900"
             />
@@ -208,7 +203,7 @@ export default function MapColorPicker({ theme, presets, custom, onApplyPreset, 
             onClick={onReset}
             className="mt-3 w-full rounded-full border border-neutral-200 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100"
           >
-            Reset to {resetTarget.label ?? resetTarget.name}
+            Reset to Default
           </button>
         </div>
       )}

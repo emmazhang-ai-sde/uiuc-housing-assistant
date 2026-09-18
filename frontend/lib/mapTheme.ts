@@ -2,9 +2,8 @@ import type { StyleSpecification } from "maplibre-gl"
 import baseStyleJson from "./mapBaseStyle.json"
 
 // ── Types ────────────────────────────────────────────────────────────────
-// The basemap is broken into 14 recolorable "roles". A MapTheme is a full set
-// of these plus a paper-grain amount. `colors: null` means "leave the base
-// grayscale (positron) style untouched" — the Classic default.
+// The basemap is broken into recolorable roles. The app ships exactly one
+// built-in preset: Default. Users may still keep one custom palette locally.
 
 export type MapPalette = {
   LAND: string        // land / background fill
@@ -27,11 +26,11 @@ export type MapPalette = {
 }
 
 export type MapTheme = {
-  name: string               // stable id; persisted, and what basePreset points at
-  label?: string             // display text when the id is not what the UI should say
-  grain: number              // paper-grain overlay opacity, 0..1
-  colors: MapPalette | null  // null = untouched positron (raw grayscale)
-  basePreset?: string        // preset the colors derive from; Reset reverts here
+  name: string
+  label?: string
+  grain: number
+  colors: MapPalette
+  basePreset?: string
 }
 
 // ── Picker layout ────────────────────────────────────────────────────────
@@ -47,67 +46,30 @@ export const PALETTE_GROUPS: { group: string; items: { key: keyof MapPalette; la
   { group: "Availability pins", items: [ { key: "PIN_NOW", label: "Available now" }, { key: "PIN_AVAIL", label: "Future (Aug 2026)" }, { key: "PIN_UNAVAIL", label: "Leased" } ] },
 ]
 
-// Fallback palette for any theme still carrying colors: null. Now that every
-// preset defines its colors this is only a safety net (and the seed for editing
-// such a theme), not the look anything ships with. Positron-ish tones.
-export const BASELINE_PALETTE: MapPalette = {
-  LAND: "#FFFFFF", RESID: "#FBFBFA", LAWN: "#D9E6D0", WOOD: "#CBDCC0",
-  WATER: "#CFE2EE", WATERLINE: "#A9C9DE", BLDG: "#ECE9E4", BLDG_OUT: "#DAD5CD",
-  ROAD: "#E9E7E4", CASE: "#D6D2CC", PATH: "#E2DFDA", LABEL: "#4A4A4A", HALO: "#FFFFFF", BOUNDARY: "#C9C4BC",
-  PIN_NOW: "#D2F55E", PIN_AVAIL: "#C7DDB5", PIN_UNAVAIL: "#F5F5F5",
-}
-
-// ── Presets (user-designed; append to add more) ──────────────────────────
-export const LAVENDER_PALETTE: MapPalette = {
-  LAND: "#F1EFF6", RESID: "#ECE9F1", LAWN: "#CFE5BB", WOOD: "#CFE5BB",
-  WATER: "#E0EDF8", WATERLINE: "#87B4DA", BLDG: "#B8A8C8", BLDG_OUT: "#FFFFFF",
-  ROAD: "#E1DFE2", CASE: "#FFFFFF", PATH: "#FFFFFF", LABEL: "#852CCF", HALO: "#FFFFFF", BOUNDARY: "#FFFFFF",
-  PIN_NOW: "#7B4FC4", PIN_AVAIL: "#C9BAEA", PIN_UNAVAIL: "#ECE9F1",  // deep + light purple
-}
-
-export const BLOSSOM_PALETTE: MapPalette = {
-  LAND: "#F7F6F4", RESID: "#EFE4D3", LAWN: "#B6D6C7", WOOD: "#A3C4B2",
-  WATER: "#C4D6E9", WATERLINE: "#A6BDE1", BLDG: "#EAC0C5", BLDG_OUT: "#F6D5DC",
-  ROAD: "#EFE4D3", CASE: "#BCB8B8", PATH: "#D2C5B5", LABEL: "#1A1A1A", HALO: "#FFFFFF", BOUNDARY: "#2A2A2A",
-  PIN_NOW: "#D96C90", PIN_AVAIL: "#F4CDD9", PIN_UNAVAIL: "#EFE4D3",  // deep + light pink
-}
-
-// The shipped default look (2026-07-20), promoted from a hand-mixed palette:
-// white land and roads, soft green parks, clear blue water, slate labels. It
-// replaced the raw grayscale positron that Classic used to render (colors: null).
+// The shipped default look: warm paper land, soft green parks, clear blue
+// water, slate labels, and blush availability pins.
 export const DEFAULT_PALETTE: MapPalette = {
-  LAND: "#FFFFFF", RESID: "#F5F1ED", LAWN: "#CFECCA", WOOD: "#CFECCA",
-  WATER: "#A4D5F2", WATERLINE: "#A4D5F2", BLDG: "#E9EAEF", BLDG_OUT: "#C1C1D1",
+  LAND: "#FFFFFF", RESID: "#FFFDEE", LAWN: "#CFECCA", WOOD: "#CFECCA",
+  WATER: "#A4D5F2", WATERLINE: "#A4D5F2", BLDG: "#E9EAEF", BLDG_OUT: "#E9EAEF",
   ROAD: "#FFFFFF", CASE: "#FFFFFF", PATH: "#D6D6D6", LABEL: "#546E7A", HALO: "#FFFFFF", BOUNDARY: "#C9C4BC",
-  PIN_NOW: "#CFECCA", PIN_AVAIL: "#227950", PIN_UNAVAIL: "#F5F5F5",  // light + deep green
+  PIN_NOW: "#EED6DA", PIN_AVAIL: "#EED6DA", PIN_UNAVAIL: "#F5F5F5",
 }
 
-// `name` stays "Classic" so themes already in localStorage, and any basePreset
-// pointing here, keep resolving; only the display text and colors changed.
-export const CLASSIC_THEME: MapTheme = {
-  name: "Classic",
-  label: "Classic (Default)",
+export const DEFAULT_THEME: MapTheme = {
+  name: "Default",
+  label: "Default",
   grain: 0,
   colors: DEFAULT_PALETTE,
 }
 
-// The theme name given to a hand-edited palette. Not a member of PRESET_THEMES —
-// its colors come from whatever the user last edited, not a fixed definition.
+export const PRESET_THEMES: MapTheme[] = [DEFAULT_THEME]
 export const CUSTOM_THEME_NAME = "Custom"
 
-export const PRESET_THEMES: MapTheme[] = [
-  CLASSIC_THEME,
-  { name: "Lavender", grain: 0, colors: LAVENDER_PALETTE },
-  { name: "Blossom", grain: 0, colors: BLOSSOM_PALETTE },
-]
-
-export const DEFAULT_THEME: MapTheme = CLASSIC_THEME
-
-// ── Availability price-pin colors (themed) ─────────────────────────────────
-// Pin backgrounds come from the active theme, falling back to the baseline set
-// for a colors: null theme. Text color is auto-picked for contrast.
+// ── Availability price-pin colors ──────────────────────────────────────────
+// Pin backgrounds come from the single active theme. Text color is auto-picked
+// for contrast.
 export function themePins(theme: MapTheme): { now: string; available: string; unavailable: string } {
-  const c = theme.colors ?? BASELINE_PALETTE
+  const c = theme.colors
   return { now: c.PIN_NOW, available: c.PIN_AVAIL, unavailable: c.PIN_UNAVAIL }
 }
 
@@ -171,9 +133,8 @@ function recolor(style: any, c: MapPalette): any {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-/** Build a full MapLibre style for a theme. Null colors → untouched positron. */
+/** Build a full MapLibre style for a theme. */
 export function buildMapStyle(theme: MapTheme): StyleSpecification {
   const clone = JSON.parse(JSON.stringify(baseStyleJson))
-  if (!theme.colors) return clone as StyleSpecification
   return recolor(clone, theme.colors) as StyleSpecification
 }
