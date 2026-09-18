@@ -162,14 +162,14 @@ python -m pipeline.ingest
 **Terminal 1 — Backend:**
 ```bash
 source .venv/bin/activate
-uvicorn backend.main:app --reload
-# → http://localhost:8000
+uvicorn backend.main:app --reload --port 3101
+# → http://localhost:3101
 ```
 
 **Terminal 2 — Frontend:**
 ```bash
 cd frontend && npm run dev
-# → http://localhost:3000
+# → http://localhost:3102
 ```
 
 

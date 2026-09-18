@@ -6,15 +6,14 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3102](http://localhost:3102) with your browser to see the result.
+
+This repo intentionally uses the `310x` port range for local development:
+
+- FastAPI backend: `http://localhost:3101`
+- Next.js frontend: `http://localhost:3102`
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

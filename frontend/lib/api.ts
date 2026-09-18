@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8300"
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3101"
 
 export interface Listing {
   company: string

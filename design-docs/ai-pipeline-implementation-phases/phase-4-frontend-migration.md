@@ -14,11 +14,11 @@ Cloud deployment (Vercel + Railway) is a secondary goal — it comes after local
 User
  │
  ▼
-Next.js  (localhost:3000 locally / Vercel in prod)
+Next.js  (localhost:3102 locally / Vercel in prod)
  │
  │  POST /api/search  { query: "2BR under $900" }
  ▼
-FastAPI  (localhost:8000 locally / Railway in prod)
+FastAPI  (localhost:3101 locally / Railway in prod)
  │
  ├── rag/rag_chain.py     ← retriever + LangChain chain (unchanged)
  │
@@ -57,7 +57,7 @@ Scaffolded with `create-next-app` (TypeScript, Tailwind, App Router).
 
 **`app/globals.css`** — stripped down to just `@import "tailwindcss"`, removing the default Next.js dark mode variables.
 
-**`frontend/.env.local`** — sets `NEXT_PUBLIC_API_URL=http://localhost:8000` so the frontend points to the local backend port.
+**`frontend/.env.local`** — sets `NEXT_PUBLIC_API_URL=http://localhost:3101` so the frontend points to the local backend port.
 
 ---
 
@@ -71,22 +71,22 @@ Two terminals required:
 
 cd /Users/shuyangzhang/RAG/uiuc-housing-assistant-langchain-rag
 source .venv/bin/activate
-uvicorn backend.main:app --reload --port 8000
-# → http://localhost:8000/api/search
+uvicorn backend.main:app --reload --port 3101
+# → http://localhost:3101/api/search
 ```
 
-`frontend/.env.local` is set to `NEXT_PUBLIC_API_URL=http://localhost:8000`. If you change the port, update that file too.
+`frontend/.env.local` is set to `NEXT_PUBLIC_API_URL=http://localhost:3101`. If you change the port, update that file too.
 
 **Terminal 2 — Frontend (Next.js)**
 ```bash
 cd /Users/shuyangzhang/RAG/uiuc-housing-assistant-langchain-rag/frontend
 npm run dev
-# → http://localhost:3000
+# → http://localhost:3102
 ```
 
 **Terminal 3 — Test the backend directly:**
 ```bash
-curl -X POST http://localhost:8000/api/search \
+curl -X POST http://localhost:3101/api/search \
   -H "Content-Type: application/json" \
   -d '{"query": "2BR under $900"}'
 ```
@@ -106,6 +106,6 @@ curl -X POST http://localhost:8000/api/search \
 - [x] Build FastAPI `/api/search` endpoint (`backend/main.py`), verified with curl
 - [x] Create Next.js project, set up folder structure
 - [x] Build all React components and wire up `page.tsx`
-- [x] Local full-stack verified: backend on :8000, frontend on :3000
+- [x] Local full-stack verified: backend on :3101, frontend on :3102
 
 Deployment → see `design_docs/phase-4-product-launch.md`
