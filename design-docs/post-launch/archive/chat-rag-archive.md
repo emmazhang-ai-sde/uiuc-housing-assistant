@@ -1,12 +1,13 @@
 # Chat / RAG Archive
 
 **Created: 2026-09-17**
+**Updated: 2026-09-17**
 
 ## Status
 
 The product no longer presents Chat, Table, or RAG as primary user-facing surfaces. The active search experience is now the structured listing dataset shown through Card and Map views.
 
-This archive note preserves the old architecture so the repo stays understandable without keeping the current product narrative tied to AI/RAG.
+Legacy code has been moved to `archive/legacy-chat-rag/` so the active app structure stays focused on data search.
 
 ## Why It Was Archived
 
@@ -18,23 +19,22 @@ The stronger product story is now: scrape and normalize real landlord data, keep
 
 | Former surface | Current behavior | Archive / note |
 | --- | --- | --- |
-| `/chat` | Redirects to `/card` | Former implementation remains in git history and legacy component files. |
-| `/table` | Redirects to `/card` | Previous page source is archived at `design-docs/post-launch/archive/table-page-v1.tsx`. |
+| `/chat` | Not served | Old route code is archived under `archive/legacy-chat-rag/frontend/app/chat`. |
+| `/table` | Not served | Old route code is archived under `archive/legacy-chat-rag/frontend/app/table`; the fuller table implementation remains at `design-docs/post-launch/archive/table-page-v1.tsx`. |
 | Chat tab | Removed from `AppHeader` | Card and Map are the primary tabs. |
 | Table tab | Removed from `AppHeader` | Table is no longer a product surface. |
 
-## Legacy Code Left In Place For Now
+## Archived Code
 
 These files are historical/legacy and should not be treated as active product direction unless the feature is intentionally revived:
 
-- `rag/rag_chain.py` — LLM filter extraction, Chroma retrieval, proximity filtering, and summary generation.
-- `rag/agent.py` — LangGraph tool-calling agent for the old Chat flow.
-- `backend/main.py` `/api/search` and `/chat` — old RAG and conversational endpoints.
-- `frontend/app/api/chat/route.ts` — Next.js proxy for the old FastAPI chat endpoint.
-- `frontend/hooks/useChat.ts` and `frontend/components/chat/*` — old chat persistence and UI.
-- `frontend/components/AssistantMessage.tsx`, `frontend/components/SummaryTable.tsx`, and related export helpers — old rich search-result message/table tooling.
-
-They are intentionally not deleted in this pass because removing them cleanly also means trimming Python dependencies, frontend components, Supabase conversation tables, old analytics event names, and a large amount of historical documentation. That should be a separate cleanup commit.
+- `archive/legacy-chat-rag/python/rag/` — LLM filter extraction, Chroma retrieval, proximity filtering, summary generation, and LangGraph agent.
+- `archive/legacy-chat-rag/backend/main-with-rag-endpoints.py` — old FastAPI `/api/search` and `/chat` implementation.
+- `archive/legacy-chat-rag/frontend/app/api/chat/` — old Next.js chat proxy.
+- `archive/legacy-chat-rag/frontend/app/api/conversations/` — old chat persistence routes.
+- `archive/legacy-chat-rag/frontend/hooks/useChat.ts` and `archive/legacy-chat-rag/frontend/components/chat/` — old chat UI and state.
+- `archive/legacy-chat-rag/frontend/components/AssistantMessage.tsx`, `SummaryTable.tsx`, `UserBubble.tsx`, and `Sidebar.tsx` — old rich chat/table result tooling.
+- `archive/legacy-chat-rag/chroma_db/` and `archive/legacy-chat-rag/models/` — old vector store and embedding model assets.
 
 ## Active Direction
 
@@ -47,9 +47,5 @@ Keep the main path simple:
 
 ## Future Cleanup Checklist
 
-- Remove or isolate `rag/` if no backend endpoint imports it.
-- Remove `/api/search` and `/chat` from `backend/main.py` once no clients call them.
-- Remove `frontend/app/api/chat`, `useChat`, and `components/chat`.
-- Decide whether `SummaryTable` should live only as archived code or be deleted entirely.
-- Update README and old launch docs so the top-level project description no longer sells AI/RAG as the current product.
-- Consider dropping LangChain, Groq, Ollama, Chroma, and sentence-transformer dependencies if the vector index is no longer needed.
+- Drop LangChain, Groq, Ollama, Chroma, and sentence-transformer dependencies when we are sure no archived code needs to run locally.
+- Remove old Supabase conversation tables if no historical chat data needs to be preserved.

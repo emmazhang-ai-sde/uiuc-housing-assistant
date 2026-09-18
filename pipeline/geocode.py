@@ -13,10 +13,21 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from pipeline.ingest import get_latest_db
+from config import SNAPSHOTS_DIR
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 USER_AGENT    = "uiuc-housing-assistant/1.0 (sz94@illinois.edu)"
+
+
+def get_latest_db() -> Path:
+    latest_file = Path(SNAPSHOTS_DIR) / "latest.txt"
+    if not latest_file.exists():
+        raise FileNotFoundError("No snapshot found in snapshots/. Run pipeline.normalize first.")
+    date_str = latest_file.read_text().strip()
+    db_path = Path(SNAPSHOTS_DIR) / f"listings_{date_str}.db"
+    if not db_path.exists():
+        raise FileNotFoundError(f"Snapshot DB not found: {db_path}")
+    return db_path
 
 # Hardcoded coordinates for addresses Nominatim cannot resolve.
 # Nominatim sometimes matches Champaign County villages (Fisher, St. Joseph) instead of
@@ -29,7 +40,6 @@ MANUAL_COORDS: dict[str, tuple[float, float]] = {
     # Then add here as:   "911 S Locust":   (40.XXXXX, -88.XXXXX),
     # Then run:  python -c "import sqlite3; ..."   (NULL out lat/lng for these addresses)
     #            python -m pipeline.geocode   (re-geocodes via MANUAL_COORDS)
-    #            python -m pipeline.ingest    (pushes updated coords to ChromaDB)
     #
     # "911 S Locust"  — stored (40.1069,-88.2407); ORS walking check said ~4 min from
     #                   Green/6th vs Google Maps ~17 min, BUT Nominatim's house-number

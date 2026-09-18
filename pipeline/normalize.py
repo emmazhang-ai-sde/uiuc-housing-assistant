@@ -401,7 +401,7 @@ def main():
         print(f"📸 Snapshot written: {new_db}")
 
     print_summary(new_db)
-    print(f"\nRun next:  python -m pipeline.ingest")
+    print(f"\nRun next:  python -m pipeline.geocode")
 
 
 if __name__ == "__main__":

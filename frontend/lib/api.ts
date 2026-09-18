@@ -1,5 +1,3 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3101"
-
 export interface Listing {
   company: string
   address: string
@@ -27,11 +25,11 @@ export interface Listing {
   property_type: string          // Phase 8.3: e.g. "Apartment", "House", "Townhouse"
 }
 
-// Phase 6: explicit UI filters sent alongside every NL query
+// Shared listing filters used by Card and Map.
 export interface Filters {
   beds: number[] | null
   availability_window: "now" | "june_2026" | "july_2026" | "august_2026" | "leased" | null
-  min_price_per_bed: number | null                    // floor; the agent has always extracted this (rag/rag_chain.py), the UI gained it 2026-07-20
+  min_price_per_bed: number | null                    // floor
   max_price_per_bed: number | null                    // ceiling; the buffer below widens THIS end only
   company: string[] | null                            // multi-select: null or [] means every source
   buffer_type: "percent" | "fixed" | "exact" | null  // how the price buffer is applied
@@ -52,12 +50,6 @@ export const DEFAULT_FILTERS: Filters = {
   buffer_value: null,
   property_type: null,
   penthouse: null,
-}
-
-export interface SearchResponse {
-  answer: string
-  listings: Listing[]
-  filters_applied: Record<string, unknown>  // Phase 6: echoed back from backend
 }
 
 export interface DataStatus {
@@ -133,16 +125,4 @@ export async function fetchListingsPage(filters: Filters, page: number, pageSize
   if (!res.ok) throw new Error(`API error: ${res.status}`)
   const data = await res.json()
   return { listings: data.listings as Listing[], total: (data.total as number) ?? data.listings.length }
-}
-
-export async function search(query: string, filters: Filters, token?: string): Promise<SearchResponse> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" }
-  if (token) headers["Authorization"] = `Bearer ${token}`
-  const res = await fetch(`${API_URL}/api/search`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ query, filters }),
-  })
-  if (!res.ok) throw new Error(`API error: ${res.status}`)
-  return res.json()
 }

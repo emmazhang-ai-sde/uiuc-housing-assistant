@@ -1,212 +1,209 @@
-# 🏠 UIUC Housing Assistant
+# UIUC Housing Assistant
 
-A UIUC housing search tool for students who want one place to compare real listings from Champaign-Urbana landlords.
+A housing search tool for UIUC students who want one place to compare real listings from Champaign-Urbana landlords.
 
-Filter by beds, price, availability, property type, source, and location. Browse the same dataset as cards or on a full-screen map, with prices, availability, photos, coordinates, and direct landlord links.
+The app collects listings directly from property management sites, normalizes them into one dataset, and lets students filter by beds, price, availability, property type, source, and location.
 
-**Live at [uiuc-housing-ai.com](https://uiuc-housing-ai.com)**.
+**Live:** [uiuc-housing-ai.com](https://uiuc-housing-ai.com)
 
-## What It Does
+## Product
 
-Most UIUC students search for housing on Apartments.com or Craigslist, where listings are often stale, mis-priced, or already rented. This tool goes directly to the source, scraping major Champaign-Urbana landlords and normalizing everything into one searchable listing dataset.
+UIUC students do not need another place to chat about housing. They need one reliable dataset they can filter quickly.
 
-The current product focus is structured search over reliable data: filters, cards, map, availability windows, geocoding, and source links. Earlier Chat/RAG/Table experiments are archived; see [`design-docs/post-launch/archive/chat-rag-archive.md`](design-docs/post-launch/archive/chat-rag-archive.md).
+The core workflow is:
 
-## Demo
+- filter listings by beds, budget, move-in date, property type, company, and location
+- scan results in Card view with photos, prices, availability, and source links
+- switch to Map view when distance to campus matters
+- see which companies are included, excluded, or blocked by source limitations
 
-Two active views over the same dataset:
+Active views:
 
-- **Card** (`/card`) — filter by beds, price, availability, property type, and source; browse a paginated grid of listing cards.
-- **Map** (`/map`) — the same listings plotted on an interactive map, colored by availability, with walking/driving time badges to campus landmarks.
+- **Card** (`/card`) — filter-driven listing browse
+- **Map** (`/map`) — the same filtered listings plotted around campus
 
-Archived routes:
+Access is gated with Supabase Auth so listing access stays limited to approved users.
 
-- `/chat` redirects to `/card`
-- `/table` redirects to `/card`
+Archived Chat, Table, and RAG code lives under `archive/legacy-chat-rag/` and is not imported by the active app.
 
-Access is gated behind Supabase authentication so listings stay limited to approved users.
-
-## Architecture — Data Search Pipeline
-
-The active system runs in four phases:
+## System Flow
 
 1. **Scrape** — one Playwright scraper per landlord writes `data/<company>_raw.json`.
-2. **Normalize** — `pipeline.normalize` cleans all raw files into a dated SQLite snapshot.
-3. **Geocode** — `pipeline.geocode` fills coordinates for new addresses and preserves previously verified coordinates.
-4. **Serve** — FastAPI reads the latest snapshot and applies SQL filters for Card and Map views.
+2. **Normalize** — `pipeline.normalize` merges raw files into a dated SQLite snapshot.
+3. **Geocode** — `pipeline.geocode` fills missing coordinates and keeps verified coordinates.
+4. **Serve** — FastAPI reads the latest snapshot and applies SQL filters.
+5. **Browse** — Next.js renders Card and Map views from `/api/listings`.
 
-The old LangChain/Chroma/Groq RAG implementation remains in the repository as legacy code for now, but it is not the active product path.
+Active backend endpoints:
 
----
+- `GET /api/status`
+- `GET /api/listings`
+
+Local ports:
+
+- backend: `http://localhost:3101`
+- frontend: `http://localhost:3102`
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| **Scraping** | Playwright (headless Chromium), stealth mode for bot-protected sites |
-| **Database** | SQLite (versioned snapshots in `snapshots/`) |
-| **Backend** | FastAPI + Uvicorn |
-| **Frontend** | Next.js 16 (React 19, TypeScript, Tailwind CSS 4) |
-| **Auth** | Supabase Auth (magic link / OTP, `@illinois.edu`-restricted), JWT verified backend-side via ES256 JWKS |
-| **Maps** | react-map-gl + MapLibre GL, OpenFreeMap tiles, OpenRouteService for walk/drive times |
-| **Deployment** | Railway (backend) + Vercel (frontend) |
-| **Language** | Python 3.14 / TypeScript |
-
+| Scraping | Playwright |
+| Database | SQLite snapshots |
+| Backend | FastAPI + Uvicorn |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS |
+| Auth | Supabase Auth |
+| Maps | react-map-gl, MapLibre GL, OpenFreeMap, OpenRouteService |
+| Deployment | Railway backend, Vercel frontend |
+| Language | Python 3.14, TypeScript |
 
 ## Project Structure
 
-```
-uiuc-housing-assistant-langchain-rag/
-├── scrapers/                   # One Playwright scraper per company (green_street.py,
-│                               #   universities_group.py, smile.py, mhm.py, seven07.py,
-│                               #   bankier.py, jsj.py, roland.py, octave.py)
+```text
+uiuc-housing-assistant/
+├── scrapers/                   # One scraper per landlord
 ├── pipeline/
-│   ├── normalize.py            # Reads all data/*_raw.json → merged snapshot DB
-│   ├── geocode.py              # Batch geocodes addresses via Nominatim
-│   └── ingest.py                # Incremental Chroma update (add/update/delete by stable ID)
-├── rag/                         # Legacy Chat/RAG implementation, archived from product path
+│   ├── normalize.py            # Raw JSON -> SQLite snapshot
+│   └── geocode.py              # Batch geocoding
 ├── backend/
-│   └── main.py                  # FastAPI — /api/listings, /api/status plus legacy RAG endpoints
-├── frontend/                    # Next.js (React, TypeScript, Tailwind)
+│   └── main.py                 # FastAPI: /api/listings, /api/status
+├── frontend/
 │   ├── app/
-│   │   ├── card/                # Filter-driven browsing grid
-│   │   ├── chat/                # Archived route; redirects to /card
-│   │   ├── table/               # Archived route; redirects to /card
-│   │   ├── map/                 # Full-screen interactive map
-│   │   ├── about/                # Marketing / product page
-│   │   ├── account/              # Signed-in user account page
-│   │   ├── login/                # Supabase auth (magic link / OTP)
-│   │   └── coming-soon/          # Pre-launch waitlist page
-│   ├── components/               # ListingGrid, ListingCard, MapView, FilterBar, AppHeader, ...
-│   └── lib/                      # api.ts, companies.ts, landmarks.ts, availability.ts
-├── snapshots/                    # Versioned SQLite snapshots + raw JSON archives
-│   ├── latest.txt                # Points to most recent snapshot date
-│   ├── listings_YYYY-MM-DD.db
-│   └── raw_YYYY-MM-DD_<company>.json
-├── chroma_db/                    # Legacy Chroma vector store from archived RAG flow
-├── config.py                     # Shared constants (model names, paths)
-├── design-docs/                  # Phase design docs and architecture notes
-└── scripts/                      # Maintainer-only tooling (e.g. bulk waitlist invites)
+│   │   ├── card/               # Card search view
+│   │   ├── map/                # Map search view
+│   │   ├── about/              # Product page
+│   │   ├── account/            # Account page
+│   │   └── login/              # Supabase auth
+│   ├── components/
+│   └── lib/
+├── snapshots/                  # Versioned SQLite + raw JSON snapshots
+├── archive/
+│   └── legacy-chat-rag/         # Archived Chat, Table, RAG, Chroma assets
+├── design-docs/                # Detailed implementation notes
+└── scripts/                    # Maintainer tooling
 ```
 
+## Local Commands
 
-## Setup
-
-### 1. Clone and create a virtual environment
+First setup:
 
 ```bash
-git clone <your-repo-url>
-cd uiuc-housing-assistant-langchain-rag
 python3 -m venv .venv
 source .venv/bin/activate
-```
-
-### 2. Install Python dependencies
-
-```bash
 pip install -r requirements.txt
 playwright install chromium
-```
-
-### 3. Install Node.js dependencies (frontend)
-
-```bash
 cd frontend && npm install && cd ..
 ```
 
-> **Note:** You only need to reinstall dependencies if you delete `.venv`, clone the repo to a new machine, or move the project to a different folder. For normal day-to-day use, just `source .venv/bin/activate` and skip straight to running the app.
-
-### 4. Configure environment variables
+Env:
 
 ```bash
 cp .env.example .env
 ```
 
-Fill in Supabase project credentials. See `.env.example` for what each variable does. `GROQ_API_KEY` is only needed if you intentionally revive the archived RAG endpoints.
-
-### 5. Install and start Ollama (optional, legacy RAG only)
+Frontend local env should point to the backend:
 
 ```bash
-brew install ollama
-brew services start ollama
-ollama pull llama3.1:8b
+BACKEND_URL=http://localhost:3101
+NEXT_PUBLIC_API_URL=http://localhost:3101
 ```
 
-Set `LLM_PROVIDER=groq` or `LLM_PROVIDER=ollama` only when working on archived Chat/RAG behavior.
-
-
-## Running the Pipeline
-
-### Data pipeline (run once, then re-run whenever you want fresh listings)
+Backend:
 
 ```bash
-# Step 1 — Scrape each company (repeat per scraper in scrapers/)
-python scrapers/green_street.py
-python scrapers/universities_group.py
-# ... one run per company → data/<company>_raw.json
-
-# Step 2 — Normalize and snapshot
-python -m pipeline.normalize
-# → snapshots/listings_YYYY-MM-DD.db  (skipped if data unchanged vs last snapshot)
-
-# Step 3 — Geocode (only needed for new addresses)
-python -m pipeline.geocode
-
-# Step 4 — Optional legacy Chroma update
-python -m pipeline.ingest
-# → chroma_db/  (only needed for archived RAG endpoints)
+.venv/bin/python -m uvicorn backend.main:app --reload --port 3101
 ```
 
-### Launch the app (two terminals)
+Frontend:
 
-**Terminal 1 — Backend:**
+```bash
+cd frontend
+npm run dev
+```
+
+Open:
+
+```bash
+http://localhost:3102/card
+```
+
+Verify:
+
+Run these while the backend command is still running:
+
+```bash
+curl http://localhost:3101/api/status
+curl "http://localhost:3102/api/listings?page=1&page_size=1"
+.venv/bin/python -m py_compile backend/main.py pipeline/geocode.py pipeline/normalize.py config.py
+```
+
+## Data Pipeline
+
+Refresh data:
+
 ```bash
 source .venv/bin/activate
-uvicorn backend.main:app --reload --port 3101
-# → http://localhost:3101
+.venv/bin/python scrapers/green_street.py
+.venv/bin/python scrapers/universities_group.py
+# run other scrapers as needed
+.venv/bin/python -m pipeline.normalize
+.venv/bin/python -m pipeline.geocode
 ```
 
-**Terminal 2 — Frontend:**
-```bash
-cd frontend && npm run dev
-# → http://localhost:3102
-```
+Snapshot files:
 
+```text
+snapshots/latest.txt
+snapshots/listings_YYYY-MM-DD.db
+snapshots/raw_YYYY-MM-DD_<company>.json
+```
 
 ## Data Sources
 
-Snapshot as of 2026-08-05: **1,138 listings across 9 companies.**
+Latest snapshot: **2026-08-05**
 
-| Company | Status | Listings |
-|---|---|---|
-| Green Street Realty | ✅ Live | 493 |
-| Universities Group | ✅ Live | 380 |
-| Roland Realty | ✅ Live | 101 |
-| JSJ Property Management | ✅ Live | 46 |
-| MHM Properties | ✅ Live | 37 |
-| Smile Student Living | ✅ Live | 30 |
-| Bankier Apartments | ✅ Live | 28 |
-| Seven07 | ✅ Live | 12 |
-| Octave | ✅ Live | 11 |
+- **1,138** listings
+- **582** unique properties
+- **9** active scraped companies
 
-A few other Champaign-Urbana landlords (The Dean, Hub, 309 Green, The Linc, Campus Circle, Latitude, Burnham 310) are intentionally excluded — either their terms of service prohibit republishing listing data, or bot protection blocks automated access. These are shown as muted, unscrapable chips in the app rather than silently omitted, so students know they weren't forgotten.
+| Company | Listings |
+|---|---:|
+| Green Street Realty | 493 |
+| Universities Group | 380 |
+| Roland Realty | 101 |
+| JSJ Property Management | 46 |
+| MHM Properties | 37 |
+| Smile Student Living | 30 |
+| Bankier Apartments | 28 |
+| Seven07 | 12 |
+| Octave | 11 |
 
-All scrapers respect each site's `robots.txt` and `Crawl-delay` directive; legality is checked before a new scraper is built.
+Excluded companies are shown in the UI as muted chips when their terms prohibit republishing listing data or bot protection blocks automated access.
 
+Scrapers respect each site's `robots.txt` and `Crawl-delay` directive; legality is checked before a new scraper is added.
 
-## Roadmap
+## Build Roadmap
 
-- [x] Card / Map views over a unified listing dataset
-- [x] Archive Chat/RAG and Table as non-primary product paths
-- [x] Distance-to-campus context on the map
-- [x] Expand beyond Green Street Realty to 9 scraped companies
-- [x] Supabase authentication, restricted to `@illinois.edu`
-- [x] Deploy to Railway (backend) + Vercel (frontend)
-- [ ] Public launch (currently waitlist-gated at `/coming-soon`)
-- [ ] Saved listings / favorites
-- [ ] Fix `beds=0` mis-parsing for non-standard unit-type strings (e.g. `"6 Bed Townhouse"`)
+**1. Local Prototype**
 
+Start with one landlord source and prove the basic loop: collect listings, clean fields, store them locally, and render them in a browsable view.
 
-## Acknowledgements
+**2. Data Layer**
 
-Learning path inspired by [瓦子's guide on Xiaohongshu](https://www.xiaohongshu.com/explore/69c9a6400000000023021345) on building production-minded portfolio projects.
+Research Champaign-Urbana landlord sites, check scraping permissions, build source-specific scrapers, and normalize raw JSON into one shared listing schema.
+
+**3. Core Search Product**
+
+Build structured filters for beds, price, availability, company, and property type, backed by SQLite and served through FastAPI.
+
+**4. Full-Stack App**
+
+Move into FastAPI, Next.js, Supabase auth, Card view, shared filter state, and separate Railway/Vercel deployments.
+
+**5. Reliable Listing Pipeline**
+
+Add snapshot versioning, repeatable refresh commands, geocoding, manual coordinate fixes, and expanded scraper coverage.
+
+**6. Map and Comparison Experience**
+
+Add map browsing, campus context, listing detail panels, source coverage notes, and clean comparison flows.

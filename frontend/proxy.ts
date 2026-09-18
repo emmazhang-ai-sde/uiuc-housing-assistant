@@ -38,8 +38,7 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // In local dev, refresh the session (above) but skip the launch-mode gating
-  // below so /chat and friends stay reachable without the pre-launch flow.
+  // In local dev, refresh the session (above) but skip the launch-mode gating.
   if (process.env.NODE_ENV === "development") {
     return supabaseResponse
   }
@@ -80,7 +79,7 @@ export async function proxy(request: NextRequest) {
     const isApiRoute = path.startsWith("/api")
     if (isPreLaunch && !isApiRoute) {
       // Show the Coming Soon waitlist page IN PLACE — the address bar keeps
-      // whatever page was requested (/chat, /map, /login, ...) instead of
+      // whatever page was requested (/card, /map, /login, ...) instead of
       // bouncing to /coming-soon. Clicking a gated tab should land you on
       // that tab's URL with a "coming soon" page, not a surprise redirect.
       // API routes are excluded: each already does its own auth check and

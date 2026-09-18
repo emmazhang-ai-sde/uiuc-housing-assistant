@@ -439,10 +439,10 @@ export default function AboutPage() {
             <Reveal>
               <div className="p-8 bg-white rounded-3xl border border-mist-100 hover:border-mint-400 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:translate-y-0 h-full flex flex-col">
                 <div className="w-11 h-11 flex items-center justify-center text-xl mb-4 rounded-xl bg-mist-50 border border-mist-100">🎯</div>
-                <div className="text-lg font-extrabold text-ink-900 mb-2">Already know what you want?</div>
+                <div className="text-lg font-extrabold text-ink-900 mb-2">Browse and filter with cards</div>
                 <p className="text-sm text-neutral-500 leading-relaxed">
-                  Set your filters, then compare everything that matches, side by side or plotted
-                  around campus.
+                  Use the card view to scan matching listings visually, adjust your filters, and
+                  compare the details that matter before opening a landlord page.
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-4">
                   {["Beds", "Budget", "Move-in date", "Company"].map(tag => (
@@ -452,8 +452,8 @@ export default function AboutPage() {
                   ))}
                 </div>
                 <div className="flex items-center gap-3 mt-auto pt-6">
-                  <Link href="/map" className="px-5 py-2.5 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors">
-                    See the Map
+                  <Link href="/card" className="px-5 py-2.5 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors">
+                    Open Card View
                   </Link>
                 </div>
               </div>
