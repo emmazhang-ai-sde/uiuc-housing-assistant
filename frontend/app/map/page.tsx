@@ -19,7 +19,7 @@ const MapView = dynamic(() => import("@/components/MapView"), { ssr: false })
 
 export default function MapPage() {
   const { filters, setFilters }     = useFilters()
-  const { theme, presets, custom, applyPreset, applyCustom, setColors, setGrain, reset } = useMapTheme()
+  const { theme, presets, custom, applyDefault, applyCustom, setColors, setGrain, reset } = useMapTheme()
   const [listings, setListings]     = useState<Listing[]>([])
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState(false)
@@ -85,38 +85,35 @@ export default function MapPage() {
         onSelectListing={handleSelectListing}
       />
 
-      {/* Floating header pill, centered on top of the map */}
-      <div className="absolute top-0 inset-x-0 z-30 pointer-events-none [&_header>div]:pointer-events-auto">
-        <AppHeader />
-      </div>
-
-      {/* Filter chips run along the top under the floating header (Expedia
-          pattern), leaving the map itself unobstructed. The row is centred to
-          line up with the header pill above it, and the color picker rides at
-          its right end so every control lives on one line. */}
-      <div className="absolute top-[68px] left-4 right-4 z-20 flex justify-center">
-        <FilterChips
-          filters={filters}
-          onChange={setFilters}
-          resultCount={error ? null : listings.length}
-          loading={loading}
-          trailing={
-            <MapColorPicker
-              theme={theme}
-              presets={presets}
-              custom={custom}
-              onApplyPreset={applyPreset}
-              onApplyCustom={applyCustom}
-              onSetColors={setColors}
-              onSetGrain={setGrain}
-              onReset={reset}
-            />
-          }
-        />
+      {/* Top tool band, matching the Card view's deep-brown toolbar treatment. */}
+      <div className="absolute top-0 inset-x-0 z-30 bg-[#E0CCB2] px-4 pb-5 pt-2 shadow-[0_16px_40px_-28px_rgba(53,20,11,0.45)]">
+        <div className="pointer-events-none [&_header>div]:pointer-events-auto">
+          <AppHeader />
+        </div>
+        <div className="mt-2 flex justify-center">
+          <FilterChips
+            filters={filters}
+            onChange={setFilters}
+            resultCount={error ? null : listings.length}
+            loading={loading}
+            trailing={
+              <MapColorPicker
+                theme={theme}
+                presets={presets}
+                custom={custom}
+                onApplyDefault={applyDefault}
+                onApplyCustom={applyCustom}
+                onSetColors={setColors}
+                onSetGrain={setGrain}
+                onReset={reset}
+              />
+            }
+          />
+        </div>
       </div>
 
         {/* Save button — top right */}
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-4 right-4 z-40">
           <SaveButton
             status={mapSave.status}
             onClick={handleSave}

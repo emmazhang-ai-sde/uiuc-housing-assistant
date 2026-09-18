@@ -4,6 +4,8 @@ import { useEffect } from "react"
 import { Listing } from "@/lib/api"
 import { COMPANY_LOGOS } from "@/lib/companies"
 import { availabilityStatus, bedsLabel, splitAvailabilityLines } from "@/lib/availability"
+import ListingPhoto from "@/components/ListingPhoto"
+import { heroDisplay } from "@/lib/fonts"
 
 function priceStr(low: number | null | undefined, high: number | null | undefined): string {
   if (low == null) return "—"
@@ -14,14 +16,14 @@ function priceStr(low: number | null | undefined, high: number | null | undefine
 // Matches ListingCardV2's badge language so a listing's status reads the same
 // in cards, table rows, and this drawer.
 const STATUS_BADGE_STYLE = {
-  now:         "bg-mint-400 text-ink-900",
-  available:   "bg-mint-200 text-ink-900",
-  unavailable: "bg-mist-100 text-neutral-500",
+  now:         "bg-forest-green text-warm-ivory",
+  available:   "bg-blush-pink text-ink-900",
+  unavailable: "bg-mist-100 text-ink-900/55",
 } as const
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[10px] font-bold text-mint-600 uppercase tracking-widest mb-2">
+    <div className="text-[10px] font-bold text-forest-green uppercase tracking-widest mb-2">
       {children}
     </div>
   )
@@ -103,11 +105,7 @@ export function DrawerContent({ listing, onClose }: { listing: Listing; onClose:
       </button>
 
       {/* Photo */}
-      <div className="h-52 shrink-0 bg-neutral-100">
-        {listing.photo_url && (
-          <img src={listing.photo_url} alt="" className="w-full h-full object-cover" />
-        )}
-      </div>
+      <ListingPhoto src={listing.photo_url} className="h-52 shrink-0" />
 
       {/* Content */}
       <div className="p-6 flex flex-col gap-5 flex-1">
@@ -124,13 +122,13 @@ export function DrawerContent({ listing, onClose }: { listing: Listing; onClose:
         </div>
 
         {/* Address */}
-        <h2 className="text-lg font-bold text-neutral-900 leading-snug -mt-1">
+        <h2 className={`${heroDisplay.className} text-2xl font-normal uppercase text-neutral-900 leading-none -mt-1`}>
           {listing.address}
         </h2>
 
         {/* Tagline */}
         {listing.tagline && (
-          <p className="text-sm font-semibold text-mint-600 -mt-2">{listing.tagline}</p>
+          <p className="text-sm font-semibold text-forest-green -mt-2">{listing.tagline}</p>
         )}
 
         {/* Unit type + area */}
@@ -150,12 +148,12 @@ export function DrawerContent({ listing, onClose }: { listing: Listing; onClose:
             {!isSingleOccupancy && (
               <div>
                 <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Per bed</div>
-                <div className="text-xl font-bold text-neutral-900">{priceBed}<span className="text-sm font-medium text-neutral-400">/mo</span></div>
+                <div className={`${heroDisplay.className} text-2xl font-normal leading-none text-neutral-900`}>{priceBed}<span className="text-sm font-medium text-neutral-400">/mo</span></div>
               </div>
             )}
             <div>
               <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">Total</div>
-              <div className="text-xl font-bold text-neutral-900">{priceTotal}<span className="text-sm font-medium text-neutral-400">/mo</span></div>
+              <div className={`${heroDisplay.className} text-2xl font-normal leading-none text-neutral-900`}>{priceTotal}<span className="text-sm font-medium text-neutral-400">/mo</span></div>
             </div>
           </div>
         )}
@@ -221,7 +219,7 @@ export function DrawerContent({ listing, onClose }: { listing: Listing; onClose:
             href={listing.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 text-center text-sm font-bold text-white bg-ink-900 hover:bg-black px-4 py-2.5 rounded-full transition-colors"
+            className="flex-1 text-center text-sm font-bold text-warm-ivory bg-forest-green hover:bg-ink-900 px-4 py-2.5 rounded-full transition-colors"
           >
             View Listing →
           </a>

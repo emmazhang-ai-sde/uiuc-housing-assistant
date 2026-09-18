@@ -1,10 +1,11 @@
 import { Listing, Filters } from "@/lib/api"
 import { COMPANY_LOGOS } from "@/lib/companies"
 import { availabilityStatus, bedsLabel, splitAvailabilityLines } from "@/lib/availability"
+import ListingPhoto from "@/components/ListingPhoto"
+import { heroDisplay } from "@/lib/fonts"
 
-// Jobright-style restyle of ListingCard, used only by the /card-v2 preview.
-// Same props and behavior as ListingCard; only the skin differs (mint accent,
-// bordered 16px-radius card, color-tinted tag chips, mint pill CTA).
+// Same props and behavior as the original ListingCard; this is the current
+// card skin used by the browse grid.
 
 function priceStr(low: number | null | undefined, high: number | null | undefined): string {
   if (low == null) return "—"
@@ -19,16 +20,15 @@ function splitAddress(address: string): { main: string; code: string | null } {
 }
 
 const STATUS_BADGE_STYLE = {
-  now:         "bg-mint-400 text-ink-900",
-  available:   "bg-mint-200 text-ink-900",
-  unavailable: "bg-mist-100 text-neutral-500",
+  now:         "bg-forest-green text-warm-ivory",
+  available:   "bg-blush-pink text-ink-900",
+  unavailable: "bg-mist-100 text-ink-900/55",
 } as const
 
-// Jobright tags: 10%-alpha tint of the label color behind the solid color.
 const TAG_CHIP_STYLE = [
-  "bg-[#3C96FA1A] text-[#3C96FA]",
-  "bg-[#28C86E1A] text-[#28C86E]",
-  "bg-[#8C78FF1A] text-[#8C78FF]",
+  "bg-forest-green/10 text-forest-green",
+  "bg-blush-pink text-ink-900",
+  "bg-mist-100 text-ink-900/70",
 ]
 
 function AvailabilityBadge({ availability }: { availability: string }) {
@@ -79,32 +79,30 @@ export default function ListingCardV2({
   return (
     <article
       onClick={() => onSelect?.(listing)}
-      className={`relative bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:border-mint-400 hover:shadow-[0_12px_28px_-8px_rgba(0,0,0,0.12)] transition-all duration-200 group flex flex-col overflow-hidden ${onSelect ? "cursor-pointer" : ""}`}
+      className={`relative bg-white rounded-2xl border border-mist-100 shadow-[0_2px_10px_-4px_rgba(53,20,11,0.08)] hover:border-forest-green hover:shadow-[0_14px_32px_-18px_rgba(53,20,11,0.32)] transition-all duration-200 group flex flex-col overflow-hidden ${onSelect ? "cursor-pointer" : ""}`}
     >
 
       {/* Walk/drive badges — absolute over photo (availability moved to the logo row) */}
       {(walkMins != null || driveMins != null) && (
         <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-1">
           {walkMins != null && (
-            <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full uppercase bg-white/90 text-neutral-600 shadow-sm">
+            <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full uppercase bg-warm-ivory/95 text-ink-900 shadow-sm">
               ~{walkMins} min walk
             </span>
           )}
           {driveMins != null && (
-            <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full uppercase bg-white/90 text-neutral-600 shadow-sm">
+            <span className="inline-block text-[10px] font-bold px-2.5 py-1 rounded-full uppercase bg-warm-ivory/95 text-ink-900 shadow-sm">
               ~{driveMins} min drive
             </span>
           )}
         </div>
       )}
 
-      {/* Exterior photo — always rendered; blank placeholder when no photo_url */}
-      <div className="relative h-36 shrink-0 bg-mist-50">
-        {listing.photo_url && (
-          <img src={listing.photo_url} alt="" className="w-full h-full object-cover" />
-        )}
+      {/* Exterior photo */}
+      <div className="relative h-36 shrink-0">
+        <ListingPhoto src={listing.photo_url} className="h-full w-full" />
         {isUnavailable && (
-          <div className="absolute inset-0 bg-white/60" />
+          <div className="absolute inset-0 bg-warm-ivory/65" />
         )}
       </div>
 
@@ -153,13 +151,13 @@ export default function ListingCardV2({
               </div>
             ) : (
               <div>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xl font-bold text-ink-900 tracking-tight">
+                <div className={`${heroDisplay.className} flex flex-wrap items-center gap-x-2 gap-y-1 text-2xl font-normal leading-none text-ink-900`}>
                   {isSingleOccupancy
                     ? <>{priceTotal}<span className="text-sm text-neutral-400 font-medium">/mo</span></>
                     : <>{priceBed}<span className="text-sm text-neutral-400 font-medium">/bed</span></>
                   }
                   {overBudget && (
-                    <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#FF465A1A] text-[#FF465A]">
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-blush-pink text-ink-900">
                       over budget
                     </span>
                   )}
@@ -174,7 +172,7 @@ export default function ListingCardV2({
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className={`inline-flex items-center gap-1 text-xs font-bold text-white bg-ink-900 hover:bg-black px-3 py-1.5 rounded-full transition-colors shrink-0 ${listing.price_note ? "self-end" : ""}`}
+              className={`inline-flex items-center gap-1 text-xs font-bold text-warm-ivory bg-forest-green hover:bg-ink-900 px-3 py-1.5 rounded-full transition-colors shrink-0 ${listing.price_note ? "self-end" : ""}`}
             >
               View Listing →
             </a>

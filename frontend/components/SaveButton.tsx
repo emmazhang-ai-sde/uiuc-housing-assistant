@@ -26,7 +26,7 @@ export default function SaveButton({
       onClick={onClick}
       disabled={disabled || status === "saving"}
       title={title}
-      className={`rounded-full bg-ink-900 px-3 py-1 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:opacity-50 ${className ?? ""}`}
+      className={`rounded-full bg-forest-green px-3 py-1 text-sm font-semibold text-warm-ivory transition-colors hover:bg-ink-900 disabled:cursor-not-allowed disabled:opacity-50 ${className ?? ""}`}
     >
       {status === "saving" ? savingLabel : status === "failed" ? "Save failed" : label}
     </button>

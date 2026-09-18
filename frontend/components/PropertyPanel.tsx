@@ -34,10 +34,10 @@ export default function PropertyPanel({
     // top-20 matches the host's pt-20, which is what clears the floating header:
     // the block starts level with the first card row and sticks there once the
     // grid scrolls past, rather than sliding under the header pill.
-    // Wider and shorter than the docked column: as a block it reads as a card
-    // rather than a full-height rail, and 70vh keeps it clear of the viewport
-    // bottom so more of its content scrolls internally.
-    ? "hidden lg:flex flex-col relative w-[480px] shrink-0 sticky top-20 max-h-[70vh] overflow-y-auto rounded-2xl border border-mist-100 bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)]"
+    // Wider and taller than the docked column: as a block it reads as a card
+    // rather than a full-height rail, while still keeping long content
+    // scrollable inside the panel.
+    ? "hidden lg:flex flex-col relative w-[560px] shrink-0 sticky top-20 max-h-[82vh] overflow-y-auto rounded-2xl border border-mist-100 bg-white shadow-[0_8px_30px_-12px_rgba(53,20,11,0.22)]"
     : "hidden lg:flex flex-col relative w-[420px] shrink-0 h-full overflow-y-auto border-l border-mist-100 bg-white"
 
   return (
@@ -53,7 +53,7 @@ export default function PropertyPanel({
 function EmptyState() {
   return (
     <div className="flex h-full min-h-[380px] flex-col items-center justify-center gap-5 px-9 py-12 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-mint-400/15 text-mint-600">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blush-pink text-forest-green">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="M3.5 10.5 12 4l8.5 6.5V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19v-8.5Z"
@@ -73,7 +73,7 @@ function EmptyState() {
       <ul className="flex flex-col gap-2 text-left">
         {["Photos and full address", "Pricing and lease dates", "Amenities and utilities"].map(item => (
           <li key={item} className="flex items-center gap-2.5 text-[13px] text-neutral-500">
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-mint-400" aria-hidden />
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-forest-green" aria-hidden />
             {item}
           </li>
         ))}

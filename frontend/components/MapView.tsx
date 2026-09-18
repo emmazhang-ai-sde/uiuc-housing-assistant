@@ -10,6 +10,8 @@ import { COMPANY_LOGOS } from "@/lib/companies"
 import { availabilityStatus, bedsLabel } from "@/lib/availability"
 import { exportMapAsHtml } from "@/lib/exportMap"
 import { buildMapStyle, GRAIN_DATA_URI, DEFAULT_THEME, themePins, pinTextColor, type MapTheme } from "@/lib/mapTheme"
+import ListingPhoto from "@/components/ListingPhoto"
+import { heroDisplay } from "@/lib/fonts"
 
 const MAP_HEIGHT = "clamp(560px, 60vh, 720px)"
 
@@ -206,7 +208,7 @@ const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, fi
             >
               <div
                 style={{ background: bg, color: text }}
-                className={`px-2 py-0.5 rounded-full text-[11px] font-semibold shadow-md
+                className={`${heroDisplay.className} px-2.5 py-0.5 rounded-full text-[13px] font-normal leading-none shadow-md
                            cursor-pointer hover:scale-110 transition-transform select-none
                            border ${isSelected ? "border-neutral-900 scale-110 ring-2 ring-neutral-900/20" : "border-white/60"}`}
               >
@@ -257,11 +259,7 @@ const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, fi
             closeButton={false}
             maxWidth="240px"
           >
-            <div className="h-28 bg-neutral-100">
-              {popup.photo_url && (
-                <img src={popup.photo_url} alt="" className="w-full h-full object-cover block" />
-              )}
-            </div>
+            <ListingPhoto src={popup.photo_url} className="h-28" compact />
             <div className="text-xs text-neutral-700 p-3 space-y-1.5">
               <div className="flex items-start justify-between gap-2">
                 {COMPANY_LOGOS[popup.company]
@@ -289,7 +287,7 @@ const MapView = forwardRef<MapViewHandle, Props>(function MapView({ listings, fi
               {popup.price_note ? (
                 <div className="text-xs font-medium text-neutral-500 leading-snug">{popup.price_note}</div>
               ) : (
-                <div className="font-bold text-neutral-900 text-sm">
+                <div className={`${heroDisplay.className} text-base font-normal leading-none text-neutral-900`}>
                   {popup.beds <= 1
                     ? <>{priceLabel(popup)}<span className="font-normal text-neutral-400 text-xs">/mo</span></>
                     : <>{priceLabel(popup)}<span className="font-normal text-neutral-400 text-xs">/bed</span></>

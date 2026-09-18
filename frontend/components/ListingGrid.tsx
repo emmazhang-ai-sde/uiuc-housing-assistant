@@ -17,12 +17,13 @@ type Props = {
   // Card views live in different layouts (a full-width page vs. a column squeezed
   // next to a conversation + detail panel), so the column count intentionally
   // differs per usage rather than being forced to match.
-  columns: 3 | 4
+  columns: 2 | 3 | 4
   onSelect?: (listing: Listing) => void
   className?: string
 }
 
-const COLS_CLASS: Record<3 | 4, string> = {
+const COLS_CLASS: Record<2 | 3 | 4, string> = {
+  2: "sm:grid-cols-2",
   3: "sm:grid-cols-2 lg:grid-cols-3",
   4: "sm:grid-cols-2 lg:grid-cols-4",
 }

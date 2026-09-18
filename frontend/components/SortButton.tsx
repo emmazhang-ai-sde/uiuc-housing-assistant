@@ -59,10 +59,10 @@ export default function SortButton({ value, onChange }: {
         aria-expanded={open}
         className={`flex items-center gap-1.5 h-9 pl-4 pr-3 rounded-full border text-xs font-semibold whitespace-nowrap transition-colors shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] ${
           isSet
-            ? "bg-ink-900 text-white border-ink-900"
+            ? "bg-forest-green text-warm-ivory border-forest-green"
             : open
-              ? "bg-white text-ink-900 border-neutral-400"
-              : "bg-white/95 backdrop-blur text-ink-900 border-mist-100 hover:border-neutral-400"
+              ? "bg-warm-ivory text-ink-900 border-forest-green"
+              : "bg-warm-ivory/95 backdrop-blur text-ink-900 border-mist-100 hover:border-forest-green"
         }`}
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -80,7 +80,7 @@ export default function SortButton({ value, onChange }: {
       {open && (
         <div
           role="listbox"
-          className="absolute top-full right-0 mt-2 z-50 min-w-max rounded-2xl border border-mist-100 bg-white p-1.5 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.2)]"
+          className="absolute top-full right-0 mt-2 z-50 min-w-max rounded-2xl border border-mist-100 bg-warm-ivory p-1.5 shadow-[0_8px_30px_-12px_rgba(53,20,11,0.32)]"
         >
           {SORT_OPTIONS.map(o => (
             <button
@@ -89,10 +89,10 @@ export default function SortButton({ value, onChange }: {
               aria-selected={o.key === value}
               onClick={() => { onChange(o.key); setOpen(false) }}
               className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-medium transition-colors ${
-                o.key === value ? "bg-mist-100 text-ink-900" : "text-neutral-700 hover:bg-mist-50"
+                o.key === value ? "bg-blush-pink text-ink-900" : "text-ink-900/70 hover:bg-mist-50"
               }`}
             >
-              <span className={`text-mint-400 ${o.key === value ? "" : "invisible"}`} aria-hidden>✓</span>
+              <span className={`text-forest-green ${o.key === value ? "" : "invisible"}`} aria-hidden>✓</span>
               {o.label}
             </button>
           ))}

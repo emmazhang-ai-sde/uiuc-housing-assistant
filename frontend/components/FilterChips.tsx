@@ -39,8 +39,8 @@ function Pill({ active, onClick, children }: {
       onClick={onClick}
       className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
         active
-          ? "bg-ink-900 text-white"
-          : "bg-mist-100 text-neutral-900 hover:bg-neutral-200"
+          ? "bg-forest-green text-warm-ivory"
+          : "bg-mist-100 text-ink-900 hover:bg-blush-pink"
       }`}
     >
       {children}
@@ -66,10 +66,10 @@ function Chip({ label, active, open, onToggle, align = "left", children }: {
         onClick={onToggle}
         className={`flex items-center gap-1.5 h-9 pl-4 pr-3 rounded-full border text-xs font-semibold whitespace-nowrap transition-colors shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] ${
           active
-            ? "bg-ink-900 text-white border-ink-900"
+            ? "bg-forest-green text-warm-ivory border-forest-green"
             : open
-              ? "bg-white text-ink-900 border-neutral-400"
-              : "bg-white/95 backdrop-blur text-ink-900 border-mist-100 hover:border-neutral-400"
+              ? "bg-warm-ivory text-ink-900 border-forest-green"
+              : "bg-warm-ivory/95 backdrop-blur text-ink-900 border-mist-100 hover:border-forest-green"
         }`}
       >
         {label}
@@ -81,7 +81,7 @@ function Chip({ label, active, open, onToggle, align = "left", children }: {
         </span>
       </button>
       {open && (
-        <div className={`absolute top-full mt-2 z-50 bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.2)] p-4 min-w-max ${
+        <div className={`absolute top-full mt-2 z-50 bg-warm-ivory rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(53,20,11,0.32)] p-4 min-w-max ${
           align === "right" ? "right-0" : "left-0"
         }`}>
           {children}
@@ -110,7 +110,7 @@ function PriceInput({ placeholder, value, onChange }: {
           const v = e.target.value.replace(/\D/g, "").slice(0, 4)
           onChange(v ? Number(v) : null)
         }}
-        className="w-full pl-7 pr-3 py-2 rounded-xl border border-neutral-200 text-sm text-ink-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-mint-400 transition"
+        className="w-full pl-7 pr-3 py-2 rounded-xl border border-mist-100 bg-white/70 text-sm text-ink-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-forest-green transition"
       />
     </div>
   )
@@ -236,7 +236,7 @@ export default function FilterChips({ filters, onChange, resultCount, loading, t
               />
             </div>
             {min != null && max != null && min > max && (
-              <p className="text-xs text-[#FF465A] leading-relaxed">
+              <p className="text-xs text-ink-900 leading-relaxed">
                 Min is above max, so nothing can match.
               </p>
             )}
@@ -271,7 +271,7 @@ export default function FilterChips({ filters, onChange, resultCount, loading, t
                       const v = e.target.value.replace(/\D/g, "").slice(0, 3)
                       onChange({ ...filters, buffer_value: v ? Number(v) : null })
                     }}
-                    className="w-14 px-2.5 py-1 rounded-full text-xs text-neutral-700 bg-mist-100 focus:outline-none focus:ring-2 focus:ring-mint-400"
+                    className="w-14 px-2.5 py-1 rounded-full text-xs text-ink-900 bg-mist-100 focus:outline-none focus:ring-2 focus:ring-forest-green"
                   />
                 )}
               </div>
@@ -358,7 +358,7 @@ export default function FilterChips({ filters, onChange, resultCount, loading, t
                     aria-pressed={on}
                     onClick={() => toggleCompany(name)}
                     className={`px-2.5 py-1 rounded-full transition-colors ${
-                      on ? "bg-ink-900 ring-2 ring-ink-900/20" : "bg-mist-100 hover:bg-neutral-200"
+                      on ? "bg-forest-green ring-2 ring-forest-green/20" : "bg-mist-100 hover:bg-blush-pink"
                     }`}
                   >
                     <img src={logo} alt={name} className="h-4 object-contain" />
@@ -367,7 +367,7 @@ export default function FilterChips({ filters, onChange, resultCount, loading, t
               })}
             </div>
           </Group>
-          <ExcludedRow label="Not able to scrape" labelClassName="text-[#FF465A]" companies={UNSCRAPABLE_COMPANIES} />
+          <ExcludedRow label="Not able to scrape" labelClassName="text-ink-900/60" companies={UNSCRAPABLE_COMPANIES} />
           <ExcludedRow label="Fully leased" companies={FULLY_LEASED_COMPANIES} />
         </div>
       </Chip>
@@ -375,7 +375,7 @@ export default function FilterChips({ filters, onChange, resultCount, loading, t
       {hasAnyFilter && (
         <button
           onClick={() => { onChange(DEFAULT_FILTERS); setOpen(null) }}
-          className="h-9 px-4 rounded-full text-xs font-semibold text-neutral-500 hover:text-ink-900 bg-white/95 backdrop-blur border border-mist-100 hover:border-neutral-400 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)] transition-colors whitespace-nowrap"
+          className="h-9 px-4 rounded-full text-xs font-semibold text-ink-900/60 hover:text-ink-900 bg-warm-ivory/95 backdrop-blur border border-mist-100 hover:border-forest-green shadow-[0_2px_10px_-4px_rgba(53,20,11,0.16)] transition-colors whitespace-nowrap"
         >
           Clear all
         </button>
@@ -385,7 +385,7 @@ export default function FilterChips({ filters, onChange, resultCount, loading, t
           value while a refetch is in flight so the row does not jump. */}
       {resultCount != null && (
         <span
-          className={`h-9 inline-flex items-center px-4 rounded-full text-xs font-bold bg-ink-900 text-white shadow-[0_2px_10px_-4px_rgba(0,0,0,0.2)] whitespace-nowrap transition-opacity ${
+          className={`h-9 inline-flex items-center px-4 rounded-full text-xs font-bold bg-forest-green text-warm-ivory shadow-[0_2px_10px_-4px_rgba(53,20,11,0.2)] whitespace-nowrap transition-opacity ${
             loading ? "opacity-50" : "opacity-100"
           }`}
         >

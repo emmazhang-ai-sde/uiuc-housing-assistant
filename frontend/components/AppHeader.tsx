@@ -4,17 +4,17 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import UserMenu from "@/components/UserMenu"
-import { inter } from "@/lib/fonts"
+import { heroDisplay, inter } from "@/lib/fonts"
 
 const TABS = [
   { label: "Card", href: "/card" },
   { label: "Map",  href: "/map"  },
-  { label: "Rate & Report", href: "/feedback" },
 ]
 
-export default function AppHeader() {
+export default function AppHeader({ variant = "light" }: { variant?: "light" | "dark" }) {
   const path = usePathname()
   const [isAdmin, setIsAdmin] = useState(false)
+  const dark = variant === "dark"
 
   // The ADMIN_EMAIL set is server-only and never shipped to the browser
   // bundle (see app/api/admin/status/route.ts), so this tab's visibility is
@@ -29,15 +29,21 @@ export default function AppHeader() {
   }, [])
 
   return (
-    <header className={`${inter.className} flex justify-center px-4 pt-3 pb-2 shrink-0`}>
-      <div className="flex items-center gap-3 h-11 pl-4 pr-2 bg-white/95 backdrop-blur border border-mist-100 rounded-full shadow-[0_2px_10px_-4px_rgba(0,0,0,0.08)]">
+    <header className={`${inter.className} relative z-[90] flex justify-center px-4 pt-3 pb-2 shrink-0`}>
+      <div className={`flex max-w-[calc(100vw-2rem)] items-center gap-3 h-11 pl-4 pr-2 backdrop-blur rounded-full shadow-[0_2px_10px_-4px_rgba(53,20,11,0.16)] ${
+        dark
+          ? "bg-espresso-brown/95 border border-warm-ivory/10"
+          : "bg-warm-ivory/95 border border-mist-100"
+      }`}>
         <Link
           href="/about"
-          className="text-sm font-extrabold tracking-tight text-ink-900 hover:text-ink-900/70 transition-colors"
+          className={`${heroDisplay.className} text-lg font-normal uppercase leading-none transition-colors ${
+            dark ? "text-warm-ivory hover:text-blush-pink" : "text-ink-900 hover:text-ink-900/70"
+          }`}
         >
           UIUC Housing
         </Link>
-        <div className="flex gap-1">
+        <div className="flex shrink-0 gap-1">
           {TABS.map(({ label, href }) => {
             const active = path.startsWith(href)
             return (
@@ -46,8 +52,12 @@ export default function AppHeader() {
                 href={href}
                 className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
                   active
-                    ? "bg-ink-900 text-white"
-                    : "text-neutral-500 hover:text-ink-900 hover:bg-mint-400/15"
+                    ? dark
+                      ? "bg-warm-ivory text-espresso-brown"
+                      : "bg-forest-green text-warm-ivory"
+                    : dark
+                      ? "text-warm-ivory/65 hover:text-warm-ivory hover:bg-warm-ivory/10"
+                      : "text-ink-900/60 hover:text-ink-900 hover:bg-blush-pink"
                 }`}
               >
                 {label}
@@ -59,8 +69,12 @@ export default function AppHeader() {
               href="/admin/activity"
               className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
                 path.startsWith("/admin")
-                  ? "bg-ink-900 text-white"
-                  : "text-neutral-500 hover:text-ink-900 hover:bg-mint-400/15"
+                  ? dark
+                    ? "bg-warm-ivory text-espresso-brown"
+                    : "bg-forest-green text-warm-ivory"
+                  : dark
+                    ? "text-warm-ivory/65 hover:text-warm-ivory hover:bg-warm-ivory/10"
+                    : "text-ink-900/60 hover:text-ink-900 hover:bg-blush-pink"
               }`}
             >
               Admin Activity
