@@ -19,12 +19,18 @@ The core workflow is:
 
 Active views:
 
+- **About** (`/about`) — editorial product page and entry point
 - **Card** (`/card`) — filter-driven listing browse
 - **Map** (`/map`) — the same filtered listings plotted around campus
+- **Login** (`/login`) — Supabase sign-in
 
-Access is gated with Supabase Auth so listing access stays limited to approved users.
+Access is gated with Supabase Auth so listing access stays limited to approved users. There is no standalone account page now; the header user menu owns the signed-in state, shows the current user, and provides Log out.
 
-Archived Chat, Table, and RAG code lives under `archive/legacy-chat-rag/` and is not imported by the active app.
+Archived code:
+
+- Chat, Table, and RAG code lives under `archive/legacy-chat-rag/` and is not imported by the active app.
+- The former `Rate & Report` page lives under `archive/retired-feedback-page/`.
+- A complete pre-redesign frontend snapshot lives under `archive/ui-snapshots/`.
 
 ## System Flow
 
@@ -72,13 +78,14 @@ uiuc-housing-assistant/
 │   │   ├── card/               # Card search view
 │   │   ├── map/                # Map search view
 │   │   ├── about/              # Product page
-│   │   ├── account/            # Account page
 │   │   └── login/              # Supabase auth
 │   ├── components/
 │   └── lib/
 ├── snapshots/                  # Versioned SQLite + raw JSON snapshots
 ├── archive/
-│   └── legacy-chat-rag/         # Archived Chat, Table, RAG, Chroma assets
+│   ├── legacy-chat-rag/         # Archived Chat, Table, RAG, Chroma assets
+│   ├── retired-feedback-page/   # Archived user-facing feedback page
+│   └── ui-snapshots/            # Full frontend UI snapshots
 ├── design-docs/                # Detailed implementation notes
 └── scripts/                    # Maintainer tooling
 ```

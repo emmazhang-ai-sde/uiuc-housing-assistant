@@ -1,35 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UIUC Housing Frontend
 
-## Getting Started
+Next.js 16 frontend for the UIUC Housing Assistant. The active app is now focused on search, comparison, and map browsing rather than chat or account-management pages.
 
-First, run the development server:
+## Active Routes
+
+- `/about` — editorial landing page with the current warm campus visual system
+- `/card` — card-based listing browse with shared filters and listing detail panel
+- `/map` — map-first browse with shared filters, listing pins, and map color controls
+- `/login` — Supabase auth
+- `/admin/activity` — admin-only activity view, exposed from the header for admins
+- `/admin/feedback` — admin-only historical feedback review
+
+There is no active `/account` page. Signed-in user controls live in the shared header:
+
+- unauthenticated users see `Log In`
+- signed-in users see their email prefix and avatar
+- the dropdown shows the full email and `Log out`
+- admin users get the `Admin Activity` tab from `/api/admin/status`
+
+The former user-facing `Rate & Report` page has been retired from navigation and archived at `../archive/retired-feedback-page/`.
+
+## Design System Notes
+
+- App-wide body font: `Inter`
+- Display/brand font: `Lilita One`, used for hero text, prominent stats, brand marks, prices, and select headings
+- Warm palette tokens live in `app/globals.css`:
+  - `warm-ivory`
+  - `espresso-brown`
+  - `forest-green`
+  - `blush-pink`
+- About hero image asset: `public/about/uiuc-housing-hero.png`
+- Experimental static About preview: `public/about-editorial-preview.html`
+
+## Local Development
+
+The repo intentionally uses the `310x` port range:
+
+- FastAPI backend: `http://localhost:3101`
+- Next.js frontend: `http://localhost:3102`
+
+Start the frontend:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3102](http://localhost:3102) with your browser to see the result.
+Useful checks:
 
-This repo intentionally uses the `310x` port range for local development:
+```bash
+npx tsc --noEmit
+npm run lint
+```
 
-- FastAPI backend: `http://localhost:3101`
-- Next.js frontend: `http://localhost:3102`
+`npm run lint` may report existing React hook lint issues in `app/card/page.tsx` and `app/map/page.tsx` around synchronous loading-state updates inside effects. Those are pre-existing app-page issues, separate from component-level UI changes.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Key Components
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `components/AppHeader.tsx` — shared navigation and admin tab
+- `components/UserMenu.tsx` — signed-in user dropdown and logout
+- `components/FilterChips.tsx` — shared Card/Map filter row
+- `components/ListingCardV2.tsx` — active listing card skin
+- `components/ListingGrid.tsx` — card grid column layout
+- `components/PropertyPanel.tsx` — docked detail panel on Card view
+- `components/PropertyDrawer.tsx` — drawer/detail content shared with Map
+- `components/MapColorPicker.tsx` — default/custom map color editor
+- `components/ListingPhoto.tsx` — image loader with fallback on broken listing photos
 
-## Learn More
+## Map Theme
 
-To learn more about Next.js, take a look at the following resources:
+Map theme defaults live in `lib/mapTheme.ts`; persisted theme state lives in `hooks/useMapTheme.ts`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The active map color UI supports:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `default` palette
+- user-edited custom colors based on the default palette
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Named alternate presets were removed from the product UI.
