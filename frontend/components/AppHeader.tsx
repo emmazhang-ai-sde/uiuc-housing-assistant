@@ -9,7 +9,6 @@ import { inter } from "@/lib/fonts"
 const TABS = [
   { label: "Card", href: "/card" },
   { label: "Map",  href: "/map"  },
-  { label: "Table", href: "/table" },
   { label: "Rate & Report", href: "/feedback" },
 ]
 

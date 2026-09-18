@@ -138,7 +138,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Floating header pill, overlaid on top like the Chat/Map views */}
+      {/* Floating header pill, overlaid on top like the Map view */}
       <div className="absolute top-0 inset-x-0 z-30 pointer-events-none [&_header>div]:pointer-events-auto print:hidden">
         <AppHeader />
       </div>

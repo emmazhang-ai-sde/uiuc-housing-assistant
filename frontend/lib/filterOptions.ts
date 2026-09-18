@@ -1,7 +1,6 @@
-// Filter option lists shared by the two filter surfaces: FilterBar (the stacked
-// panel used by Card and Table) and MapFilterChips (the horizontal chip row on
-// the Map). They render very differently but must offer the same choices, so the
-// options live here rather than being duplicated per component.
+// Filter option lists shared by the active Card and Map filter surfaces.
+// They render very differently but must offer the same choices, so the options
+// live here rather than being duplicated per component.
 
 export const BED_OPTIONS: { label: string; value: number | null }[] = [
   { label: "Any",    value: null },

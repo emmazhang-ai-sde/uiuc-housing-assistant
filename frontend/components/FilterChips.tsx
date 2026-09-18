@@ -3,7 +3,7 @@
 // Expedia-style horizontal filter chips, used by the Map and Card views
 // (2026-07-20). Both are content-first surfaces — a full-bleed map, a card grid —
 // so their filters collapse into one centred row that opens dropdowns on demand,
-// instead of the always-open stacked panel Table still uses
+// instead of the older always-open stacked filter panel archived with Table
 // (components/FilterBar.tsx). Both components drive the same Filters object and
 // share their option lists via lib/filterOptions.ts, so the choices cannot drift.
 //

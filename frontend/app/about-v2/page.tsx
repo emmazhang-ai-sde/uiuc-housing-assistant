@@ -44,7 +44,7 @@ const PAIN_QUOTES = [
   },
   {
     problem: "Every follow-up question is another call to an office that already closed.",
-    solution: "Filter the shared dataset once, then compare in cards, table, or map.",
+    solution: "Filter the shared dataset once, then compare in cards or map.",
   },
 ]
 
@@ -164,7 +164,7 @@ function MockListingCard() {
   )
 }
 
-function MockChat() {
+function MockFilteredResults() {
   return (
     <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-5 flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
@@ -221,9 +221,9 @@ export default function AboutV2Page() {
       mock: <MockListingCard />,
     },
     {
-      title: "Filter once, compare everywhere",
-      body: "Not sure which view is easiest yet? Set your criteria once, then move between cards, a dense table, and the map without rebuilding the search.",
-      mock: <MockChat />,
+      title: "Filter once, compare two ways",
+      body: "Not sure which view is easiest yet? Set your criteria once, then move between cards and the map without rebuilding the search.",
+      mock: <MockFilteredResults />,
     },
   ]
 
@@ -485,7 +485,6 @@ export default function AboutV2Page() {
             <span className="text-neutral-400 ml-2">Built for UIUC students in Champaign-Urbana.</span>
           </div>
           <div className="flex items-center gap-5 text-sm font-semibold text-ink-900">
-            <Link href="/table" className="hover:text-mint-600 transition-colors">Table</Link>
             <Link href="/map" className="hover:text-mint-600 transition-colors">Map</Link>
             <Link href="/card" className="hover:text-mint-600 transition-colors">Card</Link>
           </div>

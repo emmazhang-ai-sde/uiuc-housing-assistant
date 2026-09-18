@@ -47,9 +47,9 @@ function formatDuration(sec: number): string {
   return `${s}s`
 }
 
-// The three browse surfaces get their own top row in the feature-usage strip
-// so they read as a comparable set. Order is deliberate: Map / Card / Table.
-const VIEW_EVENTS = ["map_search", "card_view", "table_view"]
+// Active browse surfaces get their own top row in the feature-usage strip.
+// Archived route events stay in the secondary row when historical data exists.
+const VIEW_EVENTS = ["map_search", "card_view"]
 
 // Friendlier labels than the raw event_type slugs used in the DB.
 const EVENT_LABELS: Record<string, string> = {
@@ -59,7 +59,7 @@ const EVENT_LABELS: Record<string, string> = {
   message_sent: "Messages sent",
   map_search: "Map searches",
   card_view: "Card views",
-  table_view: "Table views",
+  table_view: "Archived table views",
   listing_view: "Listings viewed",
 }
 
@@ -194,9 +194,8 @@ export default function AdminActivityPage() {
                 </div>
               )}
 
-              {/* Feature usage — raw event counts. Top row is the three browse
-                  surfaces (Map / Card / Table) so they read as a comparable
-                  set; every other event drops to a second row. */}
+              {/* Feature usage — raw event counts. Top row is the active browse
+                  surfaces; archived and secondary events drop to a second row. */}
               {Object.keys(counts).length === 0 ? (
                 <div className="mb-8 text-sm text-neutral-400">No activity logged yet.</div>
               ) : (

@@ -280,7 +280,7 @@ export default function AboutPage() {
     },
     {
       title: "Filter Once, See It Everywhere",
-      body: "Choose beds, budget, move-in window, company, and property type once. The same filtered dataset powers the card grid, table, and full-screen map.",
+      body: "Choose beds, budget, move-in window, company, and property type once. The same filtered dataset powers the card grid and full-screen map.",
       cta: { label: "Open the Map", href: "/map" },
       mock: <MockMapSearch />,
     },
@@ -460,22 +460,22 @@ export default function AboutPage() {
             </Reveal>
             <Reveal delay={100}>
               <div className="p-8 bg-white rounded-3xl border border-mist-100 hover:border-mint-400 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:translate-y-0 h-full flex flex-col">
-                <div className="w-11 h-11 flex items-center justify-center text-xl mb-4 rounded-xl bg-mist-50 border border-mist-100">▦</div>
-                <div className="text-lg font-extrabold text-ink-900 mb-2">Need to compare quickly?</div>
+                <div className="w-11 h-11 flex items-center justify-center text-xl mb-4 rounded-xl bg-mist-50 border border-mist-100">⌖</div>
+                <div className="text-lg font-extrabold text-ink-900 mb-2">Need to compare by location?</div>
                 <p className="text-sm text-neutral-500 leading-relaxed">
-                  Use the table when you want a dense view of prices, availability, landlords,
-                  and unit details without opening every listing card.
+                  Use the map when distance matters more than a spreadsheet view. See prices
+                  around campus, then open the listing detail from the pin or card.
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-4">
-                  {["Sortable rows", "Price ranges", "Source links"].map(tag => (
+                  {["Campus context", "Price pins", "Listing details"].map(tag => (
                     <span key={tag} className="px-2 py-1 rounded-md bg-black/[.04] text-[13px] font-medium text-ink-900">
                       {tag}
                     </span>
                   ))}
                 </div>
                 <div className="flex items-center gap-3 mt-auto pt-6">
-                  <Link href="/table" className="px-5 py-2.5 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors">
-                    Open the Table
+                  <Link href="/map" className="px-5 py-2.5 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors">
+                    Open the Map
                   </Link>
                 </div>
               </div>
@@ -517,7 +517,6 @@ export default function AboutPage() {
               <ul className="space-y-2.5 text-[15px]">
                 {([
                   ["Card View", "/card"],
-                  ["Table View", "/table"],
                   ["Map View", "/map"],
                   ["Rate & Report", "/feedback"],
                 ] as const).map(([label, href]) => (

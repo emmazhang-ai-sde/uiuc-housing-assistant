@@ -82,7 +82,7 @@ const SEED: DemoData = {
     { id: 4, label: "Logins", count: 128 },
     { id: 5, label: "Chats opened", count: 96 },
     { id: 6, label: "Map searches", count: 74 },
-    { id: 7, label: "Table views", count: 58 },
+    { id: 7, label: "Archived table views", count: 58 },
     { id: 8, label: "Logouts", count: 39 },
   ],
   growth: [
@@ -126,7 +126,7 @@ const SEED: DemoData = {
     { id: 5, email: "sam.o@example.edu", event: "Logins", metadata: "{}", created_at: "2026-07-12T19:57", is_new_user: true },
     { id: 6, email: "avery.l@example.edu", event: "Card views", metadata: '{"count":12}', created_at: "2026-07-12T18:30", is_new_user: true },
     { id: 7, email: "dana.w@example.edu", event: "Messages sent", metadata: '{"chars":151}', created_at: "2026-07-12T17:05", is_new_user: false },
-    { id: 8, email: "dana.w@example.edu", event: "Table views", metadata: "{}", created_at: "2026-07-12T17:01", is_new_user: false },
+    { id: 8, email: "dana.w@example.edu", event: "Archived table views", metadata: "{}", created_at: "2026-07-12T17:01", is_new_user: false },
     { id: 9, email: "chris.m@example.edu", event: "Listings viewed", metadata: '{"listing_id":"tanner-1b"}', created_at: "2026-07-12T15:22", is_new_user: false },
     { id: 10, email: "chris.m@example.edu", event: "Map searches", metadata: '{"bounds":"north-campus"}', created_at: "2026-07-12T15:18", is_new_user: false },
     { id: 11, email: "taylor.b@example.edu", event: "Logins", metadata: "{}", created_at: "2026-07-12T14:09", is_new_user: false },

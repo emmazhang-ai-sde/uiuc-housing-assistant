@@ -106,7 +106,7 @@ export default function AccountPage() {
         </div>
       </div>
 
-      {/* Floating header pill, overlaid like the Chat/Map views */}
+      {/* Floating header pill, overlaid like the search views */}
       <div className="absolute top-0 inset-x-0 z-30 pointer-events-none [&_header>div]:pointer-events-auto">
         <AppHeader />
       </div>

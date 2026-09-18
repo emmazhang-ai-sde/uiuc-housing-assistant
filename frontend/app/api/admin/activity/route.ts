@@ -51,9 +51,9 @@ export async function GET() {
   const rows = (all ?? []).filter(r => !isAdminEmail(r.email))
 
   const counts: Record<string, number> = {}
-  // Distinct people per event type, alongside the raw count. "Table views: 3"
-  // is 3 mount events — could be one person reloading /table three times. The
-  // per-user set answers "how many people actually used this" instead.
+  // Distinct people per event type, alongside the raw count. Archived route
+  // events can still appear here, so the per-user set answers "how many people
+  // actually used this" instead of only showing mount/reload counts.
   const usersByEvent = new Map<string, Set<string>>()
   const activeUsers = new Set<string>()
   const activeUsers24h = new Set<string>()
