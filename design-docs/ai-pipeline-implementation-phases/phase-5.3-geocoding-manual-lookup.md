@@ -158,6 +158,15 @@ Future scrapes are automatically protected: `geocode()` checks `MANUAL_COORDS` b
 | `"60 E Green –"` | `(40.11042, -88.23897)` | 60 E Green – Roommate Matching Special! | Failure Mode 3: em-dash strips city name |
 | `"60 E. Green"` | `(40.11042, -88.23897)` | 60 E. Green – May/June Special! | Failure Mode 3: em-dash strips city name |
 | `"502 S. Fifth –"` | `(40.11261, -88.23181)` | 502 S. Fifth – Fall Semester Only! (url: 502-e-healey-january-2024) | Failure Mode 3: em-dash strips city name; Nominatim matched Chicago (~41.878, -87.711). Verified via Google Maps 2026-07-05 |
+| `"101 E. Armory"` | `(40.10515, -88.23844)` | 101 E. Armory Street (MHM) | Street is Armory AVENUE — Nominatim finds nothing for "Armory Street". Coords from Nominatim "101 E Armory Ave, Champaign". Verified 2026-07-05 |
+| `"59 E. Chalmers"` | `(40.10636, -88.23925)` | 59/61 E. Chalmers, Champaign | No "St" suffix → street-segment fallback ~0.9 km east. Coords from Nominatim with "St" suffix. Verified 2026-07-05 |
+| `"61 E. Chalmers"` | `(40.10636, -88.23912)` | 59/61 E. Chalmers, Champaign | Same as above |
+| `"707 S 4th"` | `(40.10964, -88.23411)` | 707 S 4th St (Seven07) | Numeral "4th" matched the Champaign City Building downtown; spelled-out "Fourth" returns the building. Verified 2026-07-05 |
+| `"101 E. Springfield - Fall"` | `(40.112548, -88.238556)` | 101 E. Springfield - Fall Semester Only! | Failure Mode 3 (hyphen variant): suffix strips city; Nominatim matched Springfield, IL (39.799, -89.644). Coords from correctly-geocoded sibling "101 E. Springfield, Champaign". Verified 2026-08-05 |
+| `"1008 W. Main –"` | `(40.1146906, -88.2213552)` | 1008 W. Main – Individual Lease | Failure Mode 3: Nominatim matched a W Main St near Illiopolis, IL (39.931, -89.066). Coords from correctly-geocoded sibling "1008 W. Main, Urbana". Verified 2026-08-05 |
+| `"25 E John"` | `(40.1087788, -88.2412091)` | 25 E John, Champaign | No "St" suffix → street-segment match ~8 km east (lng -88.142). Coords from structured Nominatim query (Campustown house-number match, consistent with neighbors 48/57/58 E John). Verified 2026-08-05 |
+| `"605 S. Fifth –"` | `(40.1109773, -88.2323923)` | 605 S. Fifth – 1 Bedroom | Failure Mode 3: Nominatim matched Chicago (41.878, -87.711). Coords from structured Nominatim query (house-number match, Midtown). Was in Unresolved list since ~2026-06. Verified 2026-08-05 |
+| `"Helen Ct"` | `(40.0992158, -88.2947863)` | Helen Ct/Duncan Rd/Kirby Ave Townhomes | Property name, not an address; Nominatim matched Helen Ct in Dundee, IL (42.012, -88.184). Coords from structured Nominatim query "Helen Court, Champaign" (Holiday Park, consistent with Duncan/Kirby). Was in Unresolved list since ~2026-06. Verified 2026-08-05 |
 
 ---
 
@@ -167,6 +176,6 @@ These addresses were flagged but not yet corrected. Manual Google Maps lookup re
 
 | Address | Stored Coords | Problem |
 |---|---|---|
-| `911 S Locust` | `(40.1069, -88.2407)` | ORS gives ~4 min walk from Green/6th but Google Maps shows ~17 min — wrong street |
-| `605 S. Fifth` | `(41.88, -87.71)` | Chicago — Failure Mode 1 or 2 |
-| `Helen Ct` | `(42.01, -88.18)` | Dundee, IL — property name without street address |
+| `911 S Locust` | `(40.1069, -88.2407)` | ORS gives ~4 min walk from Green/6th but Google Maps shows ~17 min — wrong street. However, a structured Nominatim house-number query (2026-08-05) returns these same coords, so the stored value may be right after all. Needs a Google Maps manual lookup to settle. |
+
+Resolved 2026-08-05 (moved to Known Entries above): `605 S. Fifth –` (was Chicago), `Helen Ct` (was Dundee, IL).

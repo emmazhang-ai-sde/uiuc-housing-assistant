@@ -1,0 +1,24 @@
+{
+  "presets": [
+    {
+      "name": "Lavender",
+      "grain": 0,
+      "colors": {
+        "LAND": "#F1EFF6",
+        "RESID": "#ECE9F1",
+        "LAWN": "#CFE5BB",
+        "WOOD": "#CFE5BB",
+        "WATER": "#E0EDF8",
+        "WATERLINE": "#87B4DA",
+        "BLDG": "#B8A8C8",
+        "BLDG_OUT": "#FFFFFF",
+        "ROAD": "#E1DFE2",
+        "CASE": "#FFFFFF",
+        "PATH": "#FFFFFF",
+        "LABEL": "#852CCF",
+        "HALO": "#FFFFFF",
+        "BOUNDARY": "#FFFFFF"
+      }
+    }
+  ]
+}

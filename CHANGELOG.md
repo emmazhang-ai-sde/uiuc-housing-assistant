@@ -4,6 +4,18 @@ All notable changes to the UIUC Housing Assistant are recorded here.
 
 ---
 
+## 2026-08-05 — Monthly data refresh: 1,138 listings across all 9 scrapers, 5 geocode fixes
+
+### Changed
+- Full scrape → normalize → geocode → ingest run, the first since 2026-07-09. New snapshot `snapshots/listings_2026-08-05.db`: 1,138 listings (GSR 493, UG 380, Roland 101, JSJ 46, MHM 37, Smile 30, Bankier 28, Seven07 12, Octave 11), 463 available / 675 leased, 903 with price. Net −37 vs July as units lease up. All 9 scrapers succeeded with no partial archives. Chroma delta: 20 added, 242 re-embedded, 338 metadata-only, 46 removed, 525 unchanged
+- Snapshot Log row appended in `design-docs/ai-pipeline-implementation-phases/phase-8.3-data-coverage-audit.md`; from this run on, Total spans all 9 scrapers
+
+### Fixed
+- `pipeline/geocode.py` — 5 new `MANUAL_COORDS` entries. Three new addresses misgeocoded on this run: `101 E. Springfield - Fall Semester Only!` (matched Springfield, IL), `1008 W. Main – Individual Lease` (matched near Illiopolis, IL) — both the documented suffix-strips-city failure mode, fixed with coords from their correctly-geocoded sibling listings; `25 E John, Champaign` (street-segment match ~8 km east), fixed via structured Nominatim house-number query. Also resolved two long-standing FIXME entries: `605 S. Fifth – 1 Bedroom` (was Chicago) and `Helen Ct/Duncan Rd/Kirby Ave Townhomes` (was Dundee, IL), both via structured Nominatim queries. `911 S Locust` remains the only unresolved flag — Nominatim's house-number match agrees with the stored coords, so it needs a Google Maps manual lookup to settle
+- `design-docs/ai-pipeline-implementation-phases/phase-5.3-geocoding-manual-lookup.md` — Known Entries table synced with code (was missing the four 2026-07-05 entries; now includes today's five); resolved entries moved out of the Unresolved list
+
+---
+
 ## 2026-07-05 — Fixed "under $X" being extracted as a price floor instead of a ceiling
 
 ### Fixed

@@ -13,10 +13,10 @@ import { inter } from "@/lib/fonts"
 // Previous version archived at design-docs/post-launch/archive/about-page-jobright-v1.tsx
 
 const TYPED_QUERIES = [
-  "2BR under $900/bed near Grainger",
-  "studio available now",
-  "cheapest 4BR near the Quad",
-  "houses for August 2026",
+  "2BR · under $900/bed · near Grainger",
+  "Studio · available now",
+  "4BR · near the Quad",
+  "Houses · August 2026",
 ]
 
 const EXTRAS = [
@@ -221,23 +221,32 @@ function MockListingCard() {
   )
 }
 
-function MockChat() {
+function MockMapSearch() {
   return (
-    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-5 flex flex-col gap-3">
-      <span className="self-end max-w-[85%] bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] text-ink-900 rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium">
-        2BR under $900/bed near Grainger?
-      </span>
-      <span className="self-start max-w-[85%] bg-mist-50 border border-mist-100 text-ink-900 rounded-2xl rounded-tl-md px-4 py-2.5 text-sm">
-        Found 37 units. Want them sorted by walk time?
-      </span>
-      <span className="self-end max-w-[85%] bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] text-ink-900 rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium">
-        Yes please
-      </span>
-      <span className="self-start bg-mist-50 border border-mist-100 rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-1.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-mint-400 animate-bounce [animation-delay:0ms] motion-reduce:animate-none" />
-        <span className="w-1.5 h-1.5 rounded-full bg-mint-400 animate-bounce [animation-delay:150ms] motion-reduce:animate-none" />
-        <span className="w-1.5 h-1.5 rounded-full bg-mint-400 animate-bounce [animation-delay:300ms] motion-reduce:animate-none" />
-      </span>
+    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-5">
+      <div className="flex flex-wrap gap-2 mb-4">
+        {["2 Bed", "< $900/bed", "Available August", "Apartment"].map(label => (
+          <span key={label} className="px-3 py-1.5 rounded-full bg-mist-50 border border-mist-100 text-xs font-bold text-ink-900">
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className="relative h-48 rounded-2xl overflow-hidden bg-[linear-gradient(135deg,#EFF6F2,#D9F8E8)] border border-mist-100">
+        <div className="absolute inset-0 opacity-60 bg-[linear-gradient(90deg,transparent_23px,#ffffff_24px),linear-gradient(0deg,transparent_23px,#ffffff_24px)] bg-[length:48px_48px]" />
+        {[
+          ["left-[18%] top-[30%]", "$785"],
+          ["left-[55%] top-[22%]", "$860"],
+          ["left-[68%] top-[62%]", "$895"],
+          ["left-[34%] top-[68%]", "$820"],
+        ].map(([pos, price]) => (
+          <span
+            key={price}
+            className={`absolute ${pos} -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink-900 text-white text-xs font-bold px-3 py-1.5 shadow-lg`}
+          >
+            {price}
+          </span>
+        ))}
+      </div>
     </div>
   )
 }
@@ -270,10 +279,10 @@ export default function AboutPage() {
       mock: <MockListingCard />,
     },
     {
-      title: "Your Own Housing Expert",
-      body: "Type what you actually want, in plain English. The conversation remembers context, so you can narrow things down turn by turn instead of fighting dropdown forms.",
-      cta: { label: "Start Chatting", href: "/chat" },
-      mock: <MockChat />,
+      title: "Filter Once, See It Everywhere",
+      body: "Choose beds, budget, move-in window, company, and property type once. The same filtered dataset powers the card grid, table, and full-screen map.",
+      cta: { label: "Open the Map", href: "/map" },
+      mock: <MockMapSearch />,
     },
   ]
 
@@ -288,7 +297,7 @@ export default function AboutPage() {
         <Reveal>
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-mist-50 border border-mist-100 text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-7">
             <span className="w-2 h-2 rounded-full bg-mint-400" />
-            AI housing copilot, built for UIUC
+            UIUC housing search, built around real listings
           </div>
           <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight leading-[1.08] max-w-3xl mx-auto">
             <span className="block">SKIP THE TAB-HOPPING</span>
@@ -305,15 +314,15 @@ export default function AboutPage() {
             <span className="truncate"><TypedQuery /></span>
           </div>
           <p className="text-neutral-500 text-base sm:text-lg max-w-xl mx-auto mt-6 leading-relaxed">
-            One search across every UIUC-area leasing company, with honest price per bed and
-            live availability, in plain English.
+            One searchable dataset across UIUC-area leasing companies, with honest price per bed,
+            live availability, and map-first comparison.
           </p>
           <div className="flex items-center justify-center gap-3 mt-8">
             <Link
-              href="/chat"
+              href="/card"
               className="px-6 py-3 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors"
             >
-              Try it free
+              Search listings
             </Link>
             <Link
               href="/map"
@@ -451,22 +460,22 @@ export default function AboutPage() {
             </Reveal>
             <Reveal delay={100}>
               <div className="p-8 bg-white rounded-3xl border border-mist-100 hover:border-mint-400 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:translate-y-0 h-full flex flex-col">
-                <div className="w-11 h-11 flex items-center justify-center text-xl mb-4 rounded-xl bg-mist-50 border border-mist-100">💬</div>
-                <div className="text-lg font-extrabold text-ink-900 mb-2">Still figuring it out?</div>
+                <div className="w-11 h-11 flex items-center justify-center text-xl mb-4 rounded-xl bg-mist-50 border border-mist-100">▦</div>
+                <div className="text-lg font-extrabold text-ink-900 mb-2">Need to compare quickly?</div>
                 <p className="text-sm text-neutral-500 leading-relaxed">
-                  Ask anything: when to start looking, whether it&rsquo;s too late, what prices near
-                  campus really look like. Narrow it down turn by turn.
+                  Use the table when you want a dense view of prices, availability, landlords,
+                  and unit details without opening every listing card.
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-4">
-                  {["Plain English", "Remembers context", "Instant answers"].map(tag => (
+                  {["Sortable rows", "Price ranges", "Source links"].map(tag => (
                     <span key={tag} className="px-2 py-1 rounded-md bg-black/[.04] text-[13px] font-medium text-ink-900">
                       {tag}
                     </span>
                   ))}
                 </div>
                 <div className="flex items-center gap-3 mt-auto pt-6">
-                  <Link href="/chat" className="px-5 py-2.5 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors">
-                    Start chatting
+                  <Link href="/table" className="px-5 py-2.5 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors">
+                    Open the Table
                   </Link>
                 </div>
               </div>
@@ -507,10 +516,9 @@ export default function AboutPage() {
               <div className="font-bold text-ink-900 mb-4">Features</div>
               <ul className="space-y-2.5 text-[15px]">
                 {([
-                  ["AI Chat", "/chat"],
-                  ["Map View", "/map"],
                   ["Card View", "/card"],
                   ["Table View", "/table"],
+                  ["Map View", "/map"],
                   ["Rate & Report", "/feedback"],
                 ] as const).map(([label, href]) => (
                   <li key={href}>

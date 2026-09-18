@@ -61,3 +61,6 @@ data/raw_archive/
 # Logs
 *.log
 logs/
+
+# Local Claude/Codex worktrees and personal skills
+.claude/

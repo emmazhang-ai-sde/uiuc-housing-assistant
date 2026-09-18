@@ -19,7 +19,7 @@ const CTA_LABEL = "Find My Apartment" // repeated per section, like the tools pa
 const BENEFITS = [
   { icon: "🟢", title: "Live availability", body: "Leased units are labeled, not hidden." },
   { icon: "🏷️", title: "Honest per-bed pricing", body: "No teaser starting-at numbers." },
-  { icon: "💬", title: "Plain-English search", body: "No dropdown forms to fight." },
+  { icon: "▦", title: "Structured filters", body: "Beds, price, move-in, source, and type in one place." },
   { icon: "🗺️", title: "Distance you can see", body: "Walk and drive times, not guesses." },
   { icon: "🛡️", title: "Free, no spam", body: "No login walls or follow-up calls." },
   { icon: "🎓", title: "UIUC only", body: "Built around campus, for students." },
@@ -44,15 +44,15 @@ const PAIN_QUOTES = [
   },
   {
     problem: "Every follow-up question is another call to an office that already closed.",
-    solution: "Ask in plain English, get an instant answer.",
+    solution: "Filter the shared dataset once, then compare in cards, table, or map.",
   },
 ]
 
 const STEPS = [
   {
     n: "01",
-    title: "Say what you want",
-    body: "Type it in plain English in Chat, or set beds, budget, and move-in date with filters.",
+    title: "Set the filters",
+    body: "Choose beds, budget, move-in date, company, and property type from one shared filter bar.",
   },
   {
     n: "02",
@@ -167,20 +167,26 @@ function MockListingCard() {
 function MockChat() {
   return (
     <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-5 flex flex-col gap-3">
-      <span className="self-end max-w-[85%] bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] text-ink-900 rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium">
-        Is it too late to find a place for August?
-      </span>
-      <span className="self-start max-w-[85%] bg-mist-50 border border-mist-100 text-ink-900 rounded-2xl rounded-tl-md px-4 py-2.5 text-sm">
-        Not at all. Want me to show what's still open near campus?
-      </span>
-      <span className="self-end max-w-[85%] bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] text-ink-900 rounded-2xl rounded-tr-md px-4 py-2.5 text-sm font-medium">
-        Yes, under $900/bed
-      </span>
-      <span className="self-start bg-mist-50 border border-mist-100 rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-1.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-mint-400 animate-bounce [animation-delay:0ms] motion-reduce:animate-none" />
-        <span className="w-1.5 h-1.5 rounded-full bg-mint-400 animate-bounce [animation-delay:150ms] motion-reduce:animate-none" />
-        <span className="w-1.5 h-1.5 rounded-full bg-mint-400 animate-bounce [animation-delay:300ms] motion-reduce:animate-none" />
-      </span>
+      <div className="flex flex-wrap gap-2">
+        {["2 Bed", "Under $900/bed", "August", "Near campus"].map(label => (
+          <span key={label} className="px-3 py-1.5 rounded-full bg-mist-50 border border-mist-100 text-xs font-bold text-ink-900">
+            {label}
+          </span>
+        ))}
+      </div>
+      {[
+        ["308 E Green St", "$785/bed", "Available August"],
+        ["508 E Clark St", "$840/bed", "Available Now"],
+        ["710 S 3rd St", "$895/bed", "Available August"],
+      ].map(([address, price, availability]) => (
+        <div key={address} className="rounded-xl border border-mist-100 px-4 py-3 flex items-center justify-between gap-4">
+          <div>
+            <div className="text-sm font-bold text-ink-900">{address}</div>
+            <div className="text-xs text-neutral-400">{availability}</div>
+          </div>
+          <div className="text-sm font-extrabold text-ink-900 whitespace-nowrap">{price}</div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -215,8 +221,8 @@ export default function AboutV2Page() {
       mock: <MockListingCard />,
     },
     {
-      title: "Chat until it clicks",
-      body: "Not sure what you want yet? Ask in plain English: when to start looking, whether it's too late, what prices near campus really look like. The conversation remembers context, so each answer narrows the next one.",
+      title: "Filter once, compare everywhere",
+      body: "Not sure which view is easiest yet? Set your criteria once, then move between cards, a dense table, and the map without rebuilding the search.",
       mock: <MockChat />,
     },
   ]
@@ -234,7 +240,7 @@ export default function AboutV2Page() {
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.1]">
               FIND YOUR UIUC APARTMENT WITH AN{" "}
               <span className="bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] rounded-xl px-2 box-decoration-clone">
-                AI HOUSING ASSISTANT
+                REAL LISTING SEARCH
               </span>
             </h1>
             <p className="text-neutral-500 text-base sm:text-lg mt-6 leading-relaxed">
@@ -303,7 +309,7 @@ export default function AboutV2Page() {
                     {title}
                   </h3>
                   <p className="text-neutral-500 leading-relaxed mb-6">{body}</p>
-                  <CtaPill href={i === 2 ? "/chat" : "/card"} />
+                  <CtaPill href={i === 2 ? "/map" : "/card"} />
                 </div>
                 <div className={i % 2 === 1 ? "md:order-1" : ""}>{mock}</div>
               </div>
@@ -479,7 +485,7 @@ export default function AboutV2Page() {
             <span className="text-neutral-400 ml-2">Built for UIUC students in Champaign-Urbana.</span>
           </div>
           <div className="flex items-center gap-5 text-sm font-semibold text-ink-900">
-            <Link href="/chat" className="hover:text-mint-600 transition-colors">Chat</Link>
+            <Link href="/table" className="hover:text-mint-600 transition-colors">Table</Link>
             <Link href="/map" className="hover:text-mint-600 transition-colors">Map</Link>
             <Link href="/card" className="hover:text-mint-600 transition-colors">Card</Link>
           </div>

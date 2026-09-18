@@ -160,12 +160,12 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logos/project-picture.png"
-          alt="UIUC Housing AI"
+          alt="UIUC Housing"
           className="w-full rounded-2xl mb-6 object-cover"
         />
         <div className="text-center">
           <div className="text-2xl font-extrabold tracking-tight leading-tight text-ink-900">
-            UIUC Housing AI
+            UIUC Housing
           </div>
           <div className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mt-2">
             Champaign-Urbana, IL

@@ -25,19 +25,17 @@ USER_AGENT    = "uiuc-housing-assistant/1.0 (sz94@illinois.edu)"
 # TODO: fill in the remaining entries via Google Maps before running ingest.
 MANUAL_COORDS: dict[str, tuple[float, float]] = {
     # ── FIXME: KNOWN BAD GEOCODES ────────────────────────────────────────────────
-    # These addresses were confirmed misgeocoded via ORS walking-distance check:
-    # ORS gave ~4 min walk vs Google Maps ~17 min for "911 S Locust" from Green St & 6th.
-    # Other two have coordinates outside Champaign entirely (Chicago area / Dundee IL).
-    #
     # To fix: open Google Maps → search address → right-click → "What's here?" → copy lat/lng
     # Then add here as:   "911 S Locust":   (40.XXXXX, -88.XXXXX),
     # Then run:  python -c "import sqlite3; ..."   (NULL out lat/lng for these addresses)
     #            python -m pipeline.geocode   (re-geocodes via MANUAL_COORDS)
     #            python -m pipeline.ingest    (pushes updated coords to ChromaDB)
     #
-    # "911 S Locust"  — stored (40.1069,-88.2407); actual ~17 min walk from Green/6th
-    # "605 S. Fifth"  — stored (41.88,-87.71) = Chicago; should be Champaign
-    # "Helen Ct"      — stored (42.01,-88.18) = Dundee IL; should be Champaign
+    # "911 S Locust"  — stored (40.1069,-88.2407); ORS walking check said ~4 min from
+    #                   Green/6th vs Google Maps ~17 min, BUT Nominatim's house-number
+    #                   match (2026-08-05, structured query) returns the same coords —
+    #                   needs a Google Maps manual lookup to settle.
+    # "605 S. Fifth –" and "Helen Ct" — fixed 2026-08-05, see entries below.
     # ─────────────────────────────────────────────────────────────────────────────
     # Verified via Nominatim (street-level)
     "W. John":        (40.10892, -88.26153),  # 1017, 1019 W. John St
@@ -90,6 +88,32 @@ MANUAL_COORDS: dict[str, tuple[float, float]] = {
     # "707 S Fourth St, Champaign, IL" returns the Seven07 building itself
     # (Frat Park, Campustown). Verified 2026-07-05.
     "707 S 4th": (40.10964, -88.23411),
+    # "101 E. Springfield - Fall Semester Only!" — marketing suffix strips the city,
+    # so Nominatim matched Springfield, IL (39.799, -89.644). Same coords as the
+    # correctly-geocoded sibling listing "101 E. Springfield, Champaign".
+    # Hyphen-suffix key so it doesn't shadow the sibling. Verified 2026-08-05.
+    "101 E. Springfield - Fall": (40.112548, -88.238556),
+    # "1008 W. Main – Individual Lease" — same em-dash failure mode; Nominatim matched
+    # a W Main St near Illiopolis, IL (39.931, -89.066). Same coords as the
+    # correctly-geocoded sibling "1008 W. Main, Urbana". Verified 2026-08-05.
+    "1008 W. Main –": (40.1146906, -88.2213552),
+    # "25 E John, Champaign" (no "St" suffix) fell back to a street-segment match
+    # ~8 km east (lng -88.142). Coords from structured Nominatim query
+    # "25 East John Street, city=Champaign, state=Illinois" (Campustown house-number
+    # match, consistent with neighbors 48/57/58 E John). Verified 2026-08-05.
+    "25 E John": (40.1087788, -88.2412091),
+    # "605 S. Fifth – 1 Bedroom" — em-dash failure mode (see "502 S. Fifth –" above);
+    # Nominatim matched a Fifth street in Chicago (41.878, -87.711). Coords from
+    # structured Nominatim query "605 South Fifth Street, city=Champaign" —
+    # house-number match in Midtown. Was a FIXME above since ~2026-06. Em-dash key
+    # so it doesn't shadow the sibling "605 S. Fifth, Champaign". Verified 2026-08-05.
+    "605 S. Fifth –": (40.1109773, -88.2323923),
+    # "Helen Ct/Duncan Rd/Kirby Ave Townhomes" — property name, not an address;
+    # Nominatim matched a Helen Ct in Dundee, IL (42.012, -88.184). Coords from
+    # structured Nominatim query "Helen Court, city=Champaign" (Holiday Park,
+    # SW Champaign — consistent with the Duncan/Kirby location). Was a FIXME
+    # above since ~2026-06. Verified 2026-08-05.
+    "Helen Ct": (40.0992158, -88.2947863),
 }
 
 

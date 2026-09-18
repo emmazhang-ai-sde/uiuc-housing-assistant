@@ -38,6 +38,9 @@ Running record of `python -m pipeline.normalize` output over time. Unlike the on
 | Date | Snapshot | GSR | UG | Total | Available | Leased | Has price | No price |
 |------|----------|-----|----|----|-----------|--------|-----------|----------|
 | 2026-07-05 | `listings_2026-07-05.db` (previous: 2026-06-29) | 500 | 381 | 881 | 421 | 460 | 731 | 150 |
+| 2026-08-05 | `listings_2026-08-05.db` (previous: 2026-07-09) | 493 | 380 | 1138 | 463 | 675 | 903 | 235 |
+
+From 2026-08-05 on, Total spans all 9 scrapers (GSR/UG columns kept for continuity). 2026-08-05 full breakdown: GSR 493, UG 380, Roland 101, JSJ 46, MHM 37, Smile 30, Bankier 28, Seven07 12, Octave 11. All 9 scrapers succeeded with no partial archives; net −37 vs the 2026-07-09 snapshot (1,175) as units lease up.
 
 ---
 

@@ -7,9 +7,9 @@ import UserMenu from "@/components/UserMenu"
 import { inter } from "@/lib/fonts"
 
 const TABS = [
-  { label: "Chat", href: "/chat" },
-  { label: "Map",  href: "/map"  },
   { label: "Card", href: "/card" },
+  { label: "Map",  href: "/map"  },
+  { label: "Table", href: "/table" },
   { label: "Rate & Report", href: "/feedback" },
 ]
 
