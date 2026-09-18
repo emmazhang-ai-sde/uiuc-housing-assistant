@@ -5,7 +5,7 @@ import Link from "next/link"
 import AppHeader from "@/components/AppHeader"
 import { fetchStatus, DataStatus } from "@/lib/api"
 import { COMPANIES } from "@/lib/companies"
-import { inter } from "@/lib/fonts"
+import { heroDisplay, inter } from "@/lib/fonts"
 
 // Jobright-style landing rebuild (2026-07-15). Section order mirrors
 // jobright.ai/ai-agent: hero → logo marquee → stats band → "always on"
@@ -17,21 +17,6 @@ const TYPED_QUERIES = [
   "Studio · available now",
   "4BR · near the Quad",
   "Houses · August 2026",
-]
-
-const EXTRAS = [
-  {
-    title: "Live availability",
-    body: "Listings stay up to date, so a unit that is already leased never shows up as available.",
-  },
-  {
-    title: "Distance you can see",
-    body: "Every listing is plotted relative to campus, with walk and drive times to real landmarks.",
-  },
-  {
-    title: "Free, no spam",
-    body: "No login walls, no forms handed to leasing offices, no follow-up calls.",
-  },
 ]
 
 /* ---------- animation helpers ---------- */
@@ -104,20 +89,20 @@ function TypedHeading({ text }: { text: string }) {
 
   useEffect(() => {
     if (!started) return
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setShown(text.length)
-      return
-    }
     if (shown >= text.length) return
-    const timer = window.setTimeout(() => setShown(s => s + 1), 55)
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const timer = window.setTimeout(() => setShown(text.length), 0)
+      return () => window.clearTimeout(timer)
+    }
+    const timer = window.setTimeout(() => setShown(s => s + 1), 70)
     return () => window.clearTimeout(timer)
   }, [started, shown, text])
 
   return (
-    <h2 ref={ref} className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink-900 min-h-[1.25em]">
+    <h2 ref={ref} className={`${heroDisplay.className} text-4xl font-normal uppercase text-ink-900 min-h-[1.25em] sm:text-5xl`}>
       {text.slice(0, shown)}
       {started && shown < text.length && (
-        <span className="inline-block w-[3px] h-[0.9em] bg-mint-400 align-middle ml-1" aria-hidden />
+        <span className="inline-block w-[3px] h-[0.9em] bg-forest-green align-middle ml-1" aria-hidden />
       )}
       <span className="sr-only">{text}</span>
     </h2>
@@ -131,8 +116,8 @@ function TypedQuery() {
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setText(TYPED_QUERIES[0])
-      return
+      const timer = window.setTimeout(() => setText(TYPED_QUERIES[0]), 0)
+      return () => window.clearTimeout(timer)
     }
     let queryIdx = 0
     let charIdx = 0
@@ -167,7 +152,7 @@ function TypedQuery() {
   return (
     <>
       {text}
-      <span className="inline-block w-0.5 h-[1.1em] bg-mint-600 align-middle ml-0.5 animate-pulse motion-reduce:animate-none" />
+      <span className="inline-block w-0.5 h-[1.1em] bg-forest-green align-middle ml-0.5 animate-pulse motion-reduce:animate-none" />
     </>
   )
 }
@@ -176,14 +161,14 @@ function TypedQuery() {
 
 function MockSources() {
   return (
-    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-5 flex flex-col gap-3">
-      <div className="flex items-center gap-2 rounded-full border border-mist-100 bg-mist-50 px-4 py-2 text-sm text-neutral-500">
+    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(53,20,11,0.2)] p-5 flex flex-col gap-3">
+      <div className="flex items-center gap-2 rounded-full border border-mist-100 bg-mist-50 px-4 py-2 text-sm text-ink-900/60">
         <span aria-hidden>🔍</span> near Grainger, under $900/bed
       </div>
       {COMPANIES.slice(0, 4).map(({ name, logo }) => (
         <div key={name} className="flex items-center justify-between rounded-xl border border-mist-100 px-4 py-2.5">
           <img src={logo} alt={name} className="h-4 object-contain object-left" />
-          <span className="w-5 h-5 rounded-full bg-[#28C86E1A] text-mint-600 flex items-center justify-center text-[11px] font-bold">✓</span>
+          <span className="w-5 h-5 rounded-full bg-blush-pink text-forest-green flex items-center justify-center text-[11px] font-bold">✓</span>
         </div>
       ))}
       <span className="self-center text-[11px] font-bold uppercase tracking-widest text-neutral-400">
@@ -195,17 +180,17 @@ function MockSources() {
 
 function MockListingCard() {
   return (
-    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] overflow-hidden max-w-sm mx-auto">
-      <div className="relative h-28 bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)]">
-        <span className="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase bg-mint-400 text-ink-900">
+    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(53,20,11,0.2)] overflow-hidden max-w-sm mx-auto">
+      <div className="relative h-28 bg-[linear-gradient(266deg,#F6E0DA,#FFFDEE)]">
+        <span className="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase bg-forest-green text-warm-ivory">
           Available Now
         </span>
       </div>
       <div className="p-4 flex flex-col gap-2.5">
         <div className="font-bold text-ink-900 text-sm">308 E Green St, Champaign</div>
         <div className="flex gap-1.5">
-          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-[#3C96FA1A] text-[#3C96FA]">2 Bed</span>
-          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-[#8C78FF1A] text-[#8C78FF]">Apartment</span>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-forest-green/10 text-forest-green">2 Bed</span>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-blush-pink text-ink-900">Apartment</span>
         </div>
         <div className="flex items-end justify-between">
           <div>
@@ -214,7 +199,7 @@ function MockListingCard() {
             </div>
             <div className="text-xs text-neutral-400">$1,570 total, not a teaser price</div>
           </div>
-          <span className="text-xs font-bold text-ink-900 bg-mint-400 px-3 py-1.5 rounded-full">View →</span>
+          <span className="text-xs font-bold text-warm-ivory bg-forest-green px-3 py-1.5 rounded-full">View →</span>
         </div>
       </div>
     </div>
@@ -223,7 +208,7 @@ function MockListingCard() {
 
 function MockMapSearch() {
   return (
-    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-5">
+    <div className="bg-white rounded-2xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(53,20,11,0.2)] p-5">
       <div className="flex flex-wrap gap-2 mb-4">
         {["2 Bed", "< $900/bed", "Available August", "Apartment"].map(label => (
           <span key={label} className="px-3 py-1.5 rounded-full bg-mist-50 border border-mist-100 text-xs font-bold text-ink-900">
@@ -231,7 +216,7 @@ function MockMapSearch() {
           </span>
         ))}
       </div>
-      <div className="relative h-48 rounded-2xl overflow-hidden bg-[linear-gradient(135deg,#EFF6F2,#D9F8E8)] border border-mist-100">
+      <div className="relative h-48 rounded-2xl overflow-hidden bg-[linear-gradient(135deg,#FFFDEE,#F6E0DA)] border border-mist-100">
         <div className="absolute inset-0 opacity-60 bg-[linear-gradient(90deg,transparent_23px,#ffffff_24px),linear-gradient(0deg,transparent_23px,#ffffff_24px)] bg-[length:48px_48px]" />
         {[
           ["left-[18%] top-[30%]", "$785"],
@@ -241,7 +226,7 @@ function MockMapSearch() {
         ].map(([pos, price]) => (
           <span
             key={price}
-            className={`absolute ${pos} -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink-900 text-white text-xs font-bold px-3 py-1.5 shadow-lg`}
+            className={`absolute ${pos} -translate-x-1/2 -translate-y-1/2 rounded-full bg-forest-green text-warm-ivory text-xs font-bold px-3 py-1.5 shadow-lg`}
           >
             {price}
           </span>
@@ -259,10 +244,10 @@ export default function AboutPage() {
   }, [])
 
   const statBlocks = [
-    { value: status?.listing_count?.toLocaleString() ?? "…", label: "Floor plans tracked" },
-    { value: status?.property_count?.toLocaleString() ?? "…", label: "Properties across town" },
-    { value: String(COMPANIES.length), label: "Companies, one search" },
-    { value: "100%", label: "Free for UIUC students" },
+    { value: status?.listing_count?.toLocaleString() ?? "…", labelTop: "Floor Plans", labelBottom: "Tracked" },
+    { value: status?.property_count?.toLocaleString() ?? "…", labelTop: "Properties", labelBottom: "Across Town" },
+    { value: String(COMPANIES.length), labelTop: "Companies", labelBottom: "One Search" },
+    { value: "100%", labelTop: "Free For", labelBottom: "UIUC Students" },
   ]
 
   const features: { title: string; body: string; cta: { label: string; href: string }; mock: React.ReactNode }[] = [
@@ -287,89 +272,147 @@ export default function AboutPage() {
   ]
 
   return (
-    <div className={`${inter.className} min-h-screen bg-white text-ink-900`}>
-      <div className="sticky top-0 z-30 bg-white">
+    <div className={`${inter.className} min-h-screen bg-warm-ivory text-ink-900`}>
+      <style>{`
+        @keyframes about-logo-marquee {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(calc(-50% - 0.75rem));
+          }
+        }
+
+        .about-logo-track {
+          animation: about-logo-marquee 28s linear infinite;
+        }
+
+        .about-logo-belt:hover .about-logo-track {
+          animation-play-state: paused;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .about-logo-track {
+            animation: none;
+            flex-wrap: wrap;
+            width: 100%;
+            justify-content: center;
+          }
+
+          .about-logo-duplicate {
+            display: none;
+          }
+        }
+      `}</style>
+      <div className="sticky top-0 z-30 bg-transparent">
         <AppHeader />
       </div>
 
-      {/* Hero — mirrors jobright's SKIP THE HUNT block */}
-      <section className="px-6 pt-20 pb-16 text-center">
-        <Reveal>
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-mist-50 border border-mist-100 text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-7">
-            <span className="w-2 h-2 rounded-full bg-mint-400" />
-            UIUC housing search, built around real listings
+      {/* Hero */}
+      <section className="-mt-16 overflow-hidden bg-[#E0CCB2] px-6 pb-20 pt-36 text-black md:pb-24">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(620px,1.14fr)_minmax(340px,0.86fr)] lg:gap-8">
+          <div className="text-center lg:text-left">
+            <Reveal>
+              <h1 className="mx-auto flex max-w-4xl flex-col text-black lg:mx-0">
+                <span className={`${heroDisplay.className} self-start text-[clamp(3.25rem,8vw,7.5rem)] font-normal uppercase leading-[0.88]`}>
+                  Find
+                </span>
+                <span className={`${heroDisplay.className} -mt-1 self-end whitespace-nowrap rounded-3xl bg-blush-pink px-4 py-2 text-[clamp(2rem,3.5vw,3.8rem)] font-normal uppercase leading-[0.9] text-black sm:-mt-4 sm:px-6 lg:self-start lg:ml-16`}>
+                  your UIUC place
+                </span>
+                <span className="mt-4 flex items-baseline justify-end gap-3 sm:mt-5 sm:gap-5 lg:justify-center">
+                  <span className="font-serif text-[clamp(1.9rem,4.2vw,4.25rem)] italic leading-none text-forest-green">
+                    in
+                  </span>
+                  <span className={`${heroDisplay.className} text-[clamp(2.25rem,5.3vw,5.25rem)] font-normal uppercase leading-[0.92]`}>
+                    one page
+                  </span>
+                </span>
+              </h1>
+            </Reveal>
+            <Reveal delay={120}>
+              <div className="flex items-center gap-2.5 max-w-md mx-auto mt-9 rounded-full border border-ink-900/8 bg-warm-ivory px-5 py-3 text-sm text-ink-900/65 shadow-[0_18px_42px_-18px_rgba(53,20,11,0.35)] text-left lg:mx-0">
+                <span aria-hidden>🔍</span>
+                <span className="truncate"><TypedQuery /></span>
+              </div>
+              <p className="text-ink-900/72 text-base sm:text-lg max-w-xl mx-auto mt-6 leading-relaxed lg:mx-0">
+                One searchable dataset across UIUC-area leasing companies, with honest price per bed,
+                live availability, and map-first comparison.
+              </p>
+              <div className="flex items-center justify-center gap-3 mt-8">
+                <Link
+                  href="/card"
+                  className="px-6 py-3 rounded-full bg-blush-pink text-espresso-brown text-sm font-bold hover:bg-warm-ivory transition-colors"
+                >
+                  Search listings
+                </Link>
+                <Link
+                  href="/map"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-forest-green text-warm-ivory text-sm font-bold shadow-[0_10px_24px_-16px_rgba(34,78,48,0.8)] hover:bg-ink-900 transition-colors"
+                >
+                  Browse the map →
+                </Link>
+              </div>
+            </Reveal>
           </div>
-          <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight leading-[1.08] max-w-3xl mx-auto">
-            <span className="block">SKIP THE TAB-HOPPING</span>
-            <span className="block mt-3">
-              <span className="bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] rounded-2xl px-3 box-decoration-clone">
-                Find Your Place Faster
-              </span>
-            </span>
-          </h1>
-        </Reveal>
-        <Reveal delay={120}>
-          <div className="flex items-center gap-2.5 max-w-md mx-auto mt-9 rounded-full border border-mist-100 bg-white px-5 py-3 text-sm text-neutral-600 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)] text-left">
-            <span aria-hidden>🔍</span>
-            <span className="truncate"><TypedQuery /></span>
-          </div>
-          <p className="text-neutral-500 text-base sm:text-lg max-w-xl mx-auto mt-6 leading-relaxed">
-            One searchable dataset across UIUC-area leasing companies, with honest price per bed,
-            live availability, and map-first comparison.
-          </p>
-          <div className="flex items-center justify-center gap-3 mt-8">
-            <Link
-              href="/card"
-              className="px-6 py-3 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors"
-            >
-              Search listings
-            </Link>
-            <Link
-              href="/map"
-              className="px-6 py-3 rounded-full bg-white border border-neutral-200 text-ink-900 text-sm font-bold hover:border-neutral-400 transition-colors"
-            >
-              Browse the map
-            </Link>
-          </div>
-        </Reveal>
-        <Reveal delay={240}>
-          <img
-            src="/logos/project-picture.png"
-            alt="Illustration of a UIUC campus building"
-            className="w-full max-w-3xl mx-auto mt-14 rounded-3xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.15)]"
-          />
-        </Reveal>
+          <Reveal delay={180} className="hidden lg:block">
+            <div className="relative min-h-[560px]">
+              <img
+                src="/about/uiuc-housing-hero.png"
+                alt="Illustrated UIUC student housing scene"
+                className="absolute right-[-1%] top-1/2 w-[min(34vw,500px)] -translate-y-1/2 drop-shadow-[0_28px_38px_rgba(53,20,11,0.18)]"
+              />
+            </div>
+          </Reveal>
+        </div>
       </section>
 
-      {/* Stats + coverage panel — one gradient card like jobright's tools-page
-          strip: big stats with left rules on top, thin divider, then a labeled
-          logo row. Replaces the old marquee + grey stats band. */}
-      <section className="px-6 pb-20">
+      {/* Stats + coverage panel */}
+      <section className="bg-warm-ivory px-6 py-20 md:py-24">
         <Reveal>
-          {/* Exact values from jobright's .seo-rating-section-content:
-              border-radius 0 80px 80px 80px (square top-left), gradient
-              266deg #B5FFE4→#D2FFC8, 72px padding, 2px solid black left rules
-              with 48px inset, 52/60 bold values, 18/24 medium labels,
-              2px rgba(0,0,0,.04) divider, 32px gaps, logo row justify-between.
-              Mobile sizes are our own fallback (their page is desktop-only). */}
-          <div className="max-w-6xl mx-auto rounded-[0_80px_80px_80px] bg-[linear-gradient(266deg,#B5FFE4,#D2FFC8)] p-8 md:p-[72px]">
-            {/* 4 stats (jobright fits 3), so slightly smaller values and a
-                tighter 32px inset keep every label on one line */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8">
-              {statBlocks.map(({ value, label }) => (
-                <div key={label} className="border-l-2 border-black pl-5 lg:pl-8 pr-2">
-                  <div className="text-3xl md:text-[44px] md:leading-[52px] font-bold text-black whitespace-nowrap">{value}</div>
-                  <div className="text-sm md:text-[15px] lg:text-base font-medium text-black capitalize mt-1.5">{label}</div>
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-16 flex flex-col items-center justify-center gap-4 text-center sm:flex-row sm:gap-8 sm:text-left">
+              <div className={`${heroDisplay.className} text-[96px] font-normal leading-none text-ink-900 sm:text-[128px] md:text-[150px]`}>
+                50+
+              </div>
+              <p className="max-w-md text-2xl font-medium leading-snug text-ink-900 sm:text-3xl">
+                UIUC students have already found housing with us.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 xl:grid-cols-4 sm:gap-8 xl:gap-6">
+              {statBlocks.map(({ value, labelTop, labelBottom }) => (
+                <div key={`${labelTop}-${labelBottom}`} className="flex items-center justify-center gap-5 sm:justify-start lg:gap-6 xl:gap-5">
+                  <div className={`${heroDisplay.className} text-[64px] font-normal leading-none text-ink-900 md:text-[72px] xl:text-[70px]`}>
+                    {value}
+                  </div>
+                  <div className="whitespace-nowrap text-xl font-medium leading-[1.55] text-ink-900 md:text-2xl xl:text-xl">
+                    <div>{labelTop}</div>
+                    <div>{labelBottom}</div>
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="mt-8 border-t-2 border-[rgba(0,0,0,0.04)]" />
-            {/* 8 logos read as two tidy rows of four instead of a ragged wrap */}
-            <div className="pt-8 flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-12">
-              <span className="text-lg md:text-2xl md:leading-8 font-medium text-black whitespace-nowrap lg:shrink-0">One search across</span>
-              <div className="flex-1 grid grid-cols-3 sm:grid-cols-4 gap-x-8 gap-y-6 items-center justify-items-center">
+            <div className="about-logo-belt -mx-3 mt-12 overflow-hidden py-4 [mask-image:linear-gradient(90deg,transparent,black_8%,black_92%,transparent)]">
+              <div className="about-logo-track flex w-max items-center gap-6 pr-6">
+                <span className="shrink-0 whitespace-nowrap px-3 font-serif text-2xl italic leading-none text-forest-green md:text-3xl">
+                  One Search Across
+                </span>
                 {COMPANIES.map(({ name, logo }) => (
-                  <img key={name} src={logo} alt={name} className="h-5 max-w-[110px] w-auto object-contain" />
+                  <div key={name} className="flex h-12 w-[148px] shrink-0 items-center justify-center rounded-full bg-warm-ivory/80 px-5">
+                    <img src={logo} alt={name} className="h-5 max-w-[108px] w-auto object-contain" />
+                  </div>
+                ))}
+                <span aria-hidden className="about-logo-duplicate shrink-0 whitespace-nowrap px-3 font-serif text-2xl italic leading-none text-forest-green md:text-3xl">
+                  One Search Across
+                </span>
+                {COMPANIES.map(({ name, logo }) => (
+                  <div
+                    key={`${name}-duplicate`}
+                    aria-hidden
+                    className="about-logo-duplicate flex h-12 w-[148px] shrink-0 items-center justify-center rounded-full bg-warm-ivory/80 px-5"
+                  >
+                    <img src={logo} alt="" className="h-5 max-w-[108px] w-auto object-contain" />
+                  </div>
                 ))}
               </div>
             </div>
@@ -377,29 +420,22 @@ export default function AboutPage() {
         </Reveal>
       </section>
 
-      {/* Feature rows — per-block bold title, dark body, black pill CTA with
-          circled arrow (button radius 28px, black, hover #00F0A0CC, straight
-          from jobright's CSS). Centered sentence-case headline, white bg. */}
-      <section className="px-6 py-24">
+      {/* Feature rows */}
+      <section className="bg-forest-green px-6 py-24 text-warm-ivory md:py-28">
         <div className="max-w-5xl mx-auto">
-          <Reveal>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink-900 text-center mb-16" style={{ textWrap: "balance" }}>
-              A Housing Search That&rsquo;s Always On
-            </h2>
-          </Reveal>
           <div className="flex flex-col gap-20">
             {features.map(({ title, body, cta, mock }, i) => (
               <Reveal key={title}>
                 <div className="grid md:grid-cols-2 gap-10 md:gap-14 items-center">
                   <div className={i % 2 === 1 ? "md:order-2" : ""}>
-                    <h3 className="text-3xl sm:text-4xl font-bold tracking-tight text-ink-900 mb-4">{title}</h3>
-                    <p className="text-base text-ink-900/80 font-medium leading-relaxed mb-8">{body}</p>
+                    <h3 className={`${heroDisplay.className} text-4xl font-normal uppercase leading-[0.95] text-warm-ivory mb-4 sm:text-5xl`}>{title}</h3>
+                    <p className="text-base text-warm-ivory/78 font-medium leading-relaxed mb-8">{body}</p>
                     <Link
                       href={cta.href}
-                      className="inline-flex items-center gap-3 rounded-[28px] bg-black text-white px-6 py-3.5 text-base font-semibold hover:bg-[#00F0A0CC] transition-colors"
+                      className="inline-flex items-center gap-3 rounded-[28px] bg-blush-pink text-espresso-brown px-6 py-3.5 text-base font-semibold hover:bg-warm-ivory transition-colors"
                     >
                       {cta.label}
-                      <span className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center text-sm leading-none" aria-hidden>
+                      <span className="w-6 h-6 rounded-full bg-espresso-brown text-warm-ivory flex items-center justify-center text-sm leading-none" aria-hidden>
                         ›
                       </span>
                     </Link>
@@ -409,72 +445,57 @@ export default function AboutPage() {
               </Reveal>
             ))}
           </div>
-
-          {/* Secondary trio */}
-          <Reveal>
-            <div className="grid sm:grid-cols-3 gap-4 mt-20">
-              {EXTRAS.map(({ title, body }) => (
-                <div key={title} className="p-6 bg-white rounded-2xl border border-mist-100 hover:border-mint-400 transition-colors">
-                  <span className="w-6 h-6 rounded-full bg-[#28C86E1A] text-mint-600 flex items-center justify-center text-xs font-bold mb-3">✓</span>
-                  <div className="font-bold text-ink-900 mb-1.5">{title}</div>
-                  <p className="text-sm text-neutral-500 leading-relaxed">{body}</p>
-                </div>
-              ))}
-            </div>
-          </Reveal>
         </div>
       </section>
 
       {/* Two ways to start — full-bleed grey band (Apple-style, contrasts with
           the white features above and the gradient CTA below), white
           question-cards with tag chips, typewriter title */}
-      <section className="px-6 py-24 bg-mist-50">
+      <section className="px-6 py-24 bg-warm-ivory">
         <div className="max-w-5xl mx-auto">
-          <Reveal>
-            <div className="text-center mb-12">
-              <TypedHeading text="Two Ways to Start" />
-            </div>
-          </Reveal>
+          <div className="text-center mb-12">
+            <TypedHeading text="Two Ways to Start" />
+          </div>
           <div className="grid sm:grid-cols-2 gap-6">
             <Reveal>
-              <div className="p-8 bg-white rounded-3xl border border-mist-100 hover:border-mint-400 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:translate-y-0 h-full flex flex-col">
+              <div className="p-8 bg-white rounded-3xl border border-mist-100 hover:border-forest-green hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_rgba(53,20,11,0.22)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:translate-y-0 h-full flex flex-col">
                 <div className="w-11 h-11 flex items-center justify-center text-xl mb-4 rounded-xl bg-mist-50 border border-mist-100">🎯</div>
-                <div className="text-lg font-extrabold text-ink-900 mb-2">Browse and filter with cards</div>
+                <div className={`${heroDisplay.className} text-2xl font-normal uppercase leading-none text-ink-900 mb-2`}>Browse and filter with cards</div>
                 <p className="text-sm text-neutral-500 leading-relaxed">
                   Use the card view to scan matching listings visually, adjust your filters, and
                   compare the details that matter before opening a landlord page.
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-4">
                   {["Beds", "Budget", "Move-in date", "Company"].map(tag => (
-                    <span key={tag} className="px-2 py-1 rounded-md bg-black/[.04] text-[13px] font-medium text-ink-900">
+                    <span key={tag} className="px-2 py-1 rounded-md bg-blush-pink text-[13px] font-medium text-ink-900">
                       {tag}
                     </span>
                   ))}
                 </div>
                 <div className="flex items-center gap-3 mt-auto pt-6">
-                  <Link href="/card" className="px-5 py-2.5 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors">
+                  <Link href="/card" className="px-5 py-2.5 rounded-full bg-forest-green text-warm-ivory text-sm font-bold hover:bg-ink-900 transition-colors">
                     Open Card View
                   </Link>
                 </div>
               </div>
             </Reveal>
             <Reveal delay={100}>
-              <div className="p-8 bg-white rounded-3xl border border-mist-100 hover:border-mint-400 hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.15)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:translate-y-0 h-full flex flex-col">
+              <div className="p-8 bg-white rounded-3xl border border-mist-100 hover:border-forest-green hover:-translate-y-1 hover:shadow-[0_16px_40px_-16px_rgba(53,20,11,0.22)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:translate-y-0 h-full flex flex-col">
                 <div className="w-11 h-11 flex items-center justify-center text-xl mb-4 rounded-xl bg-mist-50 border border-mist-100">⌖</div>
-                <div className="text-lg font-extrabold text-ink-900 mb-2">Need to compare by location?</div>
+                <div className={`${heroDisplay.className} text-2xl font-normal uppercase leading-none text-ink-900 mb-2`}>Need to compare by location?</div>
                 <p className="text-sm text-neutral-500 leading-relaxed">
                   Use the map when distance matters more than a spreadsheet view. See prices
                   around campus, then open the listing detail from the pin or card.
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-4">
                   {["Campus context", "Price pins", "Listing details"].map(tag => (
-                    <span key={tag} className="px-2 py-1 rounded-md bg-black/[.04] text-[13px] font-medium text-ink-900">
+                    <span key={tag} className="px-2 py-1 rounded-md bg-blush-pink text-[13px] font-medium text-ink-900">
                       {tag}
                     </span>
                   ))}
                 </div>
                 <div className="flex items-center gap-3 mt-auto pt-6">
-                  <Link href="/map" className="px-5 py-2.5 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors">
+                  <Link href="/map" className="px-5 py-2.5 rounded-full bg-forest-green text-warm-ivory text-sm font-bold hover:bg-ink-900 transition-colors">
                     Open the Map
                   </Link>
                 </div>
@@ -485,16 +506,16 @@ export default function AboutPage() {
       </section>
 
       {/* CTA banner */}
-      <section className="px-6 pt-10 pb-24">
+      <section className="bg-blush-pink px-6 py-24">
         <Reveal>
-          <div className="max-w-5xl mx-auto rounded-[32px] bg-[linear-gradient(266deg,#ACFFE1,#CFFFC4)] px-8 py-16 text-center">
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink-900">Ready to find your place?</h2>
+          <div className="max-w-5xl mx-auto px-8 py-10 text-center">
+            <h2 className={`${heroDisplay.className} text-4xl font-normal uppercase leading-none text-ink-900 sm:text-5xl`}>Ready to find your place?</h2>
             <p className="text-sm text-ink-900/70 font-medium mt-3">
               Every UIUC-area leasing company, one search.
             </p>
             <Link
               href="/card"
-              className="inline-block px-7 py-3 rounded-full bg-ink-900 text-white text-sm font-bold hover:bg-black transition-colors mt-8"
+              className="inline-block px-7 py-3 rounded-full bg-forest-green text-warm-ivory text-sm font-bold hover:bg-ink-900 transition-colors mt-8"
             >
               Get started
             </Link>
@@ -502,14 +523,18 @@ export default function AboutPage() {
         </Reveal>
       </section>
 
+      <section className="bg-warm-ivory px-6 py-16 md:py-24" aria-hidden>
+        <div className="mx-auto h-px max-w-5xl bg-espresso-brown/10" />
+      </section>
+
       {/* Footer — jobright's multi-column layout: bold wordmark row on top,
           then bold column headers with link lists. Coverage is informational
           (no product pages per company yet), so those entries are plain text. */}
-      <footer className="px-6 pt-14 pb-12 border-t border-mist-100">
+      <footer className="bg-[#E0CCB2] px-6 pt-16 pb-14 text-ink-900">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-12">
-            <div className="text-2xl font-extrabold tracking-tight text-ink-900">UIUC Housing</div>
-            <div className="text-sm text-neutral-400">Built for UIUC students in Champaign-Urbana.</div>
+            <div className={`${heroDisplay.className} text-3xl font-normal uppercase leading-none text-ink-900`}>UIUC Housing</div>
+            <div className="text-sm text-ink-900/45">Built for UIUC students in Champaign-Urbana.</div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-x-10 gap-y-12">
             <div>
@@ -518,17 +543,16 @@ export default function AboutPage() {
                 {([
                   ["Card View", "/card"],
                   ["Map View", "/map"],
-                  ["Rate & Report", "/feedback"],
                 ] as const).map(([label, href]) => (
                   <li key={href}>
-                    <Link href={href} className="text-ink-900/80 hover:text-mint-600 transition-colors">{label}</Link>
+                    <Link href={href} className="text-ink-900/70 hover:text-forest-green transition-colors">{label}</Link>
                   </li>
                 ))}
               </ul>
             </div>
             <div className="md:col-span-2">
               <div className="font-bold text-ink-900 mb-4">Coverage</div>
-              <ul className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-[15px] text-ink-900/60">
+              <ul className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-[15px] text-ink-900/55">
                 {COMPANIES.map(({ name }) => (
                   <li key={name}>{name}</li>
                 ))}
@@ -541,10 +565,9 @@ export default function AboutPage() {
                   ["About Us", "/about"],
                   ["Join the Waitlist", "/coming-soon"],
                   ["Log In", "/login"],
-                  ["My Account", "/account"],
                 ] as const).map(([label, href]) => (
                   <li key={href}>
-                    <Link href={href} className="text-ink-900/80 hover:text-mint-600 transition-colors">{label}</Link>
+                    <Link href={href} className="text-ink-900/70 hover:text-forest-green transition-colors">{label}</Link>
                   </li>
                 ))}
               </ul>

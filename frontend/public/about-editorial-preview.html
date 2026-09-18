@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UIUC Housing - Editorial About Preview</title>
+  <style>
+    :root {
+      --ink: #35140b;
+      --forest: #235c38;
+      --warm: #fffdee;
+      --mist: #e9eaef;
+      --blush: #eed6da;
+      --muted: rgba(53, 20, 11, 0.62);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f5f5f5;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: inherit; text-decoration: none; }
+    .shell { min-height: 100vh; background: #f5f5f5; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 24px;
+      background: rgba(245, 245, 245, 0.92);
+      backdrop-filter: blur(16px);
+    }
+    .nav-inner {
+      width: min(1120px, 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid rgba(53, 20, 11, 0.08);
+      border-radius: 999px;
+      background: rgba(255, 253, 238, 0.9);
+      padding: 10px 16px;
+      box-shadow: 0 8px 30px -22px rgba(53, 20, 11, 0.35);
+    }
+    .brand { font-weight: 900; letter-spacing: -0.02em; }
+    .nav-links { display: flex; gap: 18px; font-size: 13px; font-weight: 700; color: rgba(53, 20, 11, 0.68); }
+
+    section { padding-left: 24px; padding-right: 24px; }
+    .hero {
+      padding-top: 80px;
+      padding-bottom: 70px;
+      text-align: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 14px;
+      border: 1px solid rgba(53, 20, 11, 0.08);
+      border-radius: 999px;
+      background: var(--warm);
+      color: rgba(53, 20, 11, 0.62);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--forest); }
+    .title {
+      width: min(900px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      color: var(--ink);
+    }
+    .title-skip {
+      align-self: flex-start;
+      font-size: clamp(3.25rem, 8vw, 7.5rem);
+      font-weight: 900;
+      line-height: 0.88;
+      text-transform: uppercase;
+      letter-spacing: -0.045em;
+    }
+    .title-tab {
+      align-self: flex-end;
+      margin-top: -12px;
+      border-radius: 28px;
+      background: var(--blush);
+      padding: 10px 24px;
+      font-size: clamp(2.5rem, 6.4vw, 6rem);
+      font-weight: 900;
+      line-height: 0.9;
+      text-transform: uppercase;
+      letter-spacing: -0.04em;
+    }
+    .title-place {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      gap: clamp(12px, 2.4vw, 24px);
+    }
+    .title-find {
+      color: var(--forest);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2rem, 4.8vw, 4.75rem);
+      font-style: italic;
+      line-height: 1;
+    }
+    .title-your {
+      font-size: clamp(2.5rem, 6vw, 5.75rem);
+      font-weight: 900;
+      line-height: 0.92;
+      text-transform: uppercase;
+      letter-spacing: -0.045em;
+    }
+    .title-note {
+      align-self: flex-end;
+      margin-top: 12px;
+      margin-right: 44px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(53, 20, 11, 0.4);
+    }
+    .search {
+      width: min(440px, 100%);
+      margin: 36px auto 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(53, 20, 11, 0.08);
+      background: var(--warm);
+      padding: 13px 20px;
+      text-align: left;
+      color: rgba(53, 20, 11, 0.65);
+      box-shadow: 0 8px 30px -12px rgba(53, 20, 11, 0.22);
+      font-size: 14px;
+    }
+    .hero-copy {
+      width: min(580px, 100%);
+      margin: 24px auto 0;
+      color: rgba(53, 20, 11, 0.55);
+      font-size: 18px;
+      line-height: 1.65;
+    }
+    .proof {
+      width: min(760px, 100%);
+      margin: 40px auto 0;
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      gap: 12px;
+      padding: 32px 16px;
+      text-align: left;
+    }
+    .proof-side {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .proof-side span {
+      transform: rotate(-90deg);
+      white-space: nowrap;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(53, 20, 11, 0.35);
+    }
+    .proof-main { min-width: 0; }
+    .proof-row {
+      display: flex;
+      align-items: baseline;
+      gap: 20px;
+    }
+    .proof-num {
+      color: var(--forest);
+      font-size: clamp(72px, 10vw, 112px);
+      font-weight: 900;
+      line-height: 0.9;
+      letter-spacing: -0.05em;
+    }
+    .proof-students {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(32px, 4.5vw, 54px);
+      font-style: italic;
+      color: rgba(53, 20, 11, 0.8);
+      line-height: 1;
+    }
+    .proof-found {
+      margin-top: 10px;
+      text-align: right;
+      font-size: clamp(32px, 5vw, 64px);
+      font-weight: 900;
+      line-height: 0.98;
+      text-transform: uppercase;
+      letter-spacing: -0.04em;
+    }
+    .proof-dream {
+      margin-top: 14px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 14px;
+    }
+    .proof-line { width: 64px; height: 1px; background: rgba(35, 92, 56, 0.35); }
+    .proof-badge {
+      border-radius: 18px;
+      background: var(--blush);
+      padding: 8px 16px;
+      font-size: clamp(32px, 5vw, 64px);
+      font-weight: 900;
+      line-height: 1;
+      text-transform: uppercase;
+      letter-spacing: -0.045em;
+    }
+    .hero-actions {
+      margin-top: 32px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .button {
+      border-radius: 999px;
+      background: var(--forest);
+      color: var(--warm);
+      padding: 13px 24px;
+      font-size: 14px;
+      font-weight: 800;
+      transition: background 160ms ease;
+    }
+    .button:hover { background: var(--ink); }
+
+    .coverage { padding-bottom: 96px; }
+    .coverage-grid {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      display: grid;
+      gap: 32px;
+      grid-template-columns: 0.95fr 1.05fr;
+      align-items: stretch;
+    }
+    .coverage-panel {
+      position: relative;
+      overflow: hidden;
+      border-radius: 0 56px 56px 56px;
+      background: var(--blush);
+      padding: 56px 48px;
+    }
+    .coverage-mini {
+      position: absolute;
+      right: 32px;
+      top: 32px;
+      color: rgba(53, 20, 11, 0.35);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+    }
+    .coverage-script {
+      color: var(--forest);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(44px, 5vw, 68px);
+      font-style: italic;
+      line-height: 1;
+    }
+    .coverage-across {
+      margin-top: 4px;
+      font-size: clamp(52px, 6vw, 82px);
+      font-weight: 900;
+      line-height: 0.92;
+      letter-spacing: -0.05em;
+      text-transform: uppercase;
+    }
+    .coverage-source {
+      display: inline-block;
+      margin-top: 14px;
+      border-radius: 18px;
+      background: var(--warm);
+      padding: 8px 14px;
+      font-size: clamp(40px, 5vw, 64px);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.045em;
+      text-transform: uppercase;
+    }
+    .logo-belt {
+      margin: 0 0 88px;
+      overflow: hidden;
+      border-top: 1px solid rgba(35, 92, 56, 0.22);
+      border-bottom: 1px solid rgba(35, 92, 56, 0.22);
+      background: var(--warm);
+      padding: 18px 0;
+      mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+    }
+    .logo-belt-inner {
+      display: flex;
+      width: max-content;
+      align-items: center;
+      gap: 24px;
+      animation: logo-marquee 30s linear infinite;
+    }
+    .logo-belt:hover .logo-belt-inner { animation-play-state: paused; }
+    .belt-label {
+      flex: 0 0 auto;
+      padding: 0 18px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 32px;
+      font-style: italic;
+      color: var(--forest);
+      white-space: nowrap;
+    }
+    .logo-cell {
+      height: 44px;
+      width: 154px;
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 999px;
+      background: rgba(255, 253, 238, 0.62);
+      border: 1px solid rgba(53, 20, 11, 0.08);
+      padding: 0 18px;
+    }
+    .logo-cell img { max-width: 112px; max-height: 22px; object-fit: contain; }
+    @keyframes logo-marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(calc(-50% - 12px)); }
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .stat {
+      border-top: 2px solid var(--forest);
+      background: var(--warm);
+      padding: 28px 24px;
+      box-shadow: 0 10px 30px -22px rgba(53, 20, 11, 0.35);
+    }
+    .stat:nth-child(even) { transform: translateY(40px); }
+    .stat-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: rgba(53, 20, 11, 0.42);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    .stat-value {
+      margin-top: 26px;
+      font-size: clamp(48px, 6vw, 68px);
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+    .stat-label {
+      margin-top: 14px;
+      width: min(190px, 100%);
+      color: rgba(53, 20, 11, 0.65);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .features {
+      background: white;
+      padding-top: 96px;
+      padding-bottom: 96px;
+    }
+    .features-inner { width: min(1120px, 100%); margin: 0 auto; }
+    .features-head {
+      margin-bottom: 80px;
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      align-items: end;
+      gap: 32px;
+    }
+    .kicker {
+      color: var(--forest);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+    }
+    .features-title {
+      margin: 12px 0 0;
+      font-size: clamp(48px, 6vw, 68px);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+      text-transform: uppercase;
+    }
+    .features-title span {
+      display: block;
+      color: var(--forest);
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-weight: 500;
+      text-transform: none;
+    }
+    .features-copy {
+      max-width: 440px;
+      justify-self: end;
+      color: rgba(53, 20, 11, 0.65);
+      font-weight: 600;
+      line-height: 1.65;
+    }
+    .feature-list { display: grid; gap: 96px; }
+    .feature {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      align-items: center;
+      gap: 40px;
+    }
+    .feature-copy.one, .feature-copy.three { grid-column: 1 / span 6; grid-row: 1; }
+    .feature-copy.two { grid-column: 7 / span 6; grid-row: 1; }
+    .feature-mock.one { grid-column: 8 / span 5; grid-row: 1; }
+    .feature-mock.two { grid-column: 1 / span 5; grid-row: 1; }
+    .feature-mock.three { grid-column: 9 / span 4; grid-row: 1; }
+    .feature-num {
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .feature-num span:first-child {
+      color: var(--blush);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(54px, 6vw, 76px);
+      font-style: italic;
+      line-height: 1;
+    }
+    .feature-num span:last-child {
+      height: 1px;
+      flex: 1;
+      background: rgba(35, 92, 56, 0.25);
+    }
+    .feature h3 {
+      margin: 0;
+      max-width: 560px;
+      font-size: clamp(38px, 5vw, 58px);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      text-transform: uppercase;
+    }
+    .feature p {
+      max-width: 520px;
+      margin: 22px 0 0;
+      color: rgba(53, 20, 11, 0.74);
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.7;
+    }
+    .feature .button { display: inline-flex; margin-top: 30px; }
+    .mock-card {
+      border: 1px solid rgba(53, 20, 11, 0.08);
+      border-radius: 20px;
+      background: white;
+      box-shadow: 0 8px 30px -12px rgba(53, 20, 11, 0.2);
+      padding: 20px;
+    }
+    .mock-search {
+      border: 1px solid rgba(53, 20, 11, 0.08);
+      border-radius: 999px;
+      background: #f5f5f5;
+      padding: 10px 16px;
+      color: rgba(53, 20, 11, 0.62);
+      font-size: 14px;
+    }
+    .mock-row {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid rgba(53, 20, 11, 0.08);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 700;
+      color: rgba(53, 20, 11, 0.75);
+    }
+    .mock-check {
+      display: grid;
+      width: 20px;
+      height: 20px;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--blush);
+      color: var(--forest);
+      font-size: 12px;
+    }
+    .mock-photo {
+      height: 116px;
+      margin: -20px -20px 16px;
+      border-radius: 20px 20px 0 0;
+      background: linear-gradient(266deg, #f6e0da, #fffdee);
+      position: relative;
+    }
+    .mock-badge {
+      position: absolute;
+      right: 14px;
+      top: 14px;
+      border-radius: 999px;
+      background: var(--forest);
+      color: var(--warm);
+      padding: 6px 10px;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .mock-title { font-weight: 900; }
+    .mock-tags { display: flex; gap: 6px; margin-top: 12px; }
+    .mock-tag { border-radius: 8px; padding: 4px 8px; font-size: 11px; font-weight: 800; }
+    .mock-tag.green { background: rgba(35, 92, 56, 0.1); color: var(--forest); }
+    .mock-tag.pink { background: var(--blush); }
+    .mock-price { margin-top: 18px; font-size: 28px; font-weight: 900; letter-spacing: -0.04em; }
+    .mock-price span { color: rgba(53, 20, 11, 0.45); font-size: 14px; }
+    .mock-map {
+      height: 220px;
+      border-radius: 18px;
+      border: 1px solid rgba(53, 20, 11, 0.08);
+      background:
+        linear-gradient(90deg, transparent 23px, #fff 24px),
+        linear-gradient(0deg, transparent 23px, #fff 24px),
+        linear-gradient(135deg, #fffdee, #f6e0da);
+      background-size: 48px 48px, 48px 48px, auto;
+      position: relative;
+      overflow: hidden;
+    }
+    .pin {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+      background: var(--forest);
+      color: var(--warm);
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 10px 24px rgba(53, 20, 11, 0.18);
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .chip { border: 1px solid rgba(53, 20, 11, 0.08); border-radius: 999px; padding: 7px 12px; background: #f5f5f5; font-size: 12px; font-weight: 800; }
+
+    @media (max-width: 860px) {
+      .coverage-grid, .features-head, .feature { grid-template-columns: 1fr; }
+      .feature-copy.one, .feature-copy.two, .feature-copy.three,
+      .feature-mock.one, .feature-mock.two, .feature-mock.three { grid-column: auto; grid-row: auto; }
+      .stats { grid-template-columns: 1fr; }
+      .stat:nth-child(even) { transform: none; }
+      .logo-belt-inner { animation-duration: 22s; }
+      .proof { grid-template-columns: 1fr; }
+      .proof-side { display: none; }
+      .proof-found, .proof-dream { justify-content: flex-start; text-align: left; }
+      .proof-line { display: none; }
+      .title-tab { margin-top: -4px; }
+      .title-note { margin-right: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <nav class="nav">
+      <div class="nav-inner">
+        <div class="brand">UIUC Housing</div>
+        <div class="nav-links">
+          <a href="/about">Current About</a>
+          <a href="/card">Card View</a>
+          <a href="/map">Map View</a>
+        </div>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="eyebrow"><span class="dot"></span> UIUC housing search, built around real listings</div>
+      <h1 class="title">
+        <span class="title-skip">Skip</span>
+        <span class="title-tab">tab-hopping</span>
+        <span class="title-place"><span class="title-find">find</span><span class="title-your">your place</span></span>
+        <span class="title-note">faster, with real listings</span>
+      </h1>
+      <div class="search"><span aria-hidden="true">Search</span><span>4BR - near the Quad</span></div>
+      <p class="hero-copy">One searchable dataset across UIUC-area leasing companies, with honest price per bed, live availability, and map-first comparison.</p>
+      <div class="proof">
+        <div class="proof-side"><span>helped by UIUC Housing</span></div>
+        <div class="proof-main">
+          <div class="proof-row"><span class="proof-num">50+</span><span class="proof-students">students</span></div>
+          <div class="proof-found">found their</div>
+          <div class="proof-dream"><span class="proof-line"></span><span class="proof-badge">dream house</span></div>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <a class="button" href="/card">Search listings</a>
+        <a class="button" href="/map">Browse the map</a>
+      </div>
+    </section>
+
+    <section class="logo-belt" aria-label="Tracked leasing companies">
+      <div class="logo-belt-inner">
+        <div class="belt-label">one search across</div>
+        <div class="logo-cell"><img src="/logos/company-logo-green-street-realty.png" alt="Green Street Realty"></div>
+        <div class="logo-cell"><img src="/logos/company-logo-university-group.png" alt="University Group"></div>
+        <div class="logo-cell"><img src="/logos/company-logo-smile.png" alt="Smile"></div>
+        <div class="logo-cell"><img src="/logos/company-logo-jsj.webp" alt="JSJ"></div>
+        <div class="logo-cell"><img src="/logos/company-logo-bankier.png" alt="Bankier"></div>
+        <div class="logo-cell"><img src="/logos/company-logo-mhm-properties.png" alt="MHM"></div>
+        <div class="logo-cell"><img src="/logos/company-logo-roland.png" alt="Roland"></div>
+        <div class="logo-cell"><img src="/logos/company-logo-707.svg" alt="Seven07"></div>
+        <div class="belt-label" aria-hidden="true">one search across</div>
+        <div class="logo-cell" aria-hidden="true"><img src="/logos/company-logo-green-street-realty.png" alt=""></div>
+        <div class="logo-cell" aria-hidden="true"><img src="/logos/company-logo-university-group.png" alt=""></div>
+        <div class="logo-cell" aria-hidden="true"><img src="/logos/company-logo-smile.png" alt=""></div>
+        <div class="logo-cell" aria-hidden="true"><img src="/logos/company-logo-jsj.webp" alt=""></div>
+        <div class="logo-cell" aria-hidden="true"><img src="/logos/company-logo-bankier.png" alt=""></div>
+        <div class="logo-cell" aria-hidden="true"><img src="/logos/company-logo-mhm-properties.png" alt=""></div>
+        <div class="logo-cell" aria-hidden="true"><img src="/logos/company-logo-roland.png" alt=""></div>
+        <div class="logo-cell" aria-hidden="true"><img src="/logos/company-logo-707.svg" alt=""></div>
+      </div>
+    </section>
+
+    <section class="coverage">
+      <div class="coverage-grid">
+        <div class="coverage-panel">
+          <div class="coverage-mini">live coverage</div>
+          <div class="coverage-script">One search</div>
+          <div class="coverage-across">across</div>
+          <div class="coverage-source">every source</div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="stat-top"><span>01</span><span>UIUC</span></div><div class="stat-value">1,000+</div><div class="stat-label">Floor plans tracked</div></div>
+          <div class="stat"><div class="stat-top"><span>02</span><span>UIUC</span></div><div class="stat-value">400+</div><div class="stat-label">Properties across town</div></div>
+          <div class="stat"><div class="stat-top"><span>03</span><span>UIUC</span></div><div class="stat-value">8</div><div class="stat-label">Companies, one search</div></div>
+          <div class="stat"><div class="stat-top"><span>04</span><span>UIUC</span></div><div class="stat-value">100%</div><div class="stat-label">Free for UIUC students</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="features-inner">
+        <div class="features-head">
+          <div>
+            <div class="kicker">always on</div>
+            <h2 class="features-title">Housing search,<span>rearranged.</span></h2>
+          </div>
+          <p class="features-copy">The product still does the same practical work, but the page now reads less like a checklist and more like a guided tour.</p>
+        </div>
+
+        <div class="feature-list">
+          <article class="feature">
+            <div class="feature-copy one">
+              <div class="feature-num"><span>01</span><span></span></div>
+              <h3>One Search, Every Company</h3>
+              <p>Green Street Realty, Universities Group, Smile and every other tracked source, answered together in one list instead of twelve tabs.</p>
+              <a class="button" href="/card">Browse Every Company</a>
+            </div>
+            <div class="feature-mock one mock-card">
+              <div class="mock-search">near Grainger, under $900/bed</div>
+              <div class="mock-row">Green Street Realty <span class="mock-check">✓</span></div>
+              <div class="mock-row">University Group <span class="mock-check">✓</span></div>
+              <div class="mock-row">Smile Student Living <span class="mock-check">✓</span></div>
+              <div class="mock-row">JSJ Management <span class="mock-check">✓</span></div>
+            </div>
+          </article>
+
+          <article class="feature">
+            <div class="feature-copy two">
+              <div class="feature-num"><span>02</span><span></span></div>
+              <h3>The Real Price Per Bed</h3>
+              <p>A starting-at price is usually the cheapest unit type. Every result here is normalized to the exact unit, so comparisons stay honest.</p>
+              <a class="button" href="/card">Compare Real Prices</a>
+            </div>
+            <div class="feature-mock two mock-card">
+              <div class="mock-photo"><span class="mock-badge">Available Now</span></div>
+              <div class="mock-title">308 E Green St, Champaign</div>
+              <div class="mock-tags"><span class="mock-tag green">2 Bed</span><span class="mock-tag pink">Apartment</span></div>
+              <div class="mock-price">$785<span>/bed</span></div>
+            </div>
+          </article>
+
+          <article class="feature">
+            <div class="feature-copy three">
+              <div class="feature-num"><span>03</span><span></span></div>
+              <h3>Filter Once, See It Everywhere</h3>
+              <p>Choose beds, budget, move-in window, company, and property type once. The same filtered dataset powers the card grid and full-screen map.</p>
+              <a class="button" href="/map">Open the Map</a>
+            </div>
+            <div class="feature-mock three mock-card">
+              <div class="chips"><span class="chip">2 Bed</span><span class="chip">&lt; $900/bed</span><span class="chip">Available August</span></div>
+              <div class="mock-map">
+                <span class="pin" style="left:18%;top:30%">$785</span>
+                <span class="pin" style="left:55%;top:22%">$860</span>
+                <span class="pin" style="left:68%;top:62%">$895</span>
+                <span class="pin" style="left:34%;top:68%">$820</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -28,16 +28,27 @@
 
   --color-sage: #B9D2A0;
 
-  /* Jobright-inspired accent set — used by the About page and the /card-v2
-     style preview. Mint is the signature accent; ink/mist are the neutral
-     text/surface tones that go with it. */
-  --color-mint-200: #CFFFC4;
-  --color-mint-300: #ACFFE1;
-  --color-mint-400: #00F0A0;
-  --color-mint-600: #28C86E;
-  --color-ink-900: #232424;
-  --color-mist-50: #F7F8F9;
-  --color-mist-100: #F3F4F5;
+  /* Warm campus-directory palette. These keep the existing component class
+     names intact while moving the UI away from the old AI/SaaS mint skin. */
+  --color-espresso-brown: #35140B;
+  --color-warm-ivory: #FFFDEE;
+  --color-forest-green: #224E30;
+  --color-blush-pink: #F6E0DA;
+
+  --color-mint-200: #F6E0DA;
+  --color-mint-300: #E8C8BF;
+  --color-mint-400: #224E30;
+  --color-mint-600: #224E30;
+  --color-ink-900: #35140B;
+  --color-mist-50: #FFFDEE;
+  --color-mist-100: #EFE3C8;
+}
+
+/* Shared surface treatment: warm ivory UI reads better without visible block
+   outlines. Keep the token for layout/utility compatibility, but render its
+   border color transparent everywhere it is used. */
+.border-mist-100 {
+  border-color: transparent;
 }
 
 /* Company-logo marquee on the About page. Content is duplicated exactly twice,

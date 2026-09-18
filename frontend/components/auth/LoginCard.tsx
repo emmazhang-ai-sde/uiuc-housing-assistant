@@ -155,7 +155,7 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
   }
 
   return (
-    <div className="bg-white rounded-3xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] p-8 sm:p-10 w-full max-w-[480px]">
+    <div className="bg-white rounded-3xl border border-mist-100 shadow-[0_8px_30px_-12px_rgba(53,20,11,0.2)] p-8 sm:p-10 w-full max-w-[480px]">
       <div className="mb-8">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -167,7 +167,7 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
           <div className="text-2xl font-extrabold tracking-tight leading-tight text-ink-900">
             UIUC Housing
           </div>
-          <div className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mt-2">
+          <div className="text-[11px] font-bold uppercase tracking-widest text-ink-900/50 mt-2">
             Champaign-Urbana, IL
           </div>
         </div>
@@ -175,7 +175,7 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
 
       {step === "code" ? (
         <form onSubmit={handleCodeSubmit} className="space-y-5">
-          <div className="text-sm text-neutral-500 leading-relaxed">
+          <div className="text-sm text-ink-900/60 leading-relaxed">
             <p className="text-lg font-extrabold tracking-tight text-ink-900 mb-1.5">Enter your sign-in code</p>
             <p>
               We sent an 8-digit code to{" "}
@@ -183,7 +183,7 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
             </p>
           </div>
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 block mb-2">
+            <label className="text-[11px] font-bold uppercase tracking-widest text-forest-green block mb-2">
               Sign-in code
             </label>
             <input
@@ -194,18 +194,18 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
               required
               inputMode="numeric"
               autoComplete="one-time-code"
-              className="w-full px-4 py-3 rounded-xl border border-neutral-200 text-center font-mono text-xl tracking-[0.35em] text-ink-900 placeholder-neutral-300 focus:outline-none focus:ring-2 focus:ring-mint-400 transition"
+              className="w-full px-4 py-3 rounded-xl border border-mist-100 bg-warm-ivory/60 text-center font-mono text-xl tracking-[0.35em] text-ink-900 placeholder-ink-900/25 focus:outline-none focus:ring-2 focus:ring-forest-green transition"
             />
           </div>
           {error && <p className="text-sm text-[#FF465A] leading-relaxed">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors disabled:opacity-50"
+            className="w-full py-3 rounded-full bg-forest-green text-warm-ivory text-sm font-bold hover:bg-ink-900 transition-colors disabled:opacity-50"
           >
             {loading ? "Verifying…" : "Verify code"}
           </button>
-          <div className="flex items-center justify-between text-sm text-neutral-500 pt-1">
+          <div className="flex items-center justify-between text-sm text-ink-900/55 pt-1">
             <button
               type="button"
               onClick={sendCode}
@@ -240,7 +240,7 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
             type="button"
             onClick={signInWithGoogle}
             disabled={loading}
-            className="w-full py-3 rounded-full border border-neutral-200 bg-white text-ink-900 text-sm font-bold hover:border-neutral-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2.5"
+            className="w-full py-3 rounded-full border border-mist-100 bg-white text-ink-900 text-sm font-bold hover:border-forest-green transition-colors disabled:opacity-50 flex items-center justify-center gap-2.5"
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" aria-hidden="true">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -253,13 +253,13 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
 
           <div className="flex items-center gap-3" aria-hidden="true">
             <div className="flex-1 h-px bg-mist-100" />
-            <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">or</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-ink-900/50">or</span>
             <div className="flex-1 h-px bg-mist-100" />
           </div>
 
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div>
-              <div className="flex items-center w-full px-4 py-3 rounded-xl border border-neutral-200 focus-within:ring-2 focus-within:ring-mint-400 transition">
+              <div className="flex items-center w-full px-4 py-3 rounded-xl border border-mist-100 bg-warm-ivory/60 focus-within:ring-2 focus-within:ring-forest-green transition">
                 <input
                   type="email"
                   value={emailInput}
@@ -268,16 +268,16 @@ export function LoginCard({ onSuccess }: { onSuccess: () => void }) {
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
-                  className="flex-1 min-w-0 bg-transparent text-sm text-ink-900 placeholder-neutral-400 focus:outline-none"
+                  className="flex-1 min-w-0 bg-transparent text-sm text-ink-900 placeholder-ink-900/35 focus:outline-none"
                 />
               </div>
-              <p className="text-xs text-neutral-500 leading-relaxed mt-2">{ALLOWED_DOMAINS_HINT}</p>
+              <p className="text-xs text-ink-900/55 leading-relaxed mt-2">{ALLOWED_DOMAINS_HINT}</p>
             </div>
             {error && <p className="text-sm text-[#FF465A] leading-relaxed">{error}</p>}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-full bg-mint-400 text-ink-900 text-sm font-bold hover:bg-[#00D68F] transition-colors disabled:opacity-50"
+              className="w-full py-3 rounded-full bg-forest-green text-warm-ivory text-sm font-bold hover:bg-ink-900 transition-colors disabled:opacity-50"
             >
               {loading ? "Sending…" : "Email me a code"}
             </button>
